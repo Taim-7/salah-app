@@ -5,15 +5,15 @@
   const defaults = {
     lat: 54.9966, lng: -7.3086, location: 'Derry, Northern Ireland', timeZone: 'Europe/London',
     zoneVerified: true, autoLocation: false, method: '15-13', fajrAngle: 15, ishaAngle: 13,
-    ishaEnd: 'third', highLatRule: 'seventh', activeSource: 'angles', soundChoice: 'adhan', onlineCompare: true, calendarLead: 15, timeFormat: '12', theme: 'light', layout: 'classic', accent: 'forest'
+    ishaEnd: 'third', highLatRule: 'seventh', activeSource: 'angles', soundChoice: 'adhan', onlineCompare: true, calendarLead: 15, timeFormat: '12', theme: 'dark', layout: 'classic', accent: 'forest'
   };
   const names = [
-    { key: 'fajr', en: 'Fajr', ar: 'الفجر', icon: '✳', desc: 'True dawn, angle estimate' },
-    { key: 'sunrise', en: 'Sunrise', ar: 'الشروق', icon: '☀', desc: 'Fajr ends · not a prayer' },
-    { key: 'dhuhr', en: 'Dhuhr', ar: 'الظهر', icon: '◉', desc: 'After solar noon' },
-    { key: 'asr', en: 'Asr', ar: 'العصر', icon: '◔', desc: 'Hanbali one-shadow method' },
-    { key: 'maghrib', en: 'Maghrib', ar: 'المغرب', icon: '◕', desc: 'After sunset' },
-    { key: 'isha', en: 'Isha', ar: 'العشاء', icon: '☾', desc: 'Estimated disappearance of red twilight' }
+    { key: 'fajr', en: 'Fajr', ar: 'الفجر', icon: 'sun-horizon', desc: 'Dawn' },
+    { key: 'sunrise', en: 'Sunrise', ar: 'الشروق', icon: 'sunrise', desc: 'Fajr ends' },
+    { key: 'dhuhr', en: 'Dhuhr', ar: 'الظهر', icon: 'sun', desc: 'Midday' },
+    { key: 'asr', en: 'Asr', ar: 'العصر', icon: 'sun-low', desc: 'Afternoon' },
+    { key: 'maghrib', en: 'Maghrib', ar: 'المغرب', icon: 'sunset', desc: 'Sunset' },
+    { key: 'isha', en: 'Isha', ar: 'العشاء', icon: 'moon', desc: 'Night' }
   ];
   const prayers = names.filter(p => p.key !== 'sunrise');
   const dateParts = (date, zone) => {
@@ -36,14 +36,15 @@
     try {
       const raw = JSON.parse(localStorage.getItem('salah-config') || '{}');
       const c = { ...defaults, ...raw };
-      // Upgrade the original v3 defaults once; later user choices are retained.
+      // Keep existing settings on an upgrade.
       if (!raw.version4) {
         if (raw.method === '12-12') c.method = '15-13';
         c.calendarLead = 15;
         c.timeFormat = '12';
         if (raw.soundChoice === 'soft') c.soundChoice = 'adhan';
       }
-      c.version4 = true;
+      if (!raw.version5 && !('theme' in raw)) c.theme='dark';
+      c.version5 = true; c.version4 = true;
       if (raw && !('timeZone' in raw)) { c.timeZone = deviceZone(); c.zoneVerified = false; if (raw.method === '15-15') c.method = '15-15'; }
       if (!['12-12', '15-13', '15-15', 'custom'].includes(c.method)) c.method = defaults.method;
       if (!['third', 'half'].includes(c.ishaEnd)) c.ishaEnd = defaults.ishaEnd;
@@ -51,7 +52,7 @@
       if (!['adhan','soft','bell','custom','off'].includes(c.soundChoice)) c.soundChoice = 'adhan';
       c.calendarLead = 15;
       c.timeFormat = ['12','24'].includes(String(c.timeFormat)) ? String(c.timeFormat) : '12';
-      c.theme = ['light','dark'].includes(c.theme) ? c.theme : 'light';
+      c.theme = ['light','dark'].includes(c.theme) ? c.theme : 'dark';
       c.layout = ['classic','compact','timeline'].includes(c.layout) ? c.layout : 'classic';
       c.accent = ['forest','ocean','sand'].includes(c.accent) ? c.accent : 'forest';
       c.onlineCompare = c.onlineCompare !== false;
@@ -224,26 +225,67 @@
     else if (cfg.ishaEnd === 'third' && t.ishaBeyondFirstThird) msgs.push('The first-third marker falls before Isha begins. It cannot be treated as a usable cutoff on this day.');
     note(msgs.join(' '));
   }
+  const svgIcon = (kind) => {
+    const paths = {
+      'sun-horizon':'<path d="M3 18h18M6 21h12M12 4v3M5 10l2 2M19 10l-2 2M7 18a5 5 0 0 1 10 0"/>',
+      sunrise:'<path d="M3 18h18M5 21h14M12 4v7M9 8l3-3 3 3M7 18a5 5 0 0 1 10 0"/>',
+      sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.5 1.5M17.6 17.6l1.5 1.5M2 12h2M20 12h2M4.9 19.1l1.5-1.5M17.6 6.4l1.5-1.5"/>',
+      'sun-low':'<path d="M3 19h18M6 22h12M12 3v3M5 10l2 2M19 10l-2 2M6 19a6 6 0 0 1 12 0"/>',
+      sunset:'<path d="M3 18h18M5 21h14M12 4v7M9 8l3 3 3-3M7 18a5 5 0 0 1 10 0"/>',
+      moon:'<path d="M20.5 13A8.5 8.5 0 0 1 11 3.5 8.5 8.5 0 1 0 20.5 13Z"/>',
+      alert:'<circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 17h.01"/>',
+      clock:'<circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 3"/>',
+      third:'<circle cx="12" cy="12" r="9"/><path d="M12 3v9l7.8 4.5"/>',
+      half:'<circle cx="12" cy="12" r="9"/><path d="M12 3v18"/>'
+    };
+    return `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[kind]||paths.clock}</svg>`;
+  };
+  function restrictionStatus(t, instant=Date.now()) {
+    if (!t?.valid) return {level:'neutral',label:'Prayer times'};
+    const sunriseEnd = SalahSolar.plusMinutes(t.sunrise,15),
+      beforeDhuhr = SalahSolar.plusMinutes(t.solarNoon,-8),
+      beforeSunset = SalahSolar.plusMinutes(t.maghrib,-15);
+    if (isBetween(instant,t.sunrise,sunriseEnd)) return {level:'danger', label:'Avoid voluntary prayer',desc:'Sunrise precaution · approximately 15 minutes'};
+    if (isBetween(instant,beforeDhuhr,t.dhuhr)) return {level:'danger',label:'Avoid voluntary prayer',desc:'Near solar zenith · approximate buffer'};
+    if (isBetween(instant,beforeSunset,t.maghrib)) return {level:'danger',label:'Avoid voluntary prayer',desc:'Sunset precaution · approximate buffer'};
+    if (isBetween(instant,t.fajr,t.sunrise)) return {level:'caution',label:'Restricted voluntary prayers',desc:'After true dawn · exceptions include Fajr Sunnah'};
+    if (isBetween(instant,t.asr,t.maghrib)) return {level:'caution',label:'After Asr',desc:'Restriction applies once you have prayed Asr'};
+    if (isBetween(instant,t.isha,t.firstThird) && !t.ishaBeyondFirstThird) return {level:'preferred',label:'Preferred Isha period',desc:`First third ends ${fmt(t.firstThird)}`};
+    if (isBetween(instant,t.firstThird,t.midnight) && instant >= t.isha.getTime()) return {level:'caution',label:'After the first third',desc:`Half the Islamic night is ${fmt(t.midnight)}`};
+    if (instant >= t.midnight.getTime() && instant < t.nextFajr.getTime() && instant >= t.isha.getTime()) return {level:'caution',label:'After Islamic midnight',desc:'The normal Isha endpoint has passed'};
+    return {level:'calm',label:'Prayer day',desc:'Follow the timetable below'};
+  }
   function renderPrayerList(t) {
-    const now = new Date().getTime(), current = selectedKey === todayKey();
-    let active = '';
-    if (current) {
-      for (const n of names) {
-        if (n.key === 'sunrise') continue;
-        const a = t[n.key].getTime();
-        const end = n.key === 'fajr' ? t.sunrise : n.key === 'isha' ? endChoice(t) :
-          n.key === 'maghrib' ? t.isha : n.key === 'asr' ? t.maghrib : t.asr;
-        if (now >= a && now < end.getTime()) active = n.key;
-      }
-    }
-    $('prayerList').innerHTML = names.map(n => {
-      const estimated = (n.key === 'fajr' && t.fajrFallback) || (n.key === 'isha' && t.ishaFallback);
-      const desc = n.key === 'isha' ? 'Starts after estimated red twilight' : n.desc;
-      return `<div class="time-row ${n.key === active ? 'active' : ''}"><span class="time-icon" aria-hidden="true">${n.icon}</span><div class="time-text"><div class="time-name">${n.en}</div><div class="time-desc">${desc}</div></div><div class="time-data">${estimated ? '<span class="estimate-dot" title="High-latitude estimate">EST.</span>' : ''}<time class="time-value" datetime="${t[n.key].toISOString()}">${fmt(t[n.key])}</time></div></div>`;
-    }).join('') + `<div class="time-row night-summary" id="timetableThird"><span class="time-icon" aria-hidden="true">⅓</span><div class="time-text"><div class="time-name">First third of night</div><div class="time-desc">From Maghrib to next Fajr · not a prayer</div></div><div class="time-data"><time class="time-value">${fmt(t.firstThird)}${dateParts(t.firstThird,cfg.timeZone)!==selectedKey?`<small class="next-day">+1 day</small>`:""}</time></div></div><div class="time-row night-summary" id="timetableHalf"><span class="time-icon" aria-hidden="true">½</span><div class="time-text"><div class="time-name">Half of night</div><div class="time-desc">Islamic midnight · not 12:00 am</div></div><div class="time-data"><time class="time-value">${fmt(t.midnight)}${dateParts(t.midnight,cfg.timeZone)!==selectedKey?`<small class="next-day">+1 day</small>`:""}</time></div></div>`;
+    const now = Date.now(), current=selectedKey===todayKey();
+    const intervals = [
+      {at:t.fajr,end:t.sunrise,title:'After true dawn',desc:'Voluntary prayers restricted · Fajr Sunnah excepted',kind:'caution'},
+      {at:t.sunrise,end:SalahSolar.plusMinutes(t.sunrise,15),title:'Sunrise precaution',desc:'Approx. 15 minutes · voluntary prayer',kind:'avoid'},
+      {at:SalahSolar.plusMinutes(t.solarNoon,-8),end:t.dhuhr,title:'Solar zenith',desc:'Approx. 8-minute precaution before Dhuhr',kind:'avoid'},
+      {at:t.asr,end:t.maghrib,title:'After praying Asr',desc:'Conditional · applies after you perform Asr',kind:'caution'},
+      {at:SalahSolar.plusMinutes(t.maghrib,-15),end:t.maghrib,title:'Near sunset',desc:'Approx. 15-minute precaution',kind:'avoid'}
+    ];
+    const events = names.map(n=>({at:t[n.key],title:n.en,desc:n.desc,kind:'prayer',name:n,estimated:(n.key==='fajr'&&t.fajrFallback)||(n.key==='isha'&&t.ishaFallback)}));
+    const milestones=[
+      {at:t.firstThird,title:'First third of night',desc:'Isha preferred endpoint in a Hanbali opinion',kind:'night',icon:'third'},
+      {at:t.midnight,title:'Half of night',desc:'Later normal Isha endpoint in another opinion',kind:'night',icon:'half'}
+    ];
+    const sorted=[...events,...intervals.map(e=>({...e,icon:'alert'})),...milestones].filter(e=>e.at instanceof Date && !isNaN(e.at)).sort((a,b)=>a.at-b.at || (a.kind==='prayer'?-1:1));
+    $('prayerList').innerHTML=sorted.map(e=>{
+      const active=current && e.kind==='prayer' && e.name.key!=='sunrise' &&
+        now >= e.at.getTime() && now < (e.name.key==='fajr'?t.sunrise:
+        e.name.key==='dhuhr'?t.asr:e.name.key==='asr'?t.maghrib:
+        e.name.key==='maghrib'?t.isha:t.firstThird).getTime();
+      const extra=(e.kind==='avoid'||e.kind==='caution')?`<span class="range-label">until ${fmt(e.end)}</span>`:'';
+      const following=dateParts(e.at,cfg.timeZone)!==selectedKey?'<span class="next-day">+1 day</span>':'';
+      return `<div class="time-row ${e.kind==='prayer'?'prayer-entry':''} ${e.kind==='night'?'night-summary':''} ${e.kind==='avoid'?'avoid-entry':''} ${e.kind==='caution'?'caution-entry':''} ${active?'active':''}">
+        <span class="time-icon">${svgIcon(e.kind==='prayer'?e.name.icon:e.icon)}</span>
+        <div class="time-text"><div class="time-name">${e.title}${e.estimated?'<span class="estimate-dot">EST.</span>':''}</div><div class="time-desc">${e.desc}</div></div>
+        <div class="time-data"><time class="time-value" datetime="${e.at.toISOString()}">${fmt(e.at)}</time>${extra}${following}</div>
+      </div>`;
+    }).join('');
   }
   function setHero(event, now, nextDay = false, otherDate = false) {
-    if (nextDay) $('heroDate').textContent = 'Tomorrow';
+    // Date is shown beside the date picker.
     $('nextPrayerName').textContent = event.en;
     $('nextPrayerArabic').textContent = event.ar;
     $('nextPrayerTime').textContent = fmt(event.at);
@@ -255,8 +297,8 @@
   function renderHero(t) {
     const [a, b] = anglePair();
     $('heroMethod').textContent = cfg.activeSource === 'angles' || t.sourceFallback ? `${a}° / ${b}°${t.sourceFallback?' · fallback':''}` : methods.find(m=>m.id===cfg.activeSource)?.title || 'Prayer times';
-    $('heroDate').textContent = relativeKey(selectedKey);
-    $('heroDesc').textContent = 'One-shadow Asr · calculated times';
+
+    // The live status below the countdown updates automatically.
     const now = new Date();
     const events = prayers.map(p => ({ ...p, at: t[p.key] }));
     if (selectedKey === todayKey()) {
@@ -268,51 +310,15 @@
         else { $('nextPrayerName').textContent = 'Unavailable'; $('countdown').textContent = 'Please check your settings'; }
       }
     } else setHero(events[0], now, false, true);
+    updateHeroStatus(t);
   }
-  function renderNight(t) {
-    $('nightStart').textContent = fmt(t.maghrib);
-    $('nightEnd').textContent = fmtNight(t.nextFajr);
-    $('firstThird').textContent = fmtNight(t.firstThird);
-    $('halfNight').textContent = fmtNight(t.midnight);
-    $('thirdMilestone').classList.toggle('chosen', cfg.ishaEnd === 'third');
-    $('halfMilestone').classList.toggle('chosen', cfg.ishaEnd === 'half');
-    $('thirdMeaning').textContent = cfg.ishaEnd === 'third' ? 'Selected: end of preferred / choice time' : 'Recommended earlier target';
-    $('halfMeaning').textContent = cfg.ishaEnd === 'half' ? 'Selected: later normal endpoint' : 'Later endpoint supported by Muslim 612';
-    $('ishOpinionText').textContent = cfg.ishaEnd === 'third'
-      ? 'Hanbali school view: preferred time ends at the first third. Some Hanbali authorities count later time up to Fajr as necessity, not a general licence to delay.'
-      : 'Half-night opinion: the normal time ends halfway between Maghrib and Fajr, based on Sahih Muslim 612. Praying by the first third remains preferred.';
-    const warning = t.ishaBeyondHalf
-      ? 'Isha begins after the half-night marker here: this needs local fiqh guidance.'
-      : cfg.ishaEnd === 'third' && t.ishaBeyondFirstThird
-        ? 'The preferred first-third marker comes before Isha starts on this date.' : '';
-    $('cutoffWarning').textContent = warning;
-    $('cutoffWarning').classList.toggle('hidden', !warning);
-  }
-  function renderProhibited(t) {
-    // These are practical buffers, not exact legal definitions. The legal markers are
-    // appearance of the Sun, zenith, actual performance of Fajr/Asr, and sunset.
-    const sunriseEnd = SalahSolar.plusMinutes(t.sunrise, 15);
-    const zenithStart = SalahSolar.plusMinutes(t.solarNoon, -8);
-    const sunsetStart = SalahSolar.plusMinutes(t.maghrib, -15);
-    const rows = [
-      { title: 'From true dawn', detail: 'Hanbali: after true dawn; Fajr Sunnah excepted', start: fmt(t.fajr), end: fmt(t.sunrise), strong: false },
-      { title: 'Sunrise', detail: 'Until well above the horizon; ≈15-minute safety estimate', start: fmt(t.sunrise), end: fmt(sunriseEnd), strong: true },
-      { title: 'At solar zenith', detail: '≈8-minute buffer before Dhuhr, not an exact ruling', start: fmt(zenithStart), end: fmt(t.dhuhr), strong: true },
-      { title: 'After Asr', detail: 'Only after you have actually prayed Asr', start: `After Asr (from ${fmt(t.asr)})`, end: fmt(t.maghrib), strong: false },
-      { title: 'Near sunset', detail: '≈15-minute precaution before sunset', start: fmt(sunsetStart), end: fmt(t.maghrib), strong: true }
-    ];
-    $('avoidList').innerHTML = rows.map(r => `<div class="avoid-row ${r.strong ? 'strong' : ''}"><div><div class="avoid-row-title">${r.title}</div><div class="avoid-row-detail">${r.detail}</div></div><span class="avoid-row-time">${r.start} – ${r.end}</span></div>`).join('');
-    let state = 'Guidance', klass = 'avoid-status';
-    if (selectedKey === todayKey()) {
-      const now = Date.now();
-      if (isBetween(now, t.sunrise, sunriseEnd) || isBetween(now, zenithStart, t.dhuhr) || isBetween(now, sunsetStart, t.maghrib)) {
-        state = 'Avoid voluntary prayer now'; klass += ' warning';
-      } else if (isBetween(now, t.fajr, t.sunrise)) state = 'Voluntary prayer restricted from Fajr';
-      else if (isBetween(now, t.asr, t.maghrib)) state = 'After Asr: depends on whether you prayed';
-      else { state = 'No estimated restriction'; klass += ' ok'; }
-    }
-    $('avoidStatus').textContent = state;
-    $('avoidStatus').className = klass;
+  function updateHeroStatus(t) {
+    const live = selectedKey === todayKey();
+    const state = live ? restrictionStatus(t,Date.now()) : {level:'calm',label:'Selected date',desc:relativeKey(selectedKey)};
+    const msg = $('heroLiveMessage');
+    msg.textContent=state.label;
+    msg.dataset.level=state.level;
+    $('heroLiveTime').textContent=state.desc||'';
   }
   function render() {
     renderDate();
@@ -321,9 +327,9 @@
     $('timesTag').textContent = cfg.timeZone.replace('_', ' ');
     if (!dayInfo.valid) {
       note(dayInfo.reason); $('prayerList').innerHTML = '<p class="loading">Times unavailable for this date and location.</p>';
-      $('avoidList').innerHTML = ''; loadComparison(); return;
+      $('heroLiveMessage').textContent='Timing unavailable'; $('heroLiveTime').textContent='Check date and location'; loadComparison(); return;
     }
-    renderNotice(dayInfo); renderPrayerList(dayInfo); renderHero(dayInfo); renderNight(dayInfo); renderProhibited(dayInfo);
+    renderNotice(dayInfo); renderPrayerList(dayInfo); renderHero(dayInfo); renderQibla();
     loadComparison();
   }
 
@@ -369,6 +375,7 @@
       autoLocation: $('trackLocation').checked, highLatRule: $('highLatSelect').value
     };
     const wasFollowing = cfg.autoLocation;
+    if (kmApart({lat:+cfg.lat,lng:+cfg.lng},{lat,lng}) > 0.1) { variationPromise=null; magneticVariation=null; $('declinationOverride').value=''; }
     cfg = newCfg; store(); $('settingsDialog').close();
     if (!browsing) selectedKey = todayKey();
     render();
@@ -431,6 +438,7 @@
     const moved = kmApart({ lat: +cfg.lat, lng: +cfg.lng }, { lat, lng });
     if (moved < 1) return;
     cfg.lat = lat; cfg.lng = lng;
+    variationPromise=null;magneticVariation=null; $('declinationOverride').value='';
     if (moved >= 5) cfg.location = `Near ${lat.toFixed(3)}°, ${lng.toFixed(3)}°`;
     // A phone with automatic time zone enabled normally follows travel; network checks override it.
     cfg.timeZone = deviceZone(); cfg.zoneVerified = false;
@@ -502,7 +510,7 @@
     });
     $('settingsTheme').value=cfg.theme; $('settingsLayout').value=cfg.layout;
     $('settingsAccent').value=cfg.accent; $('settingsTimeFormat').value=cfg.timeFormat;
-    document.querySelector('meta[name="theme-color"]').content = cfg.theme === 'dark' ? '#101d21' : '#f4f4ed';
+    document.querySelector('meta[name="theme-color"]').content = cfg.theme === 'dark' ? '#25363c' : '#f6f7f4';
   }
   function changeAppearance(kind, value) {
     cfg[kind] = value; store(); applyAppearance();
@@ -567,7 +575,7 @@
     if (!browsing && localDay !== lastToday) { selectedKey = localDay; render(); }
     lastToday = localDay;
     if (dayInfo && dayInfo.valid && selectedKey === localDay) {
-      renderHero(dayInfo); renderProhibited(dayInfo); checkPrayerSounds();
+      renderHero(dayInfo); checkPrayerSounds();
     }
   }, 30000);
 
@@ -701,7 +709,7 @@
   $('calendarLead').value='15';
   $('soundChoice').addEventListener('change', () => {
     cfg.soundChoice = $('soundChoice').value; store();
-    $('soundStatus').textContent = 'Sound preference saved. Sounds can only work while Salah is open and armed.';
+    $('soundStatus').textContent = 'Sound saved. Test it using Play sound.';
   });
   $('testSound').addEventListener('click', () => { void playSound(); });
   $('stopSound').addEventListener('click', () => {
@@ -784,6 +792,177 @@
       `${result.eventCount} event(s) exported for this one day. Online sources need another download for future dates. iPhone may not import bulk .ics directly.` :
       `${result.eventCount} event(s) exported for up to 60 days. This static file will not automatically follow GPS, time-zone or method changes.`;
   });
+
+  // Great-circle bearing to the Kaaba. Live iPhone headings are magnetic, so a
+  // WMM2025 correction or a user-entered magnetic declination is required.
+  const KAABA={lat:21.422487,lng:39.826206};
+  const norm360=x=>(x%360+360)%360;
+  function qiblaBearing(lat,lng) {
+    const rad=Math.PI/180, phi1=lat*rad, phi2=KAABA.lat*rad;
+    const dl=(KAABA.lng-lng)*rad;
+    const y=Math.sin(dl)*Math.cos(phi2);
+    const x=Math.cos(phi1)*Math.sin(phi2)-Math.sin(phi1)*Math.cos(phi2)*Math.cos(dl);
+    return norm360(Math.atan2(y,x)/rad);
+  }
+  const compassPoints=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  let qiblaHeading=null,magneticVariation=null,variationSource='',qiblaCompassOn=false,lastAlignment=false;
+  const bearingNow=()=>qiblaBearing(+cfg.lat,+cfg.lng);
+  function renderQibla(){
+    const bearing=bearingNow(),good=Number.isFinite(bearing);
+    $('qiblaBearing').textContent=good?`${bearing.toFixed(1)}°`:'—°';
+    $('qiblaCardinal').textContent=good?compassPoints[Math.round(bearing/22.5)%16]:'—';
+    $('qiblaPosition').textContent=`${cfg.location} · true north bearing`;
+    const override=$('declinationOverride').value.trim();
+    const delta=override!==''?Number(override):magneticVariation;
+    const valid=Number.isFinite(qiblaHeading)&&Number.isFinite(delta) && Math.abs(delta)<=180 && qiblaCompassOn;
+    const arrow=$('qiblaArrow');
+    const difference=valid?((bearing-qiblaHeading-delta+540)%360-180):0;
+    arrow.style.transform=`translate(-50%, -50%) rotate(${(valid?difference:bearing).toFixed(2)}deg)`;
+    $('qiblaDial').classList.toggle('live',valid);
+    const accurate=valid && Number.isFinite(compassSensorAccuracy)&&compassSensorAccuracy>=0&&compassSensorAccuracy<=20;
+    const aligned=accurate && Math.abs(difference)<=4;
+    $('qiblaDial').classList.toggle('aligned',aligned);
+    $('qiblaAligned').textContent=aligned?'Facing the Qibla':valid?`${Math.round(Math.abs(difference))}° ${difference>0?'right':'left'} · turn the phone`: 'True-north reference · start compass';
+    if (aligned && !lastAlignment && $('qiblaHaptic').checked && typeof navigator.vibrate==='function') {
+      try{navigator.vibrate([35,35,65])}catch{}
+    }
+    lastAlignment=aligned;
+    if(valid){$('qiblaState').textContent=`Compass reading ${Math.round(qiblaHeading)}° magnetic · correction ${delta.toFixed(1)}° ${override!==''?'(manual)':variationSource}`;
+      $('qiblaAccuracy').textContent=Number.isFinite(compassSensorAccuracy)?compassSensorAccuracy<0?'Compass needs calibration — move the phone in a figure eight.':`Sensor uncertainty approximately ±${Math.round(compassSensorAccuracy)}°. Hold flat, away from metal.`:'Heading accuracy not reported: verify with another compass.';
+    }
+  }
+  let compassSensorAccuracy=NaN,variationPromise=null;
+  async function loadVariation(){
+    const date=new Date();
+    if(date.getUTCFullYear()>2029){magneticVariation=null;variationSource='model expired';return false}
+    if (variationPromise) return variationPromise;
+    variationPromise=(async()=>{
+      try {
+        // Pinned MIT package implementing NOAA/BGS WMM2025 (not an ad or account).
+        const mod=await import('https://cdn.jsdelivr.net/npm/magvar@2.2.0/+esm');
+        const magvar=mod.magvar||mod.default?.magvar;
+        if(typeof magvar!=='function')throw Error('Magnetic module not compatible');
+        const dec=Number(magvar(+cfg.lat,+cfg.lng,0,new Date()));
+        if(!Number.isFinite(dec)||Math.abs(dec)>180)throw Error('Magnetic model invalid');
+        magneticVariation=dec;variationSource='· WMM2025';
+        return true;
+      } catch(err){magneticVariation=null;variationSource='';return false}
+    })();
+    return variationPromise;
+  }
+  function orientationHandler(e) {
+    // webkitCompassHeading is magnetic north on iPhone; alpha alone is not a
+    // reliable north-referenced compass, so never treat it as one.
+    const h=Number(e.webkitCompassHeading);
+    if (!Number.isFinite(h)||e.webkitCompassHeading==null||h<0) {
+      $('qiblaState').textContent='No north-referenced heading. Use the bearing with a calibrated compass.';return;
+    }
+    qiblaHeading=norm360(h);
+    compassSensorAccuracy= e.webkitCompassAccuracy===undefined?NaN:Number(e.webkitCompassAccuracy);
+    renderQibla();
+  }
+  $('startCompass').addEventListener('click',async()=>{
+    if(!window.isSecureContext){$('qiblaState').textContent='Compass access requires HTTPS.';return;}
+    if(typeof DeviceOrientationEvent==='undefined'){$('qiblaState').textContent='This device does not expose a compass heading.';return;}
+    try {
+      // iOS requires a user gesture when requesting sensor permission.
+      if(typeof DeviceOrientationEvent.requestPermission==='function'){
+        const permission=await DeviceOrientationEvent.requestPermission();
+        if(permission!=='granted'){$('qiblaState').textContent='Motion permission denied. Use the true-north bearing above.';return;}
+      }
+      window.removeEventListener('deviceorientation',orientationHandler);
+      window.addEventListener('deviceorientation',orientationHandler);
+      qiblaCompassOn=true;
+      $('startCompass').textContent='Compass active';
+      $('qiblaState').textContent='Finding compass heading and magnetic correction…';
+      const success=await loadVariation();
+      if(!success && !$('declinationOverride').value.trim()) $('qiblaState').textContent='Magnetic model unavailable. Enter the local magnetic declination for a corrected pointer, or use the bearing with a true-north compass.';
+      renderQibla();
+    } catch(err){$('qiblaState').textContent=`Compass access failed: ${err.message}`}
+  });
+  $('qiblaGPS').addEventListener('click',()=>{
+    if(!navigator.geolocation){$('qiblaState').textContent='GPS is unavailable.';return}
+    $('qiblaState').textContent='Getting current GPS position…';
+    navigator.geolocation.getCurrentPosition(async p=>{
+      cfg.lat=+p.coords.latitude.toFixed(5);cfg.lng=+p.coords.longitude.toFixed(5);
+      cfg.location=`GPS · ${cfg.lat.toFixed(3)}, ${cfg.lng.toFixed(3)}`;
+      cfg.zoneVerified=false;store();
+      variationPromise=null;magneticVariation=null; $('declinationOverride').value='';
+      render();
+      $('qiblaState').textContent=`GPS location acquired (±${Math.round(p.coords.accuracy)} m).`;
+      if(qiblaCompassOn){await loadVariation();renderQibla()}
+      void enrichLocation(cfg.lat,cfg.lng).then(data=>{
+        if(data.name)cfg.location=data.name;
+        if(data.zone)cfg.timeZone=data.zone;
+        cfg.zoneVerified=data.confirmed;store();if(!browsing)selectedKey=todayKey();render();
+      }).catch(()=>{});
+    },e=>{$('qiblaState').textContent=`GPS unavailable: ${e.message}`},{enableHighAccuracy:true,timeout:12000,maximumAge:15000});
+  });
+  $('declinationOverride').addEventListener('input',()=>{store();renderQibla()});
+  $('clearDeclination').addEventListener('click',()=>{$('declinationOverride').value='';renderQibla()});
+  $('qiblaHaptic').addEventListener('change',()=>{
+    if($('qiblaHaptic').checked && typeof navigator.vibrate!=='function'){
+      $('qiblaState').textContent='iPhone Safari does not offer vibration to web apps; the visual alignment cue still works.';
+    }
+  });
+  
+  function addTestRow(label,message,state){
+    const row=document.createElement('div');row.className=`test-result test-${state}`;
+    const strong=document.createElement('strong');strong.textContent=label;
+    const small=document.createElement('span');small.textContent=message;
+    row.append(strong,small);$('testResults').append(row);
+  }
+  function basicChecks(){
+    $('testResults').replaceChildren();
+    addTestRow('App installation',window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true?'Home Screen mode':'Open in Safari or add to Home Screen',window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true?'pass':'info');
+    addTestRow('Connection',navigator.onLine?'Online now':'Offline now',navigator.onLine?'pass':'info');
+    addTestRow('Offline files','serviceWorker' in navigator?(navigator.serviceWorker.controller?'Offline worker controls this page':'Worker not controlling the page yet — reload after installation'):'No service worker support','serviceWorker' in navigator && navigator.serviceWorker.controller?'pass':'info');
+    addTestRow('Local calendar','Export .ics above; test delivery in iOS Calendar','info');
+    addTestRow('Notification API', ('Notification' in window && 'serviceWorker' in navigator)?`Supported · ${Notification.permission}`:'Not exposed by this browser',('Notification' in window&&'serviceWorker' in navigator)?'pass':'info');
+    addTestRow('Background push','No server connected — not available in this build','info');
+    addTestRow('Motion sensor',typeof DeviceOrientationEvent!=='undefined'?'Permission and compass test available':'Not exposed','info');
+    addTestRow('Vibration',typeof navigator.vibrate==='function'?'Browser exposes vibration':'Not supported (normal for iPhone Safari)',typeof navigator.vibrate==='function'?'pass':'info');
+  }
+  $('runBasicChecks').addEventListener('click',basicChecks);
+  $('testAdhan').addEventListener('click',async()=>{
+    $('testFeedback').textContent='Requesting adhan…';
+    await playAdhan();
+    $('testFeedback').textContent=$('soundStatus').textContent+' Listen to confirm. A playing promise does not prove the speaker is audible.';
+  });
+  let testingChimeTimer=null;
+  $('testEarlyChime').addEventListener('click',()=>{
+    if(testingChimeTimer)clearTimeout(testingChimeTimer);
+    playReminderChime();
+    $('testFeedback').textContent='A short test chime just played. A second will be requested in 10 seconds while the app stays visible.';
+    testingChimeTimer=setTimeout(()=>{
+      if(!document.hidden){playReminderChime();$('testFeedback').textContent='10-second foreground alert requested. Did you hear it? iOS may silence it after backgrounding.'}
+      else $('testFeedback').textContent='The app was hidden; it cannot guarantee background audio.';
+      testingChimeTimer=null;
+    },10000);
+  });
+  $('testNotification').addEventListener('click',async()=>{
+    const show=m=>$('testFeedback').textContent=m;
+    if(!('Notification' in window)||!('serviceWorker' in navigator)){show('Notifications are unavailable here. Install Salah to your iPhone Home Screen first.');return}
+    try {
+      const permission=await Notification.requestPermission();
+      if(permission!=='granted'){show(`Notification permission: ${permission}`);return}
+      const ready=await Promise.race([navigator.serviceWorker.ready, new Promise((_,reject)=>setTimeout(()=>reject(Error('No service worker ready within 8 seconds')),8000))]);
+      await ready.showNotification('Salah test',{body:'This is a test notification, not a prayer reminder.',icon:'./icons/icon-192.png',tag:'salah-self-test'});
+      show('Test notification sent to the system. Check Notification Centre; background scheduled alerts still require a push server.');
+    } catch(err){show(`Notification test failed: ${err.message}`)}
+  });
+  $('testGPS').addEventListener('click',()=>{
+    if(!navigator.geolocation){$('testFeedback').textContent='GPS unavailable in this browser.';return}
+    $('testFeedback').textContent='Requesting GPS…';
+    navigator.geolocation.getCurrentPosition(p=>{$('testFeedback').textContent=`GPS acquired: ±${Math.round(p.coords.accuracy)} metres. Qibla can use this position.`},e=>{$('testFeedback').textContent=`GPS permission or positioning issue: ${e.message}`},{enableHighAccuracy:true,timeout:12000,maximumAge:10000});
+  });
+  $('testVibration').addEventListener('click',()=>{
+    const supported=typeof navigator.vibrate==='function';
+    const accepted=supported?navigator.vibrate([40,50,70]):false;
+    $('testFeedback').textContent=supported?`Vibration pattern ${accepted?'accepted by browser':'not accepted'}; physical feedback still needs checking.`:'iPhone Safari does not provide the web vibration API. The Qibla dial uses a visual alignment cue.';
+  });
+  basicChecks();
+  renderQibla();
   if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});
   render(); startTracking();
 })();

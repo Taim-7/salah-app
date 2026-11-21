@@ -1,4 +1,4 @@
-const CACHE_NAME = 'salah-pwa-v4-20261121';
+const CACHE_NAME = 'salah-pwa-v5-20261121';
 const FILES = [
   './', './index.html', './styles.css', './solar.js', './providers.js', './app.js',
   './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-180.png'

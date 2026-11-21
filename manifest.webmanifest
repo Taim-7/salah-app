@@ -1,14 +1,14 @@
 {
   "id": "./",
-  "name": "Salah — Prayer Times",
+  "name": "Salah \u2014 Prayer Times",
   "short_name": "Salah",
-  "description": "Prayer time comparison, Hanbali Asr, Islamic night, in-app sounds and calendar reminders.",
+  "description": "Prayer times, Qibla compass and reminders",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#f4f4ed",
-  "theme_color": "#173b32",
+  "background_color": "#25363c",
+  "theme_color": "#25363c",
   "lang": "en-GB",
   "icons": [
     {
