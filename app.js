@@ -4,8 +4,8 @@
   const deviceZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   const defaults = {
     lat: 54.9966, lng: -7.3086, location: 'Derry, Northern Ireland', timeZone: 'Europe/London',
-    zoneVerified: true, autoLocation: false, method: '12-12', fajrAngle: 15, ishaAngle: 13,
-    ishaEnd: 'third', highLatRule: 'seventh', activeSource: 'angles', soundChoice: 'soft', onlineCompare: true, calendarLead: 0
+    zoneVerified: true, autoLocation: false, method: '15-13', fajrAngle: 15, ishaAngle: 13,
+    ishaEnd: 'third', highLatRule: 'seventh', activeSource: 'angles', soundChoice: 'adhan', onlineCompare: true, calendarLead: 15, timeFormat: '12', theme: 'light', layout: 'classic', accent: 'forest'
   };
   const names = [
     { key: 'fajr', en: 'Fajr', ar: 'الفجر', icon: '✳', desc: 'True dawn, angle estimate' },
@@ -36,12 +36,24 @@
     try {
       const raw = JSON.parse(localStorage.getItem('salah-config') || '{}');
       const c = { ...defaults, ...raw };
-      if (raw && !('timeZone' in raw)) { c.timeZone = deviceZone(); c.zoneVerified = false; if (raw.method === '15-15') c.method = '12-12'; }
+      // Upgrade the original v3 defaults once; later user choices are retained.
+      if (!raw.version4) {
+        if (raw.method === '12-12') c.method = '15-13';
+        c.calendarLead = 15;
+        c.timeFormat = '12';
+        if (raw.soundChoice === 'soft') c.soundChoice = 'adhan';
+      }
+      c.version4 = true;
+      if (raw && !('timeZone' in raw)) { c.timeZone = deviceZone(); c.zoneVerified = false; if (raw.method === '15-15') c.method = '15-15'; }
       if (!['12-12', '15-13', '15-15', 'custom'].includes(c.method)) c.method = defaults.method;
       if (!['third', 'half'].includes(c.ishaEnd)) c.ishaEnd = defaults.ishaEnd;
       if (!['angles', 'tayba', 'moonsighting', 'france', 'mwl'].includes(c.activeSource)) c.activeSource = 'angles';
-      if (!['soft','bell','custom','off'].includes(c.soundChoice)) c.soundChoice = 'soft';
-      c.calendarLead = [0,5,10,15].includes(Number(c.calendarLead)) ? Number(c.calendarLead) : 0;
+      if (!['adhan','soft','bell','custom','off'].includes(c.soundChoice)) c.soundChoice = 'adhan';
+      c.calendarLead = 15;
+      c.timeFormat = ['12','24'].includes(String(c.timeFormat)) ? String(c.timeFormat) : '12';
+      c.theme = ['light','dark'].includes(c.theme) ? c.theme : 'light';
+      c.layout = ['classic','compact','timeline'].includes(c.layout) ? c.layout : 'classic';
+      c.accent = ['forest','ocean','sand'].includes(c.accent) ? c.accent : 'forest';
       c.onlineCompare = c.onlineCompare !== false;
       if (!['seventh', 'angle', 'middle'].includes(c.highLatRule)) c.highLatRule = defaults.highLatRule;
       if (!validZone(c.timeZone)) c.timeZone = deviceZone();
@@ -59,8 +71,9 @@
     cfg.method === '15-13' ? [15, 13] : cfg.method === '15-15' ? [15, 15] : [+cfg.fajrAngle, +cfg.ishaAngle];
   const todayKey = () => dateParts(new Date(), cfg.timeZone);
   const fmt = date => date instanceof Date && !isNaN(date) ? new Intl.DateTimeFormat('en-GB', {
-    timeZone: cfg.timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
-  }).format(date) : '--:--';
+    timeZone: cfg.timeZone, hour: cfg.timeFormat === '12' ? 'numeric' : '2-digit',
+    minute: '2-digit', hour12: cfg.timeFormat === '12'
+  }).format(date).replace('AM','am').replace('PM','pm') : '--:--';
   const fmtNight = date => `${fmt(date)}${dateParts(date, cfg.timeZone) !== selectedKey ? ' (+1 day)' : ''}`;
   const prettyKey = key => dateAtNoonUTC(key).toLocaleDateString('en-GB', {
     timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
@@ -227,7 +240,7 @@
       const estimated = (n.key === 'fajr' && t.fajrFallback) || (n.key === 'isha' && t.ishaFallback);
       const desc = n.key === 'isha' ? 'Starts after estimated red twilight' : n.desc;
       return `<div class="time-row ${n.key === active ? 'active' : ''}"><span class="time-icon" aria-hidden="true">${n.icon}</span><div class="time-text"><div class="time-name">${n.en}</div><div class="time-desc">${desc}</div></div><div class="time-data">${estimated ? '<span class="estimate-dot" title="High-latitude estimate">EST.</span>' : ''}<time class="time-value" datetime="${t[n.key].toISOString()}">${fmt(t[n.key])}</time></div></div>`;
-    }).join('');
+    }).join('') + `<div class="time-row night-summary" id="timetableThird"><span class="time-icon" aria-hidden="true">⅓</span><div class="time-text"><div class="time-name">First third of night</div><div class="time-desc">From Maghrib to next Fajr · not a prayer</div></div><div class="time-data"><time class="time-value">${fmt(t.firstThird)}${dateParts(t.firstThird,cfg.timeZone)!==selectedKey?`<small class="next-day">+1 day</small>`:""}</time></div></div><div class="time-row night-summary" id="timetableHalf"><span class="time-icon" aria-hidden="true">½</span><div class="time-text"><div class="time-name">Half of night</div><div class="time-desc">Islamic midnight · not 12:00 am</div></div><div class="time-data"><time class="time-value">${fmt(t.midnight)}${dateParts(t.midnight,cfg.timeZone)!==selectedKey?`<small class="next-day">+1 day</small>`:""}</time></div></div>`;
   }
   function setHero(event, now, nextDay = false, otherDate = false) {
     if (nextDay) $('heroDate').textContent = 'Tomorrow';
@@ -282,7 +295,7 @@
     const zenithStart = SalahSolar.plusMinutes(t.solarNoon, -8);
     const sunsetStart = SalahSolar.plusMinutes(t.maghrib, -15);
     const rows = [
-      { title: 'After Fajr', detail: 'After praying Fajr (some Hanbalis start at true dawn)', start: `After Fajr (from ${fmt(t.fajr)})`, end: fmt(t.sunrise), strong: false },
+      { title: 'From true dawn', detail: 'Hanbali: after true dawn; Fajr Sunnah excepted', start: fmt(t.fajr), end: fmt(t.sunrise), strong: false },
       { title: 'Sunrise', detail: 'Until well above the horizon; ≈15-minute safety estimate', start: fmt(t.sunrise), end: fmt(sunriseEnd), strong: true },
       { title: 'At solar zenith', detail: '≈8-minute buffer before Dhuhr, not an exact ruling', start: fmt(zenithStart), end: fmt(t.dhuhr), strong: true },
       { title: 'After Asr', detail: 'Only after you have actually prayed Asr', start: `After Asr (from ${fmt(t.asr)})`, end: fmt(t.maghrib), strong: false },
@@ -294,7 +307,8 @@
       const now = Date.now();
       if (isBetween(now, t.sunrise, sunriseEnd) || isBetween(now, zenithStart, t.dhuhr) || isBetween(now, sunsetStart, t.maghrib)) {
         state = 'Avoid voluntary prayer now'; klass += ' warning';
-      } else if (isBetween(now, t.fajr, t.sunrise) || isBetween(now, t.asr, t.maghrib)) state = 'Depends on whether you prayed';
+      } else if (isBetween(now, t.fajr, t.sunrise)) state = 'Voluntary prayer restricted from Fajr';
+      else if (isBetween(now, t.asr, t.maghrib)) state = 'After Asr: depends on whether you prayed';
       else { state = 'No estimated restriction'; klass += ' ok'; }
     }
     $('avoidStatus').textContent = state;
@@ -343,10 +357,11 @@
         ![fa, ia].every(a => Number.isFinite(a) && a >= 6 && a <= 22) || !validZone(zone)) {
       status('Check coordinates, angles (6–22°) and IANA time zone (e.g. Europe/London).'); return;
     }
-    const method = document.querySelector('input[name="method"]:checked')?.value || '12-12';
+    const method = document.querySelector('input[name="method"]:checked')?.value || '15-13';
     const ishaEnd = document.querySelector('input[name="ishaEnd"]:checked')?.value || 'third';
     const newCfg = {
       activeSource: cfg.activeSource, soundChoice: cfg.soundChoice, calendarLead: cfg.calendarLead, onlineCompare: $('onlineCompare').checked,
+      theme: cfg.theme, layout: cfg.layout, accent: cfg.accent, timeFormat: cfg.timeFormat, version4: true,
       lat, lng, location: $('placeInput').value.trim() || `Lat ${lat.toFixed(3)}°, Lon ${lng.toFixed(3)}°`,
       timeZone: zone, zoneVerified: pendingPlace ? pendingPlace.zoneVerified :
         kmApart({lat:+cfg.lat,lng:+cfg.lng},{lat,lng}) < 1 && cfg.timeZone === zone && cfg.zoneVerified,
@@ -472,6 +487,35 @@
       status('Choose the correct city from the results.');
     } catch { status('City search needs an internet connection. GPS and coordinates still work offline.'); }
   }
+
+  function applyAppearance() {
+    document.body.dataset.theme = cfg.theme;
+    document.body.dataset.layout = cfg.layout;
+    document.body.dataset.accent = cfg.accent;
+    $('themeToggle').setAttribute('aria-label', cfg.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+    $('themeText').textContent = cfg.theme === 'dark' ? 'Light mode' : 'Dark mode';
+    $('themeIcon').textContent = cfg.theme === 'dark' ? '☼' : '☾';
+    $('accentPicker').value = cfg.accent;
+    document.querySelectorAll('#viewPicker [data-view]').forEach(b => {
+      b.setAttribute('aria-pressed', String(b.dataset.view === cfg.layout));
+      b.classList.toggle('selected', b.dataset.view === cfg.layout);
+    });
+    $('settingsTheme').value=cfg.theme; $('settingsLayout').value=cfg.layout;
+    $('settingsAccent').value=cfg.accent; $('settingsTimeFormat').value=cfg.timeFormat;
+    document.querySelector('meta[name="theme-color"]').content = cfg.theme === 'dark' ? '#101d21' : '#f4f4ed';
+  }
+  function changeAppearance(kind, value) {
+    cfg[kind] = value; store(); applyAppearance();
+    if (kind === 'timeFormat') render();
+  }
+  $('themeToggle').addEventListener('click', () => changeAppearance('theme',cfg.theme === 'dark' ? 'light':'dark'));
+  $('accentPicker').addEventListener('change', () => changeAppearance('accent',$('accentPicker').value));
+  $('viewPicker').addEventListener('click', e => {
+    const b=e.target.closest('[data-view]'); if(b) changeAppearance('layout',b.dataset.view);
+  });
+  [['settingsTheme','theme'],['settingsLayout','layout'],['settingsAccent','accent'],['settingsTimeFormat','timeFormat']].forEach(([id,key]) =>
+    $(id).addEventListener('change', () => changeAppearance(key,$(id).value)));
+  applyAppearance();
 
   $('openSettings').addEventListener('click', showSettings);
   $('closeSettings').addEventListener('click', () => $('settingsDialog').close());
@@ -605,15 +649,39 @@
     osc.connect(gain); gain.connect(ctx.destination);
     osc.start(at); osc.stop(at+duration+.03);
   }
+  // CC0 Adhan by Adam-synagda via Wikimedia Commons, online-only.
+  const ADHAN_URL = 'https://upload.wikimedia.org/wikipedia/commons/transcoded/b/b0/Beautiful_adhan.ogg/Beautiful_adhan.ogg.mp3';
+  let adhanPlayer = null, activeCustomPlayer=null;
+  async function playAdhan() {
+    try {
+      if (!adhanPlayer) { adhanPlayer=new Audio(ADHAN_URL); adhanPlayer.preload='auto'; adhanPlayer.volume=.8; }
+      adhanPlayer.pause(); adhanPlayer.currentTime=0;
+      await adhanPlayer.play();
+      $('soundStatus').textContent='Adhan playing from Wikimedia Commons (internet required).';
+    } catch {
+      $('soundStatus').textContent='The online adhan could not play. Use a chime or test with internet access.';
+      playReminderChime();
+    }
+  }
+  function playReminderChime() {
+    try {
+      audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') void audioCtx.resume();
+      const a=audioCtx.currentTime+.02;
+      audioTone(audioCtx,550,a,.25,.06);audioTone(audioCtx,740,a+.28,.30,.06);
+    } catch {}
+  }
   async function playSound() {
     if (cfg.soundChoice === 'off') return;
+    if (cfg.soundChoice === 'adhan') return playAdhan();
     try {
       if (cfg.soundChoice === 'custom') {
         const blob = await audioData('read');
         if (!blob) { $('soundStatus').textContent='Upload a custom sound first, or choose a built-in chime.'; return; }
         if (savedAudioObjectUrl) URL.revokeObjectURL(savedAudioObjectUrl);
         savedAudioObjectUrl = URL.createObjectURL(blob);
-        const audio = new Audio(savedAudioObjectUrl); audio.volume = .9;
+        if(activeCustomPlayer) activeCustomPlayer.pause();
+        const audio = new Audio(savedAudioObjectUrl); audio.volume = .9; activeCustomPlayer=audio;
         try { await audio.play(); }
         catch { $('soundStatus').textContent='Safari blocked custom audio playback. Tap Hear sound; background sound is not supported.'; }
         return;
@@ -630,31 +698,51 @@
   }
   $('soundChoice').value = cfg.soundChoice;
   $('calendarLead').value = String(cfg.calendarLead);
-  $('calendarLead').addEventListener('change',()=>{ cfg.calendarLead=Number($('calendarLead').value);store(); });
+  $('calendarLead').value='15';
   $('soundChoice').addEventListener('change', () => {
     cfg.soundChoice = $('soundChoice').value; store();
     $('soundStatus').textContent = 'Sound preference saved. Sounds can only work while Salah is open and armed.';
   });
   $('testSound').addEventListener('click', () => { void playSound(); });
+  $('stopSound').addEventListener('click', () => {
+    if(adhanPlayer) { adhanPlayer.pause(); adhanPlayer.currentTime=0; }
+    if(activeCustomPlayer) { activeCustomPlayer.pause(); activeCustomPlayer.currentTime=0; }
+    $('soundStatus').textContent='Sound stopped.';
+  });
   $('armSound').addEventListener('click', async () => {
     soundArmed = !soundArmed;
     if (soundArmed) {
-      if (cfg.soundChoice !== 'off') await playSound();
-      // Do not play past prayers on arm or when opening the app.
-      soundSeen = new Set(prayers.filter(p=>dayInfo?.[p.key] <= new Date()).map(p=>`${selectedKey}:${p.key}`));
+      if (cfg.soundChoice !== 'off') playReminderChime();
+      if (cfg.soundChoice === 'adhan' && !adhanPlayer) {
+        adhanPlayer=new Audio(ADHAN_URL); adhanPlayer.volume=.8; adhanPlayer.preload='auto';
+        try { adhanPlayer.load(); } catch {}
+      }
+      // Ignore all past reminders and prayer times when the user arms the page.
+      const now=Date.now();
+      soundSeen = new Set();
+      for(const p of prayers) {
+        const when=dayInfo?.[p.key]?.getTime();
+        if (!when) continue;
+        if (when - 15*60000 <= now) soundSeen.add(`${selectedKey}:pre:${p.key}`);
+        if (when <= now) soundSeen.add(`${selectedKey}:at:${p.key}`);
+      }
     }
     $('armSound').textContent = soundArmed ? 'Disarm sound' : 'Arm while open';
-    $('soundStatus').textContent = soundArmed ? 'Armed only while this page is open. Locking the phone can stop it.' : 'Not armed.';
+    $('soundStatus').textContent = soundArmed ? 'Armed for a 15-minute early chime and prayer-time sound while this page stays open.' : 'Not armed.';
   });
   function checkPrayerSounds() {
     if (!soundArmed || document.hidden || !dayInfo?.valid || cfg.soundChoice === 'off') return;
     for (const p of prayers) {
-      const id = `${selectedKey}:${p.key}`;
-      const when = dayInfo[p.key]?.getTime();
-      const diff = Date.now() - when;
-      if (when && diff >= 0 && diff < 45000 && !soundSeen.has(id)) {
-        soundSeen.add(id); void playSound();
-        $('soundStatus').textContent = `${p.en} time reached. Foreground chime requested.`;
+      const when = dayInfo[p.key]?.getTime(); if (!when) continue;
+      const now=Date.now(), reminder=when-15*60000;
+      const beforeId=`${selectedKey}:pre:${p.key}`, atId=`${selectedKey}:at:${p.key}`;
+      if(now >= reminder && now < reminder+45000 && !soundSeen.has(beforeId)) {
+        soundSeen.add(beforeId);playReminderChime();
+        $('soundStatus').textContent=`${p.en} begins in 15 minutes. Foreground chime requested.`;
+      }
+      if(now >= when && now < when+45000 && !soundSeen.has(atId)) {
+        soundSeen.add(atId);void playSound();
+        $('soundStatus').textContent=`${p.en} prayer time reached. Sound requested.`;
       }
     }
   }
@@ -664,7 +752,7 @@
   function makeCalendar() {
     const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Salah Comparison//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH','X-WR-CALNAME:Salah prayer reminders'];
     const online = onlineKinds.includes(cfg.activeSource);
-    const dayCount = online ? 1 : 30;
+    const dayCount = online ? 1 : 60;
     const keyBase = selectedKey;
     let eventCount = 0;
     for (let i = 0; i < dayCount; i++) {
@@ -678,7 +766,7 @@
         lines.push('BEGIN:VEVENT',`UID:salah-${cfg.activeSource}-${prayer.key}-${key}-${Number(cfg.lat).toFixed(3)}-${Number(cfg.lng).toFixed(3)}@salah.local`,
           `DTSTAMP:${iCalStamp(new Date())}`,`DTSTART:${iCalStamp(dt)}`,`DTEND:${iCalStamp(new Date(dt.getTime()+5*60000))}`,
           `SUMMARY:${escapeCal(prayer.en + ' prayer · Salah')}`,`DESCRIPTION:${escapeCal(cfg.location + ' · ' + cfg.activeSource + ' calculated time. Research estimates, not observed certainty.')}`,
-          'BEGIN:VALARM','ACTION:DISPLAY',`DESCRIPTION:${escapeCal(prayer.en + ' prayer time')}`, cfg.calendarLead ? `TRIGGER:-PT${cfg.calendarLead}M` : 'TRIGGER:PT0S','END:VALARM','END:VEVENT');
+          'BEGIN:VALARM','ACTION:DISPLAY',`DESCRIPTION:${escapeCal(prayer.en + ' prayer time')}`, 'TRIGGER:-PT15M','END:VALARM','END:VEVENT');
       }
     }
     lines.push('END:VCALENDAR');
@@ -694,7 +782,7 @@
     setTimeout(()=>URL.revokeObjectURL(url),30000);
     $('calendarStatus').textContent = result.online ?
       `${result.eventCount} event(s) exported for this one day. Online sources need another download for future dates. iPhone may not import bulk .ics directly.` :
-      `${result.eventCount} event(s) exported for up to 30 days. This static file will not automatically follow GPS, time-zone or method changes.`;
+      `${result.eventCount} event(s) exported for up to 60 days. This static file will not automatically follow GPS, time-zone or method changes.`;
   });
   if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});
   render(); startTracking();
