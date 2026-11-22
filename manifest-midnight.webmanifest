@@ -3,7 +3,7 @@
   "name": "Salah \u2014 Prayer Times",
   "short_name": "Salah",
   "description": "Prayer times, Qibla, fasting and sound reminders for the UK and Ireland",
-  "start_url": "./",
+  "start_url": "./?icon=midnight",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",

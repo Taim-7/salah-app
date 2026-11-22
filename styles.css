@@ -162,7 +162,7 @@ svg { display: block; }
 .text-button { background: transparent; color: var(--accent); border: 1px solid transparent; }
 .text-button:hover { text-decoration: underline; }
 .block-label { display: block; color: var(--ink); font-weight: 650; font-size: 13px; margin-bottom: 5px; }
-select, input[type="text"], input[type="number"], input[type="search"] {
+select, input[type="text"], input[type="number"], input[type="search"], input[type="url"] {
   width: 100%; padding: 9px 10px; min-height: 40px; border-radius: 10px; border: 1px solid var(--line); color: var(--ink); background: var(--shade);
 }
 input[type="range"], input[type="radio"], input[type="checkbox"] { accent-color: var(--accent); }
@@ -193,75 +193,163 @@ input[type="file"]::file-selector-button { background: var(--raised); color: var
 .compare-table .selected-col { background: var(--accent-deep); }
 .time-small { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
 .summer-table { min-width: 310px; }
-.qibla-heading p { color: var(--muted); font-size: 12px; margin-top: 4px; overflow-wrap: anywhere; }
-.qibla-content { display: grid; gap: var(--gap); }
-.compass-holder { min-width: 0; position: relative; }
-.compass-aligned {
-  display: flex; align-items: center; gap: 9px; padding: 9px 12px; min-height: 42px;
-  border: 1px solid var(--line); border-radius: var(--inset-radius); color: var(--accent);
-  background: var(--shade); font-size: 13px; font-weight: 690;
+.qibla-heading p { color: var(--muted); font-size: 13px; margin-top: 3px; overflow-wrap: anywhere; }
+.qibla-heading .secondary-button { flex: 0 0 auto; }
+#qiblaGPSStatus:empty, #fastingStatus:empty, #fastingEstimate:empty { margin: 0; }
+.view-options {
+  display: inline-flex; gap: 3px; max-width: 100%; padding: 3px;
+  background: var(--shade); border: 1px solid var(--line); border-radius: 11px;
 }
-#qiblaCueMark { width: 18px; text-align: center; font-size: 16px; }
-.compass-aligned[data-state="near"], .compass-aligned[data-state="weak"] { color: var(--warm); }
-.compass-aligned[data-state="aligned"] { color: var(--ok); border-color: var(--ok); background: color-mix(in srgb, var(--panel) 84%, var(--ok)); }
-.compass-outer {
-  --needle: var(--secondary);
-  position: relative; display: grid; place-items: center; width: min(100%, 332px);
-  aspect-ratio: 1; margin: 9px auto 0; color: var(--accent);
+.view-options button {
+  min-height: 34px; padding: 5px 11px; background: transparent; border: 1px solid transparent;
+  border-radius: 8px; color: var(--muted); font-size: 12px; font-weight: 680; white-space: nowrap;
 }
+.view-options button[aria-pressed="true"] { background: var(--raised); color: var(--accent); border-color: var(--line); }
+.qibla-content { display: grid; gap: 13px; margin-top: 13px; }
+.compass-holder {
+  position: relative; min-width: 0; padding: clamp(11px, 3.2vw, 18px);
+  background: radial-gradient(ellipse at 51% 44%, var(--wash), transparent 68%), var(--shade);
+  border: 1px solid var(--line); border-radius: var(--radius);
+}
+.qibla-content[data-view="guide"] .compass-holder { padding: 0; background: transparent; border: 0; }
+.compass-controls { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 9px; }
+.compass-chime { display: inline-flex; align-items: center; gap: 7px; min-height: 38px; font-size: 12px; color: var(--muted); }
+.compass-chime input { margin: 0; appearance: auto; }
+.compass-status {
+  --cue-colour: var(--accent);
+  display: flex; align-items: center; gap: 10px; padding: 9px 11px; min-height: 54px;
+  color: var(--cue-colour); border: 1px solid var(--line); border-radius: var(--inset-radius);
+  background: var(--shade);
+  border-color: color-mix(in srgb, var(--line) 76%, var(--cue-colour));
+  background: color-mix(in srgb, var(--shade) 93%, var(--cue-colour));
+}
+.compass-status[data-state="turn"] { --cue-colour: var(--danger); }
+.compass-status:is([data-state="near"], [data-state="weak"]) { --cue-colour: var(--warm); }
+.compass-status[data-state="aligned"] { --cue-colour: var(--ok); }
+#qiblaCueMark {
+  width: 30px; height: 30px; flex: 0 0 30px; display: grid; place-items: center; border-radius: 50%;
+  border: 1px solid currentColor; font-size: 18px; line-height: 1; font-weight: 710;
+}
+.compass-status[data-state="aligned"] #qiblaCueMark { background: var(--ok); color: var(--bg); border-color: var(--ok); }
+#qiblaCue { color: var(--ink); font-size: clamp(16px, 4.4vw, 22px); line-height: 1.17; font-weight: 720; letter-spacing: -.025em; }
+.qibla-help { color: var(--muted); font-size: 12px; line-height: 1.3; margin-top: 3px; }
+.compass-outer { --needle: var(--accent); position: relative; width: min(100%, 346px, max(226px, 47vh)); margin: 12px auto; }
+.compass-outer[data-state="turn"] { --needle: var(--danger); }
+.compass-outer[data-state="near"] { --needle: var(--warm); }
 .compass-outer.aligned { --needle: var(--ok); }
-.compass-art { width: 100%; height: 100%; overflow: visible; }
-.compass-outline { fill: var(--shade); stroke: var(--line); stroke-width: 1.4; }
-.compass-inner-ring { fill: none; stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 4; opacity: .78; }
+.compass-art { width: 100%; height: auto; aspect-ratio: 1; overflow: visible; }
+.compass-face-centre { stop-color: var(--raised); }
+.compass-face-edge { stop-color: var(--bg); }
+.compass-outline { fill: url(#compassFace); stroke: var(--line); stroke-width: 1.5; }
+.compass-inner-ring, .compass-cross { fill: none; stroke: var(--line); stroke-width: 1; }
+.compass-cross { stroke-dasharray: 2 7; opacity: .85; }
 .compass-outer.aligned .compass-outline { stroke: var(--ok); stroke-width: 2; }
-.compass-tick { stroke: var(--muted); stroke-width: 1; opacity: .48; stroke-linecap: round; }
-.compass-tick.major { stroke: var(--accent); stroke-width: 2; opacity: .83; }
-.compass-labels text { font: 700 11px Arial, sans-serif; text-anchor: middle; dominant-baseline: central; fill: var(--muted); }
-#compassNorth { fill: var(--secondary); }
-.phone-pointer { fill: var(--accent); }
-.qibla-arc { fill: none; stroke: var(--needle); stroke-width: 3; stroke-linecap: round; opacity: .8; }
-.qibla-target { stroke: var(--needle); fill: var(--raised); stroke-width: 1.6; stroke-linejoin: round; }
-.qibla-target path { fill: none; stroke-linecap: round; }
-.compass-centre {
-  position: absolute; inset: 34%; border: 1px solid var(--line); border-radius: 50%; display: grid; align-content: center;
-  text-align: center; background: var(--panel); pointer-events: none; min-width: 0;
+.compass-tick { stroke: var(--muted); stroke-width: 1; opacity: .49; stroke-linecap: round; }
+.compass-tick.major { stroke-width: 1.5; opacity: .64; }
+.compass-tick.cardinal { stroke: var(--accent); stroke-width: 2; opacity: .9; }
+.compass-labels text { font-size: 13px; font-weight: 760; text-anchor: middle; dominant-baseline: central; fill: var(--muted); }
+#compassNorth { fill: var(--accent); }
+.phone-pointer { fill: var(--ink); }
+.qibla-arc { fill: none; stroke: var(--needle); stroke-width: 4; stroke-linecap: round; opacity: .82; }
+.qibla-marker circle { fill: var(--panel); stroke: var(--needle); stroke-width: 1.4; }
+.qibla-marker path { fill: none; stroke: var(--needle); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.qibla-angle {
+  position: absolute; inset: 31%; display: flex; flex-direction: column; justify-content: center; align-items: center;
+  border: 1px solid var(--line); border-radius: 50%; background: var(--shade); line-height: 1;
 }
-.compass-centre strong { font-variant-numeric: tabular-nums; font-size: clamp(22px,7.3vw,38px); letter-spacing: -.06em; font-weight: 720; line-height: 1; }
-.compass-centre span { font-size: 10px; color: var(--muted); margin: 5px 3px 0; line-height: 1.1; }
-.compass-outer.aligned .compass-centre { color: var(--ok); border-color: var(--ok); }
-.compass-hold { text-align: center; color: var(--muted); font-size: 12px; }
-.compass-stats, .fasting-times { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; margin: 2px 0 11px; }
-.compass-stats > div, .fasting-times > div { min-width: 0; background: var(--shade); border: 1px solid var(--line); border-radius: var(--inset-radius); padding: 8px 6px; text-align: center; }
-.compass-stats dt, .fasting-times dt { color: var(--muted); font-size: 10px; line-height: 1.2; }
-.compass-stats dd, .fasting-times dd { margin: 4px 0 0; font-weight: 700; font-size: clamp(13px,3.7vw,19px); letter-spacing: -.035em; }
-.compass-stats small { display: block; color: var(--muted); font-size: 9px; margin-top: 3px; line-height: 1.18; overflow-wrap: anywhere; }
-#startCompass { width: 100%; }
-.qibla-state, .qibla-help { color: var(--muted); font-size: 12px; margin: 7px 0 0; }
+.qibla-angle strong {
+  font-size: clamp(35px, 11.2vw, 57px); font-weight: 660; letter-spacing: -.065em;
+  color: var(--ink); font-variant-numeric: tabular-nums;
+}
+.compass-outer:not(.live) .qibla-angle strong { font-size: clamp(27px, 8.2vw, 41px); }
+.qibla-angle span { margin-top: 7px; font-size: 11px; font-weight: 650; color: var(--needle); }
+.compass-outer.aligned .qibla-angle { border-color: var(--ok); }
+.compass-outer.aligned .qibla-angle strong { color: var(--ok); }
+.qibla-content[data-view="guide"] :is(.qibla-target, .needle-pin, .compass-cross, .compass-inner-ring) { display: none; }
+.qibla-content[data-view="needle"] :is(.qibla-angle, .qibla-marker) { display: none; }
+.needle-tail { fill: none; stroke: var(--muted); stroke-width: 6; stroke-linecap: round; opacity: .5; }
+.needle-head { fill: var(--needle); stroke: var(--bg); stroke-width: .7; stroke-linejoin: round; }
+.needle-fold { fill: var(--bg); opacity: .22; }
+.needle-pin { fill: var(--panel); stroke: var(--needle); stroke-width: 2; }
+#startCompass { display: block; width: 100%; min-height: 44px; }
+.compass-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 6px; }
+.compass-stats > div {
+  min-width: 0; padding: 9px 6px; text-align: center; background: var(--shade);
+  border: 1px solid var(--line); border-radius: var(--inset-radius);
+}
+.compass-stats dt { color: var(--muted); font-size: 11px; line-height: 1.2; }
+.compass-stats dd { margin: 4px 0 0; color: var(--ink); font-size: clamp(14px, 4.25vw, 20px); font-weight: 720; letter-spacing: -.035em; }
+.compass-stats small { color: var(--accent); font-size: 10px; vertical-align: .15em; white-space: nowrap; }
+.qibla-state { color: var(--muted); font-size: 12px; }
+.qibla-readout .block-label { margin-top: 12px; }
 .declination-fields { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 7px; }
-.fasting-content { display: grid; gap: var(--gap); }
-.fasting-calendar, .fasting-detail, .sound-card, .reminder-card {
+.iphone-haptics { min-width: 0; padding: 6px 9px; margin: 4px 0 7px; border: 1px solid var(--line); border-radius: 9px; }
+.iphone-haptics legend { padding-inline: 5px; color: var(--ink); font-size: 12px; }
+.iphone-haptics p { font-size: 12px; }
+.legacy-haptic { opacity: 0; pointer-events: none; position: absolute; width: 1px; height: 1px; overflow: hidden; }
+
+.fasting-content { display: grid; gap: 12px; }
+.fasting-detail, .fasting-calendar, .sound-card, .reminder-card {
   min-width: 0; padding: 12px; background: var(--shade); border: 1px solid var(--line); border-radius: var(--inset-radius);
 }
-.month-nav { justify-content: space-between; margin-bottom: 11px; }
-.month-nav h3 { text-align: center; min-width: 0; }
-.fasting-weekdays, .fasting-days { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 4px; }
-.fasting-weekdays { color: var(--muted); font-size: 11px; text-align: center; margin-bottom: 6px; }
-.fast-day { position: relative; padding: 0 0 3px; min-width: 0; aspect-ratio: 1; border: 1px solid transparent; border-radius: 8px; background: var(--panel); color: var(--ink); font-variant-numeric: tabular-nums; font-size: 13px; }
+.fasting-detail { padding: clamp(13px, 3.5vw, 20px); }
+.fasting-detail-top { display: flex; align-items: flex-start; gap: 5px 9px; justify-content: space-between; }
+.fasting-detail-top h3 { font-size: clamp(17px, 4.8vw, 24px); }
+#fastingRelative { color: var(--accent); font-size: 11px; font-weight: 690; }
+#fastingRelative:not(:empty) { margin-bottom: 3px; }
+.fasting-mark { background: var(--raised); color: var(--warm); padding: 4px 7px; border-radius: 7px; font-size: 11px; font-weight: 690; white-space: nowrap; }
+.fasting-times { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 10px 0 4px; }
+.fasting-times > div {
+  background: linear-gradient(150deg, var(--raised), var(--shade)); border: 1px solid var(--line);
+  border-radius: 10px; min-width: 0; padding: 8px;
+}
+.fasting-times dt { color: var(--muted); font-size: 12px; font-weight: 650; }
+.fasting-times dd {
+  margin: 1px 0 0; color: var(--accent); font-size: clamp(19px, 5.1vw, 29px);
+  font-weight: 740; line-height: 1.16; letter-spacing: -.035em; font-variant-numeric: tabular-nums;
+}
+.fasting-times div:last-child dd { color: var(--secondary); }
+#fastingEstimated { color: var(--warm); font-size: 10px; }
+.fasting-span { margin-top: 6px; color: var(--muted); font-weight: 650; font-size: 12px; font-variant-numeric: tabular-nums; }
+.fasting-actions { margin-top: 11px; }
+#fastingQuickAction { min-height: 44px; width: 100%; }
+#fastingQuickAction[aria-disabled="true"] { color: var(--ok); background: var(--accent-deep); border-color: var(--line); cursor: default; filter: none; }
+.fasting-other-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.fasting-other-actions button { min-height: 35px; padding: 5px 7px; font-size: 12px; }
+.fasting-other-actions .secondary-button { background: var(--shade); }
+.fasting-other-actions .text-button { margin-left: auto; }
+.month-nav { justify-content: space-between; margin-bottom: 10px; }
+.fasting-period { text-align: center; min-width: 0; }
+.fasting-period h3 { font-size: clamp(14px, 4vw, 17px); }
+#fastingToday { font-size: 11px; min-height: 25px; padding: 2px 4px; margin-top: 2px; }
+.fasting-weekdays, .fasting-days { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 3px; }
+.fasting-weekdays { color: var(--muted); font-size: 11px; text-align: center; margin-bottom: 4px; }
+.fast-day {
+  display: grid; place-content: center; justify-items: center; min-width: 0; min-height: 43px;
+  padding: 3px 1px; background: var(--panel); color: var(--ink); border: 1px solid transparent;
+  border-radius: 8px; line-height: 1; font-variant-numeric: tabular-nums; font-size: 13px; font-weight: 630;
+}
 .fast-day:hover { border-color: var(--muted); }
+.fast-day:not([data-mark=""]) { background: var(--accent-deep); }
 .fast-day[aria-pressed="true"] { border-color: var(--accent); background: var(--raised); }
-.fast-day[data-status]:not([data-status=""])::after { position: absolute; content: ""; width: 5px; height: 5px; border-radius: 5px; left: calc(50% - 2.5px); bottom: 3px; background: var(--dot); }
-.fast-day[data-status="fasted"] { --dot: var(--ok); }
-.fast-day[data-status="due"] { --dot: var(--warm); }
-.fast-day[data-status="made-up"] { --dot: var(--night); }
-.fast-day[aria-current="date"] { text-decoration: underline; text-underline-offset: 3px; font-weight: 720; }
-.fasting-month-summary { margin-top: 9px; color: var(--muted); font-size: 11px; }
-.fasting-date { font-size: 17px; letter-spacing: -.025em; font-weight: 710; }
-.fasting-times { margin-top: 11px; }
-.fasting-times > div { background: var(--panel); }
-.fasting-actions { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); align-items: start; gap: 4px; margin-top: 10px; }
-.fasting-actions .secondary-button { padding: 6px 4px; }
-.fasting-actions [aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: var(--accent-deep); }
-.fasting-actions .text-button { justify-self: start; }
+.fasting-content[data-view="week"] .fast-day[aria-pressed="true"] { background: var(--accent); color: var(--bg); }
+.fasting-content[data-view="week"] .fast-day[aria-pressed="true"] small { color: var(--bg); }
+.fast-day[aria-current="date"] > span { text-decoration: underline; text-underline-offset: 3px; }
+.fast-day small { height: .9em; margin-top: 3px; font-size: 10px; color: var(--mark-colour); }
+.fast-day[data-mark="fasted"] { --mark-colour: var(--ok); }
+.fast-day[data-mark="due"] { --mark-colour: var(--warm); }
+.fast-day[data-mark="made-up"] { --mark-colour: var(--night); }
+.fasting-summary { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: 8px; }
+.fasting-count, .fasting-makeup {
+  min-width: 0; background: var(--shade); border: 1px solid var(--line); border-radius: var(--inset-radius);
+  padding: 9px; color: var(--muted); font-size: 12px;
+}
+.fasting-count { display: flex; align-items: baseline; gap: 6px; }
+.fasting-summary strong { font-size: 18px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.fasting-makeup summary { cursor: pointer; color: var(--accent); }
+#fastingDueDates { max-height: 235px; overflow: auto; margin-top: 5px; border-top: 1px solid var(--line); }
+#fastingDueDates p { padding: 5px 2px; }
+#fastingDueDates button { display: block; text-align: start; padding-inline: 3px; min-height: 36px; font-size: 12px; }
 .alert-grid { display: grid; gap: var(--gap); }
 .sound-card .block-label:not(:first-child), .reminder-card .block-label { margin-top: 13px; }
 .volume-controls { display: flex; align-items: center; gap: 9px; }
@@ -318,29 +406,52 @@ body[data-layout="timeline"] {
   --radius: 12px; --inset-radius: 8px; --shadow: none;
 }
 body[data-layout="timeline"] .hero-card { border-left: 3px solid var(--accent); }
-body[data-layout="timeline"] .times-list { padding-left: 19px; }
+body[data-layout="timeline"] .times-list { padding-left: 25px; }
 body[data-layout="timeline"] .times-list::before {
-  position: absolute; content: ""; left: 5px; top: 25px; bottom: 25px; width: 2px;
-  background: linear-gradient(to bottom, var(--accent) var(--timeline-fill,0%), var(--line) var(--timeline-fill,0%));
+  position: absolute; content: ""; left: 8px; top: var(--rail-top,0); height: var(--rail-height,0); width: 2px;
+  background: linear-gradient(to bottom, var(--accent) var(--rail-progress,0), var(--line) var(--rail-progress,0));
 }
 body[data-layout="timeline"] .time-row { position: relative; }
-body[data-layout="timeline"] .time-row::before {
-  position: absolute; content: ""; left: -19px; top: 50%; transform: translateY(-50%);
-  width: 9px; height: 9px; border-radius: 50%; background: var(--panel); border: 2px solid var(--row-icon);
+body[data-layout="timeline"] .time-row.prayer-entry::before {
+  position: absolute; content: ""; left: -22px; top: 50%; transform: translateY(-50%);
+  box-sizing: border-box; width: 12px; height: 12px;
+  border-radius: 50%; background: var(--panel); border: 2px solid var(--row-icon);
 }
-body[data-layout="timeline"] .time-row:is(.is-past,.is-now,.is-current-marker)::before { background: var(--row-icon); }
-body[data-layout="timeline"] .time-row:is(.is-next,.current-prayer)::before { box-shadow: 0 0 0 3px var(--accent-deep); }
-body[data-layout="timeline"] .compass-inner-ring { stroke-dasharray: none; }
-body[data-layout="timeline"] .compass-outer { background: repeating-linear-gradient(0deg, transparent 0 23px, var(--line) 24px 25px); border: 1px solid var(--line); border-radius: 9px; }
-body[data-layout="timeline"] .compass-outline { fill-opacity: .92; }
-body[data-layout="timeline"] .compass-stats > div { text-align: left; border-left: 2px solid var(--accent); }
+body[data-layout="timeline"] .prayer-entry:is(.is-past,.is-now,.current-prayer)::before { background: var(--row-icon); }
+body[data-layout="timeline"] .prayer-entry:is(.is-next,.current-prayer)::before { box-shadow: 0 0 0 3px var(--accent-deep); }
+body[data-layout="timeline"] .time-row.avoid-entry:not(.within-range) { border-color: transparent; background: var(--shade); }
+body[data-layout="timeline"] .compass-holder { background: var(--shade); border-left: 2px solid var(--accent); }
+body[data-layout="timeline"] .compass-art { background: repeating-linear-gradient(0deg, transparent 0 23px, var(--line) 24px 25px); }
+body[data-layout="timeline"] .compass-face-centre { stop-color: var(--shade); }
+body[data-layout="timeline"] .compass-inner-ring { stroke-dasharray: 4 5; }
 body[data-layout="timeline"] .fast-day { border-radius: 5px; }
 body[data-layout="timeline"] :is(.sound-card,.reminder-card,.fasting-detail) { border-left: 2px solid var(--accent); }
 
 body[data-layout="horizon"] {
   --radius: 26px; --inset-radius: 16px; --gap: 17px; --shadow: 0 10px 40px #0003;
 }
-body[data-layout="horizon"] .hero-card { background: radial-gradient(ellipse at 82% 9%, var(--wash), transparent 66%), linear-gradient(168deg,var(--panel),var(--bg)); }
+body[data-layout="horizon"] .hero-card {
+  display: flex; flex-direction: column;
+  background: radial-gradient(ellipse at 82% 9%, var(--wash), transparent 66%), linear-gradient(168deg,var(--panel),var(--bg));
+}
+body[data-layout="horizon"] .hero-top { justify-content: flex-end; margin-bottom: 1px; }
+body[data-layout="horizon"] .hero-overline { display: none; }
+body[data-layout="horizon"] .hero-bottom {
+  order: 1; flex-direction: column; align-items: flex-start; gap: 4px;
+  margin: 0; padding: 0; border: 0;
+}
+body[data-layout="horizon"] .hero-live-message {
+  font-size: clamp(25px, 7vw, 40px); line-height: 1.12; letter-spacing: -.045em;
+  padding: 0; background: transparent;
+}
+body[data-layout="horizon"] .hero-live-time { font-size: 12px; }
+body[data-layout="horizon"] .sun-chart { order: 2; }
+body[data-layout="horizon"] .hero-content { order: 3; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.horizon-prayer-label { display: none; }
+body[data-layout="horizon"] .horizon-prayer-label { display: block; color: var(--muted); font-size: 11px; }
+body[data-layout="horizon"] .hero-arabic { display: none; }
+body[data-layout="horizon"] .hero-name { font-size: clamp(19px, 4.8vw, 27px); }
+body[data-layout="horizon"] .hero-time { font-size: clamp(17px, 4.3vw, 24px); }
 .sun-chart { margin: 8px -5px 0; }
 .sun-chart svg { width: 100%; overflow: visible; }
 .sun-chart-label { color: var(--muted); display: flex; justify-content: space-between; padding: 0 6px; font-size: 10px; }
@@ -349,35 +460,41 @@ body[data-layout="horizon"] .hero-card { background: radial-gradient(ellipse at 
 .sun-route, .sun-route-live, .sun-horizon { stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 .sun-horizon { stroke: var(--muted); opacity: .45; stroke-width: 1; stroke-dasharray: 3 5; }
 .sun-route { stroke: var(--muted); opacity: .63; }
-.sun-route-live { stroke: var(--accent); }
+.sun-route-live { stroke: var(--secondary); stroke-width: 2.7; }
 .sun-chart-dot { fill: var(--secondary); stroke: var(--panel); stroke-width: 1.4; }
 #sunPosition { fill: var(--ink); }
 #sunPositionHalo { fill: var(--accent); opacity: .30; }
 body[data-layout="horizon"] .time-row.prayer-entry { border-radius: 0; border: 0; border-bottom: 1px solid var(--line); background: transparent; }
 body[data-layout="horizon"] .time-row:is(.current-prayer,.is-next).prayer-entry { border-radius: 11px; border: 1px solid var(--accent); background: var(--accent-deep); }
-body[data-layout="horizon"] .compass-outline { fill: var(--raised); fill-opacity: .5; }
-body[data-layout="horizon"] .compass-outer { background: radial-gradient(circle,var(--wash),transparent 70%); }
-body[data-layout="horizon"] .compass-inner-ring { stroke: var(--accent); stroke-dasharray: 1 6; opacity: .6; }
-body[data-layout="horizon"] .compass-stats > div { background: linear-gradient(135deg,var(--raised),var(--shade)); }
+body[data-layout="horizon"] .compass-holder { background: radial-gradient(ellipse at 50% 45%, var(--wash), transparent 74%), var(--bg); }
+body[data-layout="horizon"] .compass-inner-ring { stroke: var(--accent); stroke-dasharray: 1 6; opacity: .32; }
+body[data-layout="horizon"] .fasting-detail { background: radial-gradient(ellipse at 10% 0%, var(--glow), transparent 75%), var(--bg); }
 body[data-layout="horizon"] :is(.qibla-panel,.fasting-panel,.sound-panel,.comparison-panel,.settings-screen) { background: radial-gradient(ellipse at 100% 0%, var(--wash), transparent 60%), var(--panel); }
 
-body[data-layout="tiles"] {
-  --radius: 16px; --inset-radius: 11px; --gap: 10px; --shadow: none;
+.icon-choices {
+  display: grid; grid-template-columns: repeat(auto-fit,minmax(70px,1fr)); gap: 6px; margin: 0 0 10px;
 }
-body[data-layout="tiles"] .hero-card { border-top: 3px solid var(--accent); }
-body[data-layout="tiles"] .times-list { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; }
-body[data-layout="tiles"] .time-row:not(.prayer-entry) { grid-column: 1 / -1; }
-body[data-layout="tiles"] .prayer-entry { grid-template-columns: 30px minmax(0,1fr); grid-template-rows: auto 1fr; row-gap: 4px; align-content: start; min-height: 79px; }
-body[data-layout="tiles"] .prayer-entry .time-icon { grid-row: 1 / span 2; align-self: start; width: 29px; height: 29px; }
-body[data-layout="tiles"] .prayer-entry .time-data { text-align: left; grid-column: 2; }
-body[data-layout="tiles"] .prayer-entry .time-value { font-size: 18px; }
-body[data-layout="tiles"] .prayer-entry .phase-pill { display: none; }
-body[data-layout="tiles"] .compass-outer { border: 1px solid var(--line); border-radius: 15px; background: linear-gradient(135deg,var(--wash),var(--shade) 56%); }
-body[data-layout="tiles"] .compass-outline { fill: transparent; stroke-dasharray: 3 3; }
-body[data-layout="tiles"] .compass-centre { border-radius: 16px; }
-body[data-layout="tiles"] .compass-stats > div { padding-top: 11px; border-top: 2px solid var(--accent); }
-body[data-layout="tiles"] :is(.sound-card,.reminder-card,.fasting-calendar,.fasting-detail,.settings-group) { border-top: 2px solid var(--line); }
-body[data-layout="tiles"] .palette-choice { border-radius: 7px; }
+.icon-choices button {
+  display: grid; justify-items: center; align-content: start; gap: 5px; min-width: 0;
+  padding: 7px 3px; border: 1px solid var(--line); border-radius: 10px; background: var(--shade);
+  color: var(--ink); line-height: 1.15; font-size: 11px; font-weight: 670;
+}
+.icon-choices button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-deep); }
+.icon-choices img { border-radius: 9px; }
+.home-icon-option { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.home-icon-option img { border-radius: 12px; }
+.home-icon-option strong { color: var(--ink); margin-right: auto; min-width: 0; }
+.home-icon-option a.secondary-button, .install-icon-card a.secondary-button { display: inline-grid; place-items: center; text-decoration: none; }
+#homeIconURL { margin-top: 7px; }
+#iconFastingBackup { border-top: 1px solid var(--line); margin-top: 10px; }
+#iconFastingBackup .setting-action-row { margin-top: 4px; }
+.icon-install-page { display: grid; place-items: center; min-height: 100vh; min-height: 100svh; padding: 16px; }
+.install-icon-card {
+  text-align: center; width: min(100%, 410px); border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--panel); padding: 26px 16px; box-shadow: var(--shadow);
+}
+.install-icon-card img { border-radius: 20px; margin-bottom: 9px; }
+.install-icon-card p { color: var(--muted); margin: 9px 0 17px; }
 
 @media (min-width: 760px) {
   .site-shell { padding-top: calc(22px + env(safe-area-inset-top)); }
@@ -387,8 +504,8 @@ body[data-layout="tiles"] .palette-choice { border-radius: 7px; }
   .qibla-content { grid-template-columns: minmax(0,1.1fr) minmax(0,1fr); gap: 23px; align-items: center; }
   body[data-layout="horizon"] .qibla-content { grid-template-columns: minmax(0,1.4fr) minmax(0,1fr); }
   body[data-layout="timeline"] .qibla-content { align-items: start; }
-  body[data-layout="tiles"] .qibla-content { grid-template-columns: minmax(0,1fr) minmax(0,1.1fr); }
-  .fasting-content { grid-template-columns: minmax(0,1.1fr) minmax(0,1fr); align-items: start; }
+  .fasting-content { grid-template-columns: minmax(0,1fr) minmax(0,1fr); align-items: start; }
+  .fasting-summary { grid-column: 1 / -1; }
   .alert-grid { grid-template-columns: minmax(0,1.15fr) minmax(0,1fr); align-items: start; }
   .option-group { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
@@ -405,14 +522,6 @@ body[data-layout="tiles"] .palette-choice { border-radius: 7px; }
   .hero-time { font-size: 20px; }
   .app-dock button { font-size: 9px; }
 }
-.compass-aligned[data-state="turn"] {
-  color: var(--danger);
-  background: color-mix(in srgb, var(--shade) 93%, var(--danger));
-}
-.compass-aligned[data-state="near"] { background: color-mix(in srgb, var(--shade) 93%, var(--warm)); }
-.compass-outer[data-state="turn"] { --needle: var(--danger); }
-.compass-outer[data-state="near"] { --needle: var(--warm); }
-.visual-test { border-radius: 7px; padding: 7px; background: var(--accent-deep); color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 @media (prefers-reduced-motion: no-preference) {
   .compass-outer.aligned .compass-outline { animation: qibla-aligned .55s ease-out; }
   @keyframes qibla-aligned {

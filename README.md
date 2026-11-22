@@ -12,13 +12,17 @@ Derry starts at 15° Fajr and 13° Isha, with one-shadow Asr and a one-seventh f
 
 For a local preview, run `python3 -m http.server 8000` in this folder and open `http://localhost:8000`. For Home Screen installation, serve the folder over HTTPS, open the address in Safari, then use **Share → Add to Home Screen**. Open it online once before using it offline.
 
-In **Settings**, choose Focus, Dayline, Horizon or Tiles. Dayline connects the timetable rows with a progress rail. Horizon plots the calculated altitude of the Sun and marks each scheduled prayer. A colour preset changes the surfaces, markers and app icons. A Home Screen shortcut uses the icon iOS reads when you add it.
+In **Settings**, choose Focus, Dayline or Horizon. Dayline puts the prayers and sunrise on a progress rail. Horizon shows the current prayer period above the Sun’s calculated path, with the next prayer below it. The three forbidden-time rows appear in each view.
+
+To choose an iPhone Home Screen icon, open **Settings → Appearance → Home Screen icon**. **Match colour** uses the crescent in your colour preset. Mihrab, Minaret, Compass and Prayer mat have their own designs. In Safari, tap **Open icon page**, then use **Share → Add to Home Screen** on that page. From an installed copy, use **Copy Safari link** and open the link in Safari. iOS chooses the icon at installation. Use **Save fasting log** before switching shortcuts and **Restore fasting log** in the new copy. Keep the original shortcut until you have checked your entries. [Apple's installation guide](https://support.apple.com/en-gb/guide/iphone/iphea86e5236/ios) · [WebKit on Home Screen data](https://webkit.org/blog/14787/webkit-features-in-safari-17-2/)
 
 In **Sounds**, tap **Play sound** to start audio for the session. Set the pre-prayer reminder to 15, 20, 25 or 30 minutes before the next prayer. Reminders run while Salah is open. The volume slider adjusts the recording and chime through Web Audio. The phone’s volume buttons control overall loudness. Abu Bakr uses the Fajr recording at Fajr and the regular recording for the other prayers. The recordings come from [alsuleiman-lab](https://github.com/alsuleiman-lab/athkar-audio).
 
-The Qibla dial shows how far to turn when it receives a usable heading. It has a visual alignment cue and an optional chime. Browsers that support web vibration can give a pulse. The iPhone uses the visual cue and chime.
+In **Qibla**, hold your phone flat and tap **Start compass**. **Guide** shows the turn angle in the centre of the dial and an arc to the Qibla marker. **Needle** shows the same direction with an arrow. Use **Chime** to control the sound near the Qibla and the separate compass error chime. The true bearing is available for use with another compass.
 
-In **Fasting**, select a day to see Fajr, iftar and the calculated duration. Mark a date as fasted, to make up or made up. The tracker stores your entries in this browser and works offline. Pick the dates you observe. The tracker uses the active prayer timetable and marks estimated twilight times.
+Under **Compass settings**, use **Test feedback** to check the vibration or chime. iPhone Safari has a native switch tap test. **Try a pulse on alignment** is experimental, starts off, and tries the older Safari method during a recent interaction. Newer Safari versions may only pulse on a direct tap. [WebKit on switch haptics](https://webkit.org/blog/15865/webkit-features-in-safari-18-0/#switch) · [Web Vibration API support](https://caniuse.com/mdn-api_navigator_vibrate) · [Safari 26.5 reports](https://github.com/lochie/web-haptics/issues/41)
+
+In **Fasting**, pick a day in **Week** or **Month** to see Fajr, iftar and its fasting duration. **Mark as fasted** logs a completed fast. **Log as missed** adds that date to **To make up**, where you can open it again and mark it as made up. The tracker stores entries locally, works offline and labels estimated Fajr times from the selected timetable.
 
 ## Accuracy
 

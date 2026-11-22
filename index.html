@@ -32,6 +32,7 @@
   </div>
   <div class="hero-content">
     <div class="hero-prayer">
+      <p id="horizonPrayerLabel" class="horizon-prayer-label">Next prayer</p>
       <div class="hero-arabic" dir="rtl" id="nextPrayerArabic" lang="ar"></div>
       <div class="hero-name" id="nextPrayerName">—</div>
     </div>
@@ -115,83 +116,141 @@
 </details>
 </section><section aria-labelledby="qiblaTitle" class="qibla-panel app-screen" data-screen="qibla" hidden="" id="qiblaPanel">
 <header class="qibla-heading">
-  <div><h2 id="qiblaTitle">Qibla</h2><p id="qiblaPosition">Using your selected location</p></div>
+  <div><h2 id="qiblaTitle">Qibla</h2><p id="qiblaPosition"></p></div>
   <button class="secondary-button" id="qiblaGPS" type="button">Use GPS</button>
 </header>
-<div class="qibla-content">
+<p class="form-note" id="qiblaGPSStatus" role="status"></p>
+<div class="qibla-content" id="qiblaView" data-view="guide">
   <div class="compass-holder">
-    <div class="compass-aligned" id="qiblaAligned" data-state="reference">
-      <span id="qiblaCueMark" aria-hidden="true">◇</span><span id="qiblaCue">True-north reference</span>
+    <div class="compass-controls">
+      <div class="view-options" id="qiblaLayouts" role="group" aria-label="Compass view">
+        <button type="button" data-qibla-view="guide" aria-pressed="true">Guide</button>
+        <button type="button" data-qibla-view="needle" aria-pressed="false">Needle</button>
+      </div>
+      <label class="compass-chime" for="qiblaChime"><span>Chime</span><input id="qiblaChime" type="checkbox" switch/></label>
     </div>
-    <div class="compass-outer" id="qiblaDial">
-      <svg class="compass-art" viewBox="0 0 320 320" aria-hidden="true">
-        <circle class="compass-outline" cx="160" cy="160" r="149"/>
-        <circle class="compass-inner-ring" cx="160" cy="160" r="115"/>
-        <g id="compassTicks"></g>
-        <g class="compass-labels"><text id="compassNorth">N</text><text id="compassEast">E</text><text id="compassSouth">S</text><text id="compassWest">W</text></g>
-        <path class="phone-pointer" d="M160 7l8 15-8-3-8 3z"/>
-        <path class="qibla-arc" id="qiblaArc"/>
-        <g id="qiblaArrow" class="qibla-target">
-          <rect x="-11" y="-11" width="22" height="22" rx="6"/>
-          <path d="M-6-1 0-5l6 4v6H-6zM-6 0H6"/>
-        </g>
-      </svg>
-      <div class="compass-centre" aria-hidden="true">
-        <strong id="qiblaTurnAngle">—</strong><span id="qiblaTurnLabel">From true north</span>
+    <div class="compass-status" id="qiblaAligned" data-state="reference">
+      <span id="qiblaCueMark" aria-hidden="true"></span>
+      <div>
+        <p id="qiblaCue">Qibla bearing</p>
+        <p class="qibla-help" id="qiblaAccuracy" role="status"></p>
       </div>
     </div>
-    <p class="compass-hold" id="qiblaHold">Hold your phone level, away from metal.</p>
+    <div class="compass-outer" id="qiblaDial" data-state="reference" aria-hidden="true">
+      <svg class="compass-art" viewBox="0 0 320 320">
+        <defs>
+          <radialGradient id="compassFace">
+            <stop offset="0" class="compass-face-centre"/>
+            <stop offset="1" class="compass-face-edge"/>
+          </radialGradient>
+        </defs>
+        <circle class="compass-outline" cx="160" cy="160" r="151"/>
+        <circle class="compass-inner-ring" cx="160" cy="160" r="88"/>
+        <path class="compass-cross" d="M160 63v194M63 160h194"/>
+        <g id="compassTicks"></g>
+        <g class="compass-labels"><text id="compassNorth">N</text><text id="compassEast">E</text><text id="compassSouth">S</text><text id="compassWest">W</text></g>
+        <path class="qibla-arc" id="qiblaArc"/>
+        <g id="qiblaArrow" class="qibla-target">
+          <path class="needle-tail" d="M160 160v35"/>
+          <path class="needle-head" d="m160 66 22 70-15-7v31h-14v-31l-15 7z"/>
+          <path class="needle-fold" d="m160 66 22 70-15-7v31h-7z"/>
+        </g>
+        <g id="qiblaMarker" class="qibla-marker">
+          <circle r="15"/>
+          <path d="m-8-5 8-4 8 4v10l-8 4-8-4zM-8-4l8 3 8-3M0-1v10"/>
+        </g>
+        <circle class="needle-pin" cx="160" cy="160" r="7"/>
+        <path class="phone-pointer" d="M153 9h14l-7 9z"/>
+      </svg>
+      <div class="qibla-angle">
+        <strong id="qiblaTurnAngle">—</strong>
+        <span id="qiblaTurnLabel">From north</span>
+      </div>
+    </div>
+    <button class="primary-button" id="startCompass" type="button">Start compass</button>
+    <div class="legacy-haptic" aria-hidden="true">
+      <input id="qiblaLegacySwitch" type="checkbox" switch tabindex="-1"/>
+      <label id="qiblaLegacyTrigger" for="qiblaLegacySwitch"></label>
+    </div>
   </div>
   <div class="qibla-readout">
     <dl class="compass-stats">
-      <div><dt>True bearing</dt><dd id="qiblaBearing">—</dd><small id="qiblaCardinal"></small></div>
-      <div><dt>To Makkah</dt><dd id="qiblaDistance">—</dd><small>Great-circle distance</small></div>
-      <div><dt>Sensor accuracy</dt><dd id="qiblaPrecision">—</dd><small id="qiblaPrecisionNote">Reference view</small></div>
+      <div><dt>True bearing</dt><dd><span id="qiblaBearing">—</span> <small id="qiblaCardinal"></small></dd></div>
+      <div><dt>To Makkah</dt><dd id="qiblaDistance">—</dd></div>
+      <div id="qiblaPrecisionRow" hidden><dt>Phone accuracy</dt><dd id="qiblaPrecision">—</dd></div>
     </dl>
-    <button class="primary-button" id="startCompass" type="button">Start compass</button>
-    <p class="qibla-state" id="qiblaState" role="status">Start the compass to use your phone’s heading.</p>
-    <p class="qibla-help" id="qiblaAccuracy">The bearing is measured clockwise from true north.</p>
-    <label class="tracking-toggle" id="qiblaHapticControl" hidden><input id="qiblaHaptic" type="checkbox"/><span>Vibrate near alignment</span></label>
-    <label class="tracking-toggle"><input id="qiblaChime" type="checkbox"/><span>Play a chime on alignment</span></label>
-    <p class="setting-hint" id="qiblaHapticHint"></p>
     <details class="study-links">
-      <summary>Magnetic correction</summary>
-      <label class="block-label" for="declinationOverride">Degrees east</label>
-      <div class="declination-fields"><input id="declinationOverride" max="180" min="-180" placeholder="Automatic WMM 2025" step="0.1" type="number"/><button class="secondary-button" id="clearDeclination" type="button">Use automatic</button></div>
+      <summary>Compass settings</summary>
+      <label class="tracking-toggle" id="qiblaHapticControl" hidden><input id="qiblaHaptic" type="checkbox"/><span>Vibrate near the Qibla</span></label>
+      <fieldset class="iphone-haptics" id="iphoneHaptics" hidden>
+        <legend>iPhone haptics</legend>
+        <label class="compass-chime" for="qiblaTapTest"><span>Tap the switch to test</span><input id="qiblaTapTest" type="checkbox" switch/></label>
+        <label class="tracking-toggle"><input id="qiblaLegacyPulse" type="checkbox"/><span>Try a pulse on alignment</span></label>
+        <p>Experimental. Some older versions may pulse shortly after a tap. Newer Safari can require a direct tap on the switch.</p>
+      </fieldset>
+      <div class="setting-action-row">
+        <button class="secondary-button" id="qiblaTestFeedback" type="button">Test feedback</button>
+        <span class="form-note" id="qiblaTestStatus" role="status"></span>
+      </div>
+      <label class="block-label" for="declinationOverride">Magnetic correction in degrees east</label>
+      <div class="declination-fields"><input id="declinationOverride" max="180" min="-180" placeholder="Automatic" step="0.1" type="number"/><button class="secondary-button" id="clearDeclination" type="button">Use automatic</button></div>
+      <p class="qibla-state" id="qiblaState"></p>
     </details>
   </div>
 </div>
 </section>
 
 <section aria-labelledby="fastingTitle" class="fasting-panel app-screen" data-screen="fasting" id="fastingPanel" hidden>
-  <header class="panel-heading"><h2 id="fastingTitle">Fasting tracker</h2><button type="button" class="secondary-button" id="fastingToday">Today</button></header>
-  <div class="fasting-content">
-    <div class="fasting-calendar">
-      <div class="month-nav">
-        <button class="day-arrow" id="fastingPrevious" type="button" aria-label="Previous month">‹</button>
-        <h3 id="fastingMonth"></h3>
-        <button class="day-arrow" id="fastingNext" type="button" aria-label="Next month">›</button>
-      </div>
-      <div class="fasting-weekdays" aria-hidden="true"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
-      <div id="fastingDays" class="fasting-days" role="group" aria-labelledby="fastingMonth"></div>
-      <p class="fasting-month-summary" id="fastingSummary"></p>
+  <header class="panel-heading">
+    <h2 id="fastingTitle">Fasting</h2>
+    <div class="view-options" id="fastingLayouts" role="group" aria-label="Fasting view">
+      <button type="button" data-fasting-view="week" aria-pressed="true">Week</button>
+      <button type="button" data-fasting-view="month" aria-pressed="false">Month</button>
     </div>
-    <div class="fasting-detail">
-      <p class="fasting-date" id="fastingDate"></p>
-      <p class="setting-hint" id="fastingLocation"></p>
+  </header>
+  <div class="fasting-content" id="fastingView" data-view="week">
+    <section class="fasting-calendar" aria-labelledby="fastingMonth">
+      <div class="month-nav">
+        <button class="day-arrow" id="fastingPrevious" type="button" aria-label="Previous week">‹</button>
+        <div class="fasting-period"><h3 id="fastingMonth"></h3><button type="button" class="text-button" id="fastingToday" hidden>Back to today</button></div>
+        <button class="day-arrow" id="fastingNext" type="button" aria-label="Next week">›</button>
+      </div>
+      <div class="fasting-weekdays" aria-hidden="true"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+      <div id="fastingDays" class="fasting-days" role="group" aria-labelledby="fastingMonth"></div>
+    </section>
+    <section class="fasting-detail" id="fastingDetail" aria-labelledby="fastingDate">
+      <div class="fasting-detail-top">
+        <div><p id="fastingRelative"></p><h3 id="fastingDate"></h3></div>
+        <span id="fastingMark" class="fasting-mark" hidden></span>
+      </div>
       <dl class="fasting-times">
-        <div><dt>Fajr · start fast</dt><dd id="fastingFajr">—</dd></div>
-        <div><dt>Maghrib · iftar</dt><dd id="fastingIftar">—</dd></div>
-        <div><dt>Duration</dt><dd id="fastingDuration">—</dd></div>
+        <div>
+          <dt>Fajr <span id="fastingEstimated" hidden>Est.</span></dt>
+          <dd id="fastingFajr">—</dd>
+        </div>
+        <div>
+          <dt>Iftar</dt>
+          <dd id="fastingIftar">—</dd>
+        </div>
       </dl>
+      <p class="fasting-span"><span id="fastingDuration">—</span><span id="fastingLengthLabel"> fasting</span></p>
       <p class="setting-hint" id="fastingEstimate"></p>
-      <div class="fasting-actions" role="group" aria-label="Mark the selected fast">
-        <button class="secondary-button" type="button" data-fast-status="fasted">Fasted</button>
-        <button class="secondary-button" type="button" data-fast-status="due">To make up</button>
-        <button class="secondary-button" type="button" data-fast-status="made-up">Made up</button>
-        <button class="text-button" type="button" data-fast-status="">Clear</button>
+      <div class="fasting-actions" role="group" aria-label="Log the selected day">
+        <button id="fastingQuickAction" class="primary-button" type="button" data-fast-status="fasted">Mark as fasted</button>
+        <div class="fasting-other-actions">
+          <button class="secondary-button" type="button" data-fast-status="due">Log as missed</button>
+          <button class="secondary-button" id="fastingMadeUp" type="button" data-fast-status="made-up">Already made up</button>
+          <button class="text-button" type="button" data-fast-status="">Clear entry</button>
+        </div>
       </div>
       <p id="fastingStatus" class="form-note" role="status"></p>
+    </section>
+    <div class="fasting-summary" id="fastingSummary">
+      <div class="fasting-count"><strong id="fastingCompleted">0</strong><span id="fastingPeriodLabel">fasted this week</span></div>
+      <details id="fastingToMakeUp" class="fasting-makeup">
+        <summary><strong id="fastingDue">0</strong> to make up</summary>
+        <div id="fastingDueDates"></div>
+      </details>
     </div>
   </div>
 </section>
@@ -252,16 +311,36 @@
   <h3>Appearance</h3>
   <div class="field-grid appearance-fields">
     <label for="settingsLayout">App style
-      <select id="settingsLayout"><option value="compact">Focus</option><option value="timeline">Dayline</option><option value="horizon">Horizon</option><option value="tiles">Tiles</option></select>
+      <select id="settingsLayout"><option value="compact">Focus</option><option value="timeline">Dayline</option><option value="horizon">Horizon</option></select>
     </label>
     <label for="settingsTimeFormat">Clock
       <select id="settingsTimeFormat"><option value="12">12-hour</option><option value="24">24-hour</option></select>
     </label>
   </div>
-  <p class="setting-hint" id="stylePreview"></p>
   <p class="block-label" id="paletteLabel">Colour preset</p>
   <div class="palette-choices" id="paletteChoices" role="group" aria-labelledby="paletteLabel"></div>
-</section><section class="settings-group"><h3>Location</h3><p>Find a UK or Ireland town, or use your phone’s location.</p><div class="city-search-row"><input aria-label="Town search" id="cityQuery" placeholder="Search UK or Ireland town" type="search"/><button class="secondary-button" id="citySearch" type="button">Find town</button></div><div aria-label="City search results" class="city-results" id="cityResults" role="group"></div><div class="setting-action-row"><button class="secondary-button" id="setDerry" type="button">Derry default</button><button class="secondary-button" id="setGPS" type="button">Use current GPS</button></div><label class="tracking-toggle"><input id="trackLocation" type="checkbox"/><span>Follow my location while Salah is open</span></label><div class="field-grid"><label>Latitude <input id="latInput" inputmode="decimal" max="89" min="-89" step="0.0001" type="number"/></label><label>Longitude <input id="lngInput" inputmode="decimal" max="180" min="-180" step="0.0001" type="number"/></label></div><div class="field-grid"><label>Place name <input id="placeInput" maxlength="110" placeholder="Derry, Northern Ireland" type="text"/></label><label>Time zone <select id="tzInput" disabled><option value="Europe/London">UK (London)</option><option value="Europe/Dublin">Ireland (Dublin)</option></select></label></div><div class="form-note" id="gpsStatus" role="status"></div><p class="setting-hint">The time zone comes from the saved coordinates. Town search includes nearby places offline and can look up other towns through Open-Meteo. GPS can send coordinates to BigDataCloud to look up a place name.</p></section><section class="settings-group"><h3>Online comparison</h3><label class="tracking-toggle"><input checked="" id="onlineCompare" type="checkbox"/><span>Fetch online prayer-time comparisons automatically</span></label><p class="setting-hint">When on, Salah sends the selected coordinates and date to the AlAdhan API. Your selected AlAdhan timetable still fetches times when this switch is off. Previously loaded dates can work offline.</p></section><section class="settings-group"><h3>Fajr and Isha angles</h3><div aria-label="Calculation angles" class="option-group" role="radiogroup"><label class="option-card"><input name="method" type="radio" value="15-13"/><span><strong>15° / 13°</strong><small>15° Fajr · 13° Isha</small></span></label><label class="option-card"><input name="method" type="radio" value="12-12"/><span><strong>French UOIF · 12° / 12°</strong><small>12° Fajr · 12° Isha</small></span></label><label class="option-card"><input name="method" type="radio" value="18-17"/><span><strong>Muslim World League · 18° / 17°</strong><small>MWL angle pair · uses your summer rule</small></span></label><label class="option-card"><input name="method" type="radio" value="custom"/><span><strong>Custom angles</strong><small>Choose both values yourself</small></span></label></div><div class="field-grid" id="customAngles"><label>Fajr angle <input id="fajrAngleInput" inputmode="decimal" max="22" min="6" step="0.5" type="number"/></label><label>Isha angle <input id="ishaAngleInput" inputmode="decimal" max="22" min="6" step="0.5" type="number"/></label></div><p class="setting-hint">Angles estimate the religious signs. A missing crossing tells you about the Sun’s position.</p></section>
+  <details class="study-links icon-settings">
+    <summary>Home Screen icon</summary>
+    <div class="icon-choices" id="iconChoices" role="group" aria-label="Home Screen icon design"></div>
+    <div class="home-icon-option">
+      <img id="homeIconPreview" src="./icons/icon-180.png" alt="" width="52" height="52"/>
+      <strong id="homeIconName">Forest green</strong>
+      <a id="homeIconPage" class="secondary-button" href="./install/forest.html">Open icon page</a>
+      <button id="copyIconPage" class="secondary-button" type="button" hidden>Copy Safari link</button>
+    </div>
+    <input id="homeIconURL" type="url" aria-label="Icon page link" readonly hidden/>
+    <p class="setting-hint" id="homeIconHelp">Open the icon page in Safari to add that colour to your Home Screen.</p>
+    <div id="iconFastingBackup">
+      <p class="setting-hint">Save your fasting log before replacing a Home Screen shortcut.</p>
+      <div class="setting-action-row">
+        <button id="saveFastingLog" class="secondary-button" type="button">Save fasting log</button>
+        <button id="chooseFastingLog" class="secondary-button" type="button">Restore fasting log</button>
+        <input id="restoreFastingLog" aria-label="Fasting log file" type="file" accept=".json,application/json" hidden/>
+      </div>
+      <p class="form-note" id="fastingBackupStatus" role="status"></p>
+    </div>
+  </details>
+</section><section class="settings-group"><h3>Location</h3><div class="city-search-row"><input aria-label="Town search" id="cityQuery" placeholder="Search UK or Ireland town" type="search"/><button class="secondary-button" id="citySearch" type="button">Find town</button></div><div aria-label="City search results" class="city-results" id="cityResults" role="group"></div><div class="setting-action-row"><button class="secondary-button" id="setDerry" type="button">Derry default</button><button class="secondary-button" id="setGPS" type="button">Use current GPS</button></div><label class="tracking-toggle"><input id="trackLocation" type="checkbox"/><span>Follow my location while Salah is open</span></label><div class="field-grid"><label>Latitude <input id="latInput" inputmode="decimal" max="89" min="-89" step="0.0001" type="number"/></label><label>Longitude <input id="lngInput" inputmode="decimal" max="180" min="-180" step="0.0001" type="number"/></label></div><div class="field-grid"><label>Place name <input id="placeInput" maxlength="110" placeholder="Derry, Northern Ireland" type="text"/></label><label>Time zone <select id="tzInput" disabled><option value="Europe/London">UK (London)</option><option value="Europe/Dublin">Ireland (Dublin)</option></select></label></div><div class="form-note" id="gpsStatus" role="status"></div><p class="setting-hint">The time zone comes from the saved coordinates. Town search includes nearby places offline and can look up other towns through Open-Meteo. GPS can send coordinates to BigDataCloud to look up a place name.</p></section><section class="settings-group"><h3>Online comparison</h3><label class="tracking-toggle"><input checked="" id="onlineCompare" type="checkbox"/><span>Fetch online prayer-time comparisons automatically</span></label><p class="setting-hint">When on, Salah sends the selected coordinates and date to the AlAdhan API. Your selected AlAdhan timetable still fetches times when this switch is off. Previously loaded dates can work offline.</p></section><section class="settings-group"><h3>Fajr and Isha angles</h3><div aria-label="Calculation angles" class="option-group" role="radiogroup"><label class="option-card"><input name="method" type="radio" value="15-13"/><span><strong>15° / 13°</strong><small>15° Fajr · 13° Isha</small></span></label><label class="option-card"><input name="method" type="radio" value="12-12"/><span><strong>French UOIF · 12° / 12°</strong><small>12° Fajr · 12° Isha</small></span></label><label class="option-card"><input name="method" type="radio" value="18-17"/><span><strong>Muslim World League · 18° / 17°</strong><small>MWL angle pair · uses your summer rule</small></span></label><label class="option-card"><input name="method" type="radio" value="custom"/><span><strong>Custom angles</strong></span></label></div><div class="field-grid" id="customAngles"><label>Fajr angle <input id="fajrAngleInput" inputmode="decimal" max="22" min="6" step="0.5" type="number"/></label><label>Isha angle <input id="ishaAngleInput" inputmode="decimal" max="22" min="6" step="0.5" type="number"/></label></div><p class="setting-hint">Angles estimate the religious signs. A missing crossing tells you about the Sun’s position.</p></section>
 <section class="settings-group">
   <h3>Isha</h3>
   <label class="block-label" for="ishaLimit">Ordinary Isha cutoff</label>

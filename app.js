@@ -4,7 +4,10 @@
   const defaults = {
     lat: 54.9966, lng: -7.3086, location: 'Derry, Northern Ireland', timeZone: 'Europe/London',
     autoLocation: false, method: '15-13', fajrAngle: 15, ishaAngle: 13,
-    ishaPreference: 'around-third', ishaLimit: 'half', magneticDeclination: '', highLatRule: 'seventh', activeSource: 'angles', soundChoice: 'adhan-abu-bakr', soundVolume: 40, onlineCompare: true, reminderLead: 15, reminderEnabled: true, qiblaHaptic: true, qiblaChime: false, timeFormat: '12', layout: 'compact', accent: 'forest'
+    ishaPreference: 'around-third', ishaLimit: 'half', magneticDeclination: '', highLatRule: 'seventh',
+    activeSource: 'angles', soundChoice: 'adhan-abu-bakr', soundVolume: 40, onlineCompare: true,
+    reminderLead: 15, reminderEnabled: true, qiblaHaptic: true, qiblaSound: true, qiblaLegacyPulse: false,
+    qiblaView: 'guide', fastingView: 'week', timeFormat: '12', layout: 'compact', accent: 'forest', iconChoice: 'match'
   };
   const names = [
     { key: 'fajr', en: 'Fajr', ar: 'الفجر', icon: 'sun-horizon', desc: 'Dawn' },
@@ -38,12 +41,14 @@
   const palettes = {
     forest:'Forest green', ocean:'Ocean blue', midnight:'Midnight navy', sand:'Amber sand', slate:'Cool slate'
   };
-  const layouts = {
-    compact:'Compact prayer rows and a clean compass.',
-    timeline:'A timeline with markers for earlier and upcoming prayers.',
-    horizon:'A daily Sun path and a softly lit compass.',
-    tiles:'Prayer tiles and a boxed compass with separate readings.'
-  };
+  const iconDesigns = { mihrab:'Mihrab', minaret:'Minaret', compass:'Compass', mat:'Prayer mat' };
+  const layouts = ['compact', 'timeline', 'horizon'];
+  const compassViews = ['guide', 'needle'];
+  const fastingViews = ['week', 'month'];
+  const iconQuery = new URLSearchParams(location.search).get('icon');
+  const launchAccent = Object.hasOwn(palettes, iconQuery) ? iconQuery : defaults.accent;
+  const launchIcon = Object.hasOwn(iconDesigns, iconQuery) ? iconQuery : defaults.iconChoice;
+  const isStandalone = () => navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
   const reminderLeads = [15, 20, 25, 30];
   const summerRules = {
     seventh: 'One seventh when missing',
@@ -56,7 +61,7 @@
   function loadConfig() {
     try {
       const raw = JSON.parse(localStorage.getItem('salah-config') || '{}');
-      const c = { ...defaults, ...raw };
+      const c = { ...defaults, accent:launchAccent, iconChoice:launchIcon, ...raw };
       if (!raw.version4) {
         if (raw.method === '12-12') c.method = '15-13';
         c.timeFormat = '12';
@@ -83,13 +88,18 @@
       c.reminderLead = reminderLeads.includes(lead) ? lead : defaults.reminderLead;
       c.reminderEnabled = c.reminderEnabled !== false;
       c.qiblaHaptic = c.qiblaHaptic !== false;
-      c.qiblaChime = c.qiblaChime === true;
+      c.qiblaSound = c.qiblaSound !== false;
+      c.qiblaLegacyPulse = c.qiblaLegacyPulse === true;
+      c.qiblaView = compassViews.includes(c.qiblaView) ? c.qiblaView : defaults.qiblaView;
+      c.fastingView = fastingViews.includes(c.fastingView) ? c.fastingView : defaults.fastingView;
+      delete c.qiblaChime;
       delete c.calendarLead;
       delete c.theme;
       c.timeFormat = ['12','24'].includes(String(c.timeFormat)) ? String(c.timeFormat) : '12';
-      c.layout = Object.hasOwn(layouts, c.layout) ? c.layout : defaults.layout;
+      c.layout = layouts.includes(c.layout) ? c.layout : defaults.layout;
       if (c.accent === 'dusk') c.accent = 'midnight';
       c.accent = Object.hasOwn(palettes, c.accent) ? c.accent : defaults.accent;
+      if (!Object.hasOwn(iconDesigns, c.iconChoice)) c.iconChoice = defaults.iconChoice;
       c.onlineCompare = c.onlineCompare !== false;
       if (!Object.hasOwn(summerRules, c.highLatRule)) c.highLatRule = defaults.highLatRule;
       if (![c.fajrAngle, c.ishaAngle].every(a => Number.isFinite(+a) && +a >= 6 && +a <= 22)) {
@@ -108,12 +118,13 @@
       c.autoLocation = !!zone && c.autoLocation === true;
       return c;
     } catch {
-      return { ...defaults };
+      return { ...defaults, accent:launchAccent, iconChoice:launchIcon };
     }
   }
 
   let cfg = loadConfig();
   const store = () => { try { localStorage.setItem('salah-config', JSON.stringify(cfg)); } catch {} };
+  if (Object.hasOwn(palettes, iconQuery) || Object.hasOwn(iconDesigns, iconQuery)) store();
   const anglePair = () => cfg.method === 'custom' ? [+cfg.fajrAngle, +cfg.ishaAngle] : cfg.method.split('-').map(Number);
   const todayKey = () => dateParts(new Date(), cfg.timeZone);
 
@@ -446,7 +457,6 @@
     const currentIndex = current ? sorted.reduce((index,e,i) => e.at <= now ? i : index, -1) : -1;
     const nextIndex = current ? sorted.findIndex(e => e.at > now && e.name && e.name.key !== 'sunrise' && (e.name.key !== 'isha' || ishaHasWindow(t))) : -1;
     const list = $('prayerList');
-    list.style.setProperty('--timeline-fill', Math.max(0, Math.round(100 * (currentIndex + 0.5) / sorted.length)) + '%');
     list.innerHTML = sorted.map((e,i) => {
       const phase = current ? (i === currentIndex ? (e.kind === 'prayer' ? 'is-now' : 'is-current-marker') :
         i === nextIndex ? 'is-next' : i < currentIndex ? 'is-past' : 'is-future') : '';
@@ -468,7 +478,30 @@
         <div class="time-text"><div class="time-name">${name.en}</div><div class="time-desc">Time unavailable</div></div>
         <div class="time-data">—</div></div>`);
     }
+    placePrayerRail(list, current ? now : null);
   }
+  function placePrayerRail(list, now) {
+    if (cfg.layout !== 'timeline' || !list.offsetHeight) return;
+    const rows = [...list.querySelectorAll('.prayer-entry')];
+    if (!rows.length) return;
+    const middle = row => row.offsetTop + row.offsetHeight / 2;
+    const first = middle(rows[0]);
+    const last = middle(rows.at(-1));
+    const dated = rows.filter(row => row.dataset.eventTime).map(row => ({ y:middle(row), time:Number(row.dataset.eventTime) }));
+    let progress = first;
+    if (now !== null && dated.length) {
+      const next = dated.findIndex(event => event.time > now);
+      if (next === -1) progress = dated.at(-1).y;
+      if (next > 0) {
+        const start = dated[next - 1], end = dated[next];
+        progress = start.y + (end.y - start.y) * (now - start.time) / (end.time - start.time);
+      }
+    }
+    list.style.setProperty('--rail-top', first + 'px');
+    list.style.setProperty('--rail-height', last - first + 'px');
+    list.style.setProperty('--rail-progress', progress - first + 'px');
+  }
+  window.addEventListener('resize', () => placePrayerRail($('prayerList'), selectedKey === todayKey() ? Date.now() : null));
   function drawSunChart(day) {
     const chart = $('sunChart');
     chart.hidden = cfg.layout !== 'horizon' || !day?.valid;
@@ -522,6 +555,7 @@
   }
   function setHero(event, now, otherDate = false) {
     currentHero = null;
+    $('horizonPrayerLabel').textContent = otherDate ? 'First listed prayer' : 'Next prayer';
     $('nextPrayerName').textContent = event?.en || 'Unavailable';
     $('nextPrayerArabic').textContent = event?.ar || '';
     $('nextPrayerArabic').hidden = !event?.ar;
@@ -828,20 +862,35 @@
   const paletteChoices = $('paletteChoices');
   paletteChoices.innerHTML = Object.entries(palettes).map(([id, label]) =>
     `<button type="button" class="palette-choice" data-palette="${id}"><span class="palette-sample" aria-hidden="true"><i></i><i></i><i></i></span>${label}</button>`).join('');
+  const iconFolder = id => id === 'forest' ? './icons/' : './icons/' + id + '/';
+  const iconChoices = $('iconChoices');
+  iconChoices.innerHTML = Object.entries({ match:'Match colour', ...iconDesigns }).map(([id, label]) =>
+    '<button type="button" data-icon-choice="' + id + '"><img width="42" height="42" alt="" src="' +
+    iconFolder(id === 'match' ? cfg.accent : id) + 'icon-180.png"/><span>' + label + '</span></button>').join('');
+
   function applyAppearance() {
     document.body.dataset.layout = cfg.layout;
     document.body.dataset.accent = cfg.accent;
     $('settingsLayout').value = cfg.layout;
     $('settingsTimeFormat').value = cfg.timeFormat;
-    $('stylePreview').textContent = layouts[cfg.layout];
     for (const choice of paletteChoices.children) choice.setAttribute('aria-pressed', choice.dataset.palette === cfg.accent);
     const background = getComputedStyle(document.body).getPropertyValue('--bg').trim();
     document.documentElement.style.backgroundColor = background;
     document.querySelector('meta[name="theme-color"]').content = background;
-    const iconBase = cfg.accent === 'forest' ? './icons/' : './icons/' + cfg.accent + '/';
+    const icon = cfg.iconChoice === 'match' ? cfg.accent : cfg.iconChoice;
+    const iconBase = iconFolder(icon);
     $('tabIcon').href = iconBase + 'icon-192.png';
     $('touchIcon').href = iconBase + 'icon-180.png';
-    $('appManifest').href = cfg.accent === 'forest' ? './manifest.webmanifest' : './manifest-' + cfg.accent + '.webmanifest';
+    $('appManifest').href = icon === 'forest' ? './manifest.webmanifest' : './manifest-' + icon + '.webmanifest';
+    iconChoices.querySelector('[data-icon-choice="match"] img').src = iconFolder(cfg.accent) + 'icon-180.png';
+    for (const choice of iconChoices.children) choice.setAttribute('aria-pressed', choice.dataset.iconChoice === cfg.iconChoice);
+    $('homeIconPreview').src = $('touchIcon').href;
+    $('homeIconName').textContent = iconDesigns[icon] || palettes[icon];
+    $('homeIconPage').href = './install/' + icon + '.html';
+    $('homeIconURL').value = $('homeIconPage').href;
+    $('homeIconURL').hidden = true;
+    $('homeIconHelp').textContent = isStandalone() ? 'Safari sets the icon when you add Salah to the Home Screen.' :
+      'Open the icon page in Safari to add this design to your Home Screen.';
   }
   function changeAppearance(kind, value) {
     cfg[kind] = value;
@@ -855,6 +904,24 @@
   paletteChoices.addEventListener('click', event => {
     const choice = event.target.closest('[data-palette]');
     if (choice) changeAppearance('accent', choice.dataset.palette);
+  });
+  iconChoices.addEventListener('click', event => {
+    const choice = event.target.closest('[data-icon-choice]');
+    if (choice) changeAppearance('iconChoice', choice.dataset.iconChoice);
+  });
+  $('homeIconPage').hidden = isStandalone();
+  $('copyIconPage').hidden = !isStandalone();
+  $('copyIconPage').addEventListener('click', async () => {
+    const field = $('homeIconURL');
+    try {
+      await navigator.clipboard.writeText(field.value);
+      $('homeIconHelp').textContent = 'Open the copied link in Safari. Use Share → Add to Home Screen.';
+    } catch {
+      field.hidden = false;
+      field.focus();
+      field.select();
+      $('homeIconHelp').textContent = 'Copy this link and open it in Safari.';
+    }
   });
   applyAppearance();
 
@@ -1231,13 +1298,51 @@
   }
   const compassPoints = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
   const compassLetters = ['compassNorth', 'compassEast', 'compassSouth', 'compassWest'];
-  let compassReading = null, magneticVariation = null, qiblaCompassOn = false, lastAlignment = false;
-  let variationPromise = null, variationKey = '', compassStatus = '', orientationTimer = null;
+  const compassFailureNotes = [[520, 0, .18, .13], [370, .21, .25, .13]];
+  const alignmentPulse = [45, 55, 90];
+  let compassReading = null, magneticVariation = null, lastAlignment = false;
+  let qiblaCompassOn = false, compassStarting = false, compassRun = 0;
+  let compassAudioReady = null, compassFailure = '', compassProblem = '';
+  let variationPromise = null, variationKey = '', variationFailed = false;
+  let headingTimer = null, compassProblemTimer = null;
+  let compassIssuesPlayed = new Set();
   const supportsVibration = () => typeof navigator.vibrate === 'function';
+
   function vibrate(pattern) {
     try { return supportsVibration() && navigator.vibrate(pattern); }
     catch { return false; }
   }
+
+  function tryLegacyPulse() {
+    if (!isIOS || !cfg.qiblaLegacyPulse || navigator.userActivation?.isActive === false) return false;
+    $('qiblaLegacyTrigger').click();
+    return true;
+  }
+
+  function playCompassChime(notes) {
+    if (!cfg.qiblaSound) return;
+    if (audio.chime(notes)) return;
+    const run = compassRun;
+    const stillOnCompass = () => run === compassRun && cfg.qiblaSound && !$('qiblaPanel').hidden && !document.hidden;
+    void compassAudioReady?.then(async () => {
+      if (!stillOnCompass() || audio.chime(notes)) return;
+      if (await audio.unlock() && stillOnCompass()) audio.chime(notes);
+    });
+  }
+
+  function announceCompassIssue(kind) {
+    if (compassIssuesPlayed.has(kind) || $('qiblaPanel').hidden || document.hidden) return;
+    compassIssuesPlayed.add(kind);
+    playCompassChime(compassFailureNotes);
+  }
+
+  function checkCompassProblem(problem) {
+    if (compassProblem === problem) return;
+    compassProblem = problem;
+    clearTimeout(compassProblemTimer);
+    if (problem) compassProblemTimer = setTimeout(() => announceCompassIssue(problem), 1400);
+  }
+
   function compassPoint(degrees, radius) {
     const angle = degrees * Math.PI / 180;
     return [160 + radius * Math.sin(angle), 160 - radius * Math.cos(angle)];
@@ -1247,7 +1352,9 @@
   }
   $('compassTicks').innerHTML = Array.from({length:60}, (_, i) => {
     const major = i % 5 === 0;
-    return `<path class="compass-tick${major ? ' major' : ''}" d="M${pointText(i * 6, major ? 132 : 137)} L${pointText(i * 6, 144)}"/>`;
+    const cardinal = i % 15 === 0;
+    return '<path class="compass-tick' + (cardinal ? ' cardinal' : major ? ' major' : '') +
+      '" d="M' + pointText(i * 6, cardinal ? 127 : major ? 133 : 138) + ' L' + pointText(i * 6, 144) + '"/>';
   }).join('');
 
   function resetMagneticCorrection() {
@@ -1255,74 +1362,96 @@
     $('declinationOverride').value = '';
     variationKey = '';
     magneticVariation = null;
+    variationFailed = false;
     lastAlignment = false;
   }
-  function qiblaDistance(lat, lng) {
-    return kmApart({ lat, lng }, KAABA);
-  }
+
   function renderQibla() {
     const bearing = qiblaBearing(cfg.lat, cfg.lng);
     const override = $('declinationOverride').value.trim();
-    const delta = override !== '' ? Number(override) : magneticVariation;
+    const delta = override ? Number(override) : magneticVariation;
     const correction = Number.isFinite(delta) && Math.abs(delta) <= 180;
     const accuracy = compassReading?.accuracy;
-    const fixedReference = !qiblaCompassOn || !compassReading || compassReading.tilted || !correction;
-    const reliable = Number.isFinite(accuracy) && accuracy >= 0 && accuracy <= 20;
-    const approximate = !fixedReference && compassReading.kind === 'absolute';
-    const live = !fixedReference && (reliable || approximate);
+    const knownAccuracy = Number.isFinite(accuracy) && accuracy >= 0;
+    const reliable = knownAccuracy && accuracy <= 20;
+    const approximate = compassReading?.kind === 'absolute';
+    const live = qiblaCompassOn && !!compassReading && !compassReading.tilted &&
+      correction && (reliable || approximate);
     const rotation = live ? norm360(compassReading.heading + delta) : 0;
     const direction = (bearing - rotation + 540) % 360 - 180;
     const angle = Math.round(Math.abs(direction));
-    const inAlignmentRange = Math.abs(direction) <= (lastAlignment ? 7 : 4);
-    const aligned = live && reliable && accuracy <= 8 && inAlignmentRange;
-    const alignmentCue = aligned || (approximate && inAlignmentRange);
-    const near = live && angle <= 15;
+    const withinTarget = live && Math.abs(direction) <= (lastAlignment ? 7 : 4);
+    const aligned = withinTarget && reliable && accuracy <= 8;
     const turn = direction < 0 ? 'left' : 'right';
-    const dial = $('qiblaDial');
+    const problem = qiblaCompassOn && compassReading && !compassReading.tilted
+      ? (!correction && variationFailed ? 'correction' : !reliable && !approximate ? 'accuracy' : '')
+      : '';
+    checkCompassProblem(problem);
+
+    let state = 'reference', cue = 'Qibla bearing', mark = '↑';
+    let help = 'Measured clockwise from true north.';
+    if (compassFailure) {
+      state = 'weak'; cue = 'Compass unavailable'; mark = '!';
+      help = compassFailure;
+    } else if (compassStarting || (qiblaCompassOn && !compassReading)) {
+      state = 'waiting'; cue = compassStarting ? 'Waiting for permission' : 'Finding your heading'; mark = '…';
+      help = 'Hold the phone flat, away from metal.';
+    } else if (compassReading?.tilted) {
+      state = 'weak'; cue = 'Hold your phone flat'; mark = '!';
+      help = compassReading.portrait ? 'Keep the screen facing upwards.' : 'Use portrait orientation.';
+    } else if (problem) {
+      state = 'weak'; mark = '!';
+      cue = problem === 'accuracy' ? 'Compass reading is weak' : 'Magnetic correction unavailable';
+      help = problem === 'accuracy' ? 'The reading is not accurate enough. Move away from metal.' :
+        'Set a local correction in Compass settings.';
+    } else if (live) {
+      state = aligned ? 'aligned' : withinTarget || angle <= 15 ? 'near' : 'turn';
+      cue = aligned ? 'Facing the Qibla' : withinTarget ? 'Near the Qibla' :
+        angle <= 15 ? 'A little to the ' + turn : 'Turn ' + turn + ' ' + angle + '°';
+      mark = aligned ? '✓' : withinTarget ? '↑' : direction < 0 ? '↶' : '↷';
+      help = approximate ? 'Approximate heading. Check with a calibrated compass.' : 'Keep the phone flat.';
+    } else if (qiblaCompassOn && !correction) {
+      state = 'waiting'; cue = 'Finding magnetic correction'; mark = '…';
+      help = 'Keep the phone flat.';
+    }
+
+    const dial = $('qiblaDial'), status = $('qiblaAligned');
     dial.classList.toggle('live', live);
     dial.classList.toggle('aligned', aligned);
-
+    dial.dataset.state = status.dataset.state = state;
+    $('qiblaCueMark').textContent = mark;
+    if ($('qiblaCue').textContent !== cue) $('qiblaCue').textContent = cue;
+    if ($('qiblaAccuracy').textContent !== help) $('qiblaAccuracy').textContent = help;
     $('qiblaBearing').textContent = bearing.toFixed(1) + '°';
     $('qiblaCardinal').textContent = compassPoints[Math.round(bearing / 22.5) % 16];
-    $('qiblaDistance').textContent = Math.round(qiblaDistance(cfg.lat, cfg.lng)).toLocaleString('en-GB') + ' km';
+    $('qiblaTurnAngle').textContent = aligned ? '✓' : (live ? angle : bearing.toFixed(1)) + '°';
+    $('qiblaTurnLabel').textContent = aligned ? 'Aligned' : withinTarget ? 'Near target' :
+      live ? 'Turn ' + turn : 'From true north';
+    $('qiblaDistance').textContent = Math.round(kmApart(cfg, KAABA)).toLocaleString('en-GB') + ' km';
     $('qiblaPosition').textContent = cfg.location;
-    $('compassTicks').setAttribute('transform', `rotate(${-rotation} 160 160)`);
+    $('qiblaPrecisionRow').hidden = !compassReading;
+    $('qiblaPrecision').textContent = knownAccuracy ? '±' + Math.round(accuracy) + '°' : 'Unknown';
+    $('qiblaState').textContent = live ? 'Heading ' + (Math.round(rotation) % 360) + '° true · ' +
+      (override ? 'manual correction' : 'WMM 2025') : '';
+    $('compassTicks').setAttribute('transform', 'rotate(' + -rotation + ' 160 160)');
+    const guide = cfg.qiblaView === 'guide';
     for (const [i, id] of compassLetters.entries()) {
-      const [x, y] = compassPoint(i * 90 - rotation, 119);
+      const [x, y] = compassPoint(i * 90 - rotation, guide ? 120 : 110);
       $(id).setAttribute('x', x.toFixed(1));
       $(id).setAttribute('y', y.toFixed(1));
     }
-    $('qiblaArrow').setAttribute('transform', 'translate(' + pointText(direction, 99) + ')');
-    $('qiblaArc').setAttribute('d', live && angle > 5
-      ? `M160 61 A99 99 0 0 ${direction < 0 ? 0 : 1} ${pointText(direction, 99)}` : '');
+    $('qiblaArrow').setAttribute('transform', 'rotate(' + direction.toFixed(1) + ' 160 160)');
+    const radius = guide ? 97 : 106;
+    const target = pointText(direction, radius);
+    $('qiblaMarker').setAttribute('transform', 'translate(' + target + ')');
+    $('qiblaArc').setAttribute('d', angle > 5 && (live || guide)
+      ? 'M160 ' + (160 - radius) + ' A' + radius + ' ' + radius + ' 0 0 ' + (direction < 0 ? 0 : 1) + ' ' + target : '');
 
-    const cue = $('qiblaAligned');
-    const weak = qiblaCompassOn && !live && !!compassReading;
-    cue.dataset.state = aligned ? 'aligned' : near ? 'near' : live ? 'turn' : weak ? 'weak' : 'reference';
-    dial.dataset.state = cue.dataset.state;
-    $('qiblaCueMark').textContent = aligned ? '✓' : live ? (direction < 0 ? '↶' : '↷') : '◇';
-    const cueText = aligned ? 'Facing the Qibla' : live && angle <= 4 ? 'Near the Qibla · check accuracy' :
-      live ? 'Turn ' + (near ? 'slightly ' : '') + turn + ' · ' + angle + '°' :
-      compassReading?.tilted ? 'Hold your phone level' :
-      weak ? 'Use the true-north bearing' : 'True-north reference';
-    if ($('qiblaCue').textContent !== cueText) $('qiblaCue').textContent = cueText;
-    $('qiblaTurnAngle').textContent = aligned ? '✓' : live ? angle + '°' : bearing.toFixed(1) + '°';
-    $('qiblaTurnLabel').textContent = aligned ? 'Qibla' : live && angle <= 4 ? 'Near Qibla' : live ? 'Turn ' + turn : 'From true north';
-
-    $('qiblaPrecision').textContent = Number.isFinite(accuracy) && accuracy >= 0 ? '±' + Math.round(accuracy) + '°' :
-      approximate ? 'Unknown' : '—';
-    $('qiblaPrecisionNote').textContent = approximate ? 'Approximate heading' : reliable ? 'Reported by phone' : weak ? 'Reference view' : 'Sensor off';
-    $('qiblaAccuracy').textContent = approximate ? 'This sensor gives an approximate heading. Use a calibrated compass to verify close alignment.' :
-      weak && !compassReading?.tilted && !reliable ? 'Compass reading is not accurate enough for a live pointer. Calibrate away from metal and try again.' :
-      reliable && live ? 'Sensor uncertainty about ±' + Math.round(accuracy) + '°. Hold level away from metal.' : 'The bearing is measured clockwise from true north.';
-    const state = live ? 'Heading ' + Math.round(rotation) + '° true · ' + (override === '' ? 'WMM 2025' : 'manual correction') : compassStatus;
-    if ($('qiblaState').textContent !== state) $('qiblaState').textContent = state;
-
-    if (alignmentCue && !lastAlignment && !$('qiblaPanel').hidden && !document.hidden) {
-      if (cfg.qiblaHaptic) vibrate([35, 35, 60]);
-      if (cfg.qiblaChime) audio.chime(alignmentNotes);
+    if (withinTarget && !lastAlignment && !$('qiblaPanel').hidden && !document.hidden) {
+      if (!cfg.qiblaHaptic || !vibrate(alignmentPulse)) tryLegacyPulse();
+      playCompassChime(alignmentNotes);
     }
-    lastAlignment = alignmentCue;
+    if (live) lastAlignment = withinTarget;
   }
 
   async function loadVariation() {
@@ -1331,6 +1460,7 @@
     const key = [lat, lng, now.getUTCFullYear(), now.getUTCMonth()].join(':');
     if (variationKey === key) return variationPromise;
     variationKey = key;
+    variationFailed = false;
     variationPromise = (async () => {
       try {
         const model = await import('./vendor/magvar/magvar.mjs');
@@ -1338,94 +1468,115 @@
         const value = model.magvar(lat, lng, 0, now);
         if (!Number.isFinite(value) || Math.abs(value) > 180) throw Error('Model value');
         if (variationKey === key) magneticVariation = value;
-        return true;
       } catch {
-        if (variationKey === key) { magneticVariation = null; variationKey = ''; }
-        return false;
+        if (variationKey === key) {
+          magneticVariation = null;
+          variationFailed = true;
+          variationKey = '';
+        }
       }
     })();
     return variationPromise;
   }
+
   function orientationHandler(event) {
     if (!qiblaCompassOn || document.hidden || $('qiblaPanel').hidden) return;
     const magnetic = event.webkitCompassHeading;
-    const absolute = event.absolute && Number.isFinite(event.alpha);
-    if ((!Number.isFinite(magnetic) || magnetic < 0) && !absolute) return;
     const webkit = Number.isFinite(magnetic) && magnetic >= 0;
+    const absolute = event.absolute && Number.isFinite(event.alpha);
+    if (!webkit && !absolute) return;
+    if (compassReading?.kind === 'webkit' && !webkit) return;
+    clearTimeout(headingTimer);
     const portrait = !(screen.orientation?.angle ?? window.orientation ?? 0);
     const tilted = Math.abs(event.beta || 0) > 35 || Math.abs(event.gamma || 0) > 35;
     compassReading = {
-      kind:webkit ? 'webkit' : 'absolute', tilted:tilted || !portrait,
+      kind:webkit ? 'webkit' : 'absolute', portrait, tilted:tilted || !portrait,
       heading:norm360(webkit ? magnetic : 360 - event.alpha),
       accuracy:webkit && Number.isFinite(event.webkitCompassAccuracy) ? event.webkitCompassAccuracy : null
     };
-    compassStatus = !portrait ? 'Turn the phone upright to portrait orientation.' :
-      tilted ? 'Set the phone flat to use the compass.' :
-      webkit && !(compassReading.accuracy >= 0 && compassReading.accuracy <= 20 && compassReading.accuracy !== null) ?
-        'Compass accuracy is too low. Move away from metal and recalibrate.' :
-        'Waiting for magnetic correction…';
     renderQibla();
   }
-  function stopCompass() {
-    clearTimeout(orientationTimer);
+
+  function endCompassReading() {
+    clearTimeout(headingTimer);
+    checkCompassProblem('');
     window.removeEventListener('deviceorientation', orientationHandler);
     window.removeEventListener('deviceorientationabsolute', orientationHandler);
     qiblaCompassOn = false;
+    compassStarting = false;
     compassReading = null;
     lastAlignment = false;
-    compassStatus = 'Start the compass to use your phone’s heading.';
+  }
+  function stopCompass() {
+    compassRun++;
+    endCompassReading();
+    compassFailure = '';
     $('startCompass').textContent = 'Start compass';
     renderQibla();
   }
+  function failCompass(message) {
+    endCompassReading();
+    compassFailure = message;
+    $('startCompass').textContent = 'Try compass again';
+    announceCompassIssue('unavailable');
+    renderQibla();
+  }
+
   $('startCompass').addEventListener('click', async () => {
-    if (qiblaCompassOn) { stopCompass(); return; }
+    if (qiblaCompassOn || compassStarting) { stopCompass(); return; }
+    const run = ++compassRun;
+    compassFailure = '';
+    compassIssuesPlayed = new Set();
+    compassAudioReady = cfg.qiblaSound ? audio.unlock() : null;
     if (typeof DeviceOrientationEvent === 'undefined' || !window.isSecureContext) {
-      compassStatus = 'Use HTTPS on a phone with a compass sensor.';
-      renderQibla(); return;
+      failCompass('Use the bearing below, or open Salah over HTTPS on a phone with a compass.');
+      return;
     }
+    compassStarting = true;
+    $('startCompass').textContent = 'Cancel';
+    renderQibla();
     try {
-      if (cfg.qiblaChime) void audio.unlock();
-      if (typeof DeviceOrientationEvent.requestPermission === 'function' &&
-          await DeviceOrientationEvent.requestPermission() !== 'granted') {
-        compassStatus = 'Motion permission denied. Use the true-north bearing.';
-        renderQibla(); return;
+      if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        const permission = await DeviceOrientationEvent.requestPermission();
+        if (run !== compassRun) return;
+        if (permission !== 'granted') {
+          failCompass('Motion access was denied. Use the bearing below.');
+          return;
+        }
       }
-      if ($('qiblaPanel').hidden) return;
+      if (run !== compassRun || $('qiblaPanel').hidden) return;
+      compassStarting = false;
       qiblaCompassOn = true;
       $('startCompass').textContent = 'Stop compass';
-      compassStatus = 'Waiting for a usable compass reading…';
       window.addEventListener('deviceorientation', orientationHandler);
       window.addEventListener('deviceorientationabsolute', orientationHandler);
-      orientationTimer = setTimeout(() => {
-        if (!compassReading && qiblaCompassOn) {
-          compassStatus = 'No compass heading received. Use the true-north bearing.';
-          renderQibla();
-        }
+      headingTimer = setTimeout(() => {
+        if (qiblaCompassOn && !compassReading)
+          failCompass('The phone sent no compass heading. Use the bearing below.');
       }, 4500);
-      if (!await loadVariation() && !$('declinationOverride').value.trim() && qiblaCompassOn)
-        compassStatus = 'Magnetic correction unavailable. Enter a local correction or use the true-north bearing.';
       renderQibla();
+      void loadVariation().then(renderQibla);
     } catch {
-      compassStatus = 'Compass access failed. Use the true-north bearing.';
-      renderQibla();
+      if (run === compassRun) failCompass('The phone could not give compass access. Use the bearing below.');
     }
   });
+
   $('qiblaGPS').addEventListener('click', () => {
-    if (!navigator.geolocation) { compassStatus = 'GPS unavailable.'; renderQibla(); return; }
-    compassStatus = 'Getting current GPS position…';
-    renderQibla();
+    const status = $('qiblaGPSStatus');
+    if (!navigator.geolocation) { status.textContent = 'GPS unavailable.'; return; }
+    status.textContent = 'Getting current GPS position…';
     const request = ++placeRequest;
     navigator.geolocation.getCurrentPosition(pos => {
       if (request !== placeRequest) return;
       const place = positionPlace(pos);
-      if (place.error) { compassStatus = place.error; renderQibla(); return; }
+      if (place.error) { status.textContent = place.error; return; }
       applyLocation(place);
-      compassStatus = 'Position updated for Qibla and prayers.';
-      renderQibla();
+      status.textContent = 'Location updated.';
     }, () => {
-      if (request === placeRequest) { compassStatus = 'GPS unavailable. Keeping the saved position.'; renderQibla(); }
+      if (request === placeRequest) status.textContent = 'GPS unavailable. Using the saved location.';
     }, { enableHighAccuracy:true, timeout:12000, maximumAge:15000 });
   });
+
   $('declinationOverride').value = cfg.magneticDeclination;
   $('declinationOverride').addEventListener('input', () => {
     const value = $('declinationOverride').value;
@@ -1439,90 +1590,196 @@
     if (qiblaCompassOn) void loadVariation().then(renderQibla);
     renderQibla();
   });
+
   $('qiblaHaptic').checked = cfg.qiblaHaptic;
   $('qiblaHapticControl').hidden = !supportsVibration();
-  $('qiblaChime').checked = cfg.qiblaChime;
-  $('qiblaHapticHint').textContent = supportsVibration() ? '' : 'This browser uses the visual cue and optional chime for alignment.';
+  $('qiblaChime').checked = cfg.qiblaSound;
+  $('iphoneHaptics').hidden = !isIOS;
+  $('qiblaLegacyPulse').checked = cfg.qiblaLegacyPulse;
+  $('qiblaLegacyPulse').addEventListener('change', () => {
+    cfg.qiblaLegacyPulse = $('qiblaLegacyPulse').checked;
+    store();
+  });
   $('qiblaHaptic').addEventListener('change', () => {
     cfg.qiblaHaptic = $('qiblaHaptic').checked;
     store();
   });
   $('qiblaChime').addEventListener('change', () => {
-    cfg.qiblaChime = $('qiblaChime').checked;
+    cfg.qiblaSound = $('qiblaChime').checked;
     store();
-    if (cfg.qiblaChime) void audio.unlock().then(ready => { if (ready && cfg.qiblaChime) audio.chime(alignmentNotes); });
+    if (cfg.qiblaSound) compassAudioReady = audio.unlock();
+  });
+
+  async function testCompassFeedback(feedback) {
+    if (vibrate(alignmentPulse)) {
+      feedback.textContent = 'Vibration requested. Feel for two pulses.';
+      return;
+    }
+    if (tryLegacyPulse()) {
+      feedback.textContent = 'Tried the automatic pulse. Tap the iPhone switch if you felt nothing.';
+      return;
+    }
+    if (cfg.soundVolume === 0) {
+      feedback.textContent = 'Vibration unavailable. Raise the sound level to hear the chime.';
+      return;
+    }
+    const played = await audio.unlock() && audio.chime(alignmentNotes);
+    feedback.textContent = played ? 'Vibration unavailable. Played the alignment chime.' :
+      'Vibration and sound are unavailable.';
+  }
+  $('qiblaTestFeedback').addEventListener('click', () => void testCompassFeedback($('qiblaTestStatus')));
+  function setCompassView(view) {
+    $('qiblaView').dataset.view = view;
+    for (const button of $('qiblaLayouts').children) button.setAttribute('aria-pressed', button.dataset.qiblaView === view);
+  }
+  setCompassView(cfg.qiblaView);
+  $('qiblaLayouts').addEventListener('click', event => {
+    const button = event.target.closest('[data-qibla-view]');
+    if (!button) return;
+    cfg.qiblaView = button.dataset.qiblaView;
+    store();
+    setCompassView(cfg.qiblaView);
+    renderQibla();
   });
 
   const fastingLabels = { fasted:'Fasted', due:'To make up', 'made-up':'Made up' };
+  const fastingSymbols = { fasted:'✓', due:'•', 'made-up':'↺' };
   const fastingStore = 'salah-fasting-log';
   let fastingKey = todayKey();
   let fastingFollowingToday = true;
-  let fastingRecords = {};
-  try {
-    const saved = JSON.parse(localStorage.getItem(fastingStore) || '{}');
-    fastingRecords = Object.fromEntries(Object.entries(saved).filter(([key, value]) =>
-      key.length === 10 && Number.isFinite(+dateAtNoonUTC(key)) && Object.hasOwn(fastingLabels, value)));
-  } catch {}
+  let fastingRecords = readFastingLog();
 
+  function validFastingRecords(records) {
+    return Object.fromEntries(Object.entries(records).filter(([key, mark]) => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(key) || typeof mark !== 'string' || !Object.hasOwn(fastingLabels, mark)) return false;
+      const date = dateAtNoonUTC(key);
+      return Number.isFinite(+date) && date.toISOString().slice(0, 10) === key;
+    }));
+  }
+  function readFastingLog() {
+    try { return validFastingRecords(JSON.parse(localStorage.getItem(fastingStore) || '{}')); }
+    catch { return {}; }
+  }
+  function writeFastingLog(records) {
+    localStorage.setItem(fastingStore, JSON.stringify(records));
+    fastingRecords = records;
+    if (!$('fastingPanel').hidden) renderFasting();
+  }
+
+  const fastingWeekFormat = new Intl.DateTimeFormat('en-GB', {
+    timeZone:'UTC', year:'numeric', month:'short', day:'numeric'
+  });
   function renderFasting(restoreFocus = false) {
     const date = dateAtNoonUTC(fastingKey), today = todayKey();
-    const month = fastingKey.slice(0, 7), year = date.getUTCFullYear(), index = date.getUTCMonth();
-    const first = new Date(Date.UTC(year, index, 1, 12));
-    const days = new Date(Date.UTC(year, index + 1, 0, 12)).getUTCDate();
-    const fill = (first.getUTCDay() + 6) % 7;
-    $('fastingMonth').textContent = date.toLocaleDateString('en-GB', { timeZone:'UTC', month:'long', year:'numeric' });
-    const blank = '<span aria-hidden="true"></span>'.repeat(fill);
-    $('fastingDays').innerHTML = blank + Array.from({ length:days }, (_, i) => {
-      const key = month + '-' + String(i + 1).padStart(2, '0');
+    const dayOfWeek = (date.getUTCDay() + 6) % 7;
+    const week = cfg.fastingView === 'week';
+    const startKey = week ? dayShift(fastingKey, -dayOfWeek) : fastingKey.slice(0, 7) + '-01';
+    const lastDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0, 12)).getUTCDate();
+    const days = week ? 7 : lastDay;
+    const endKey = dayShift(startKey, days - 1);
+    const first = dateAtNoonUTC(startKey), last = dateAtNoonUTC(endKey);
+    const blanks = week ? 0 : (first.getUTCDay() + 6) % 7;
+    const grid = $('fastingDays');
+    const focusInGrid = grid.contains(document.activeElement);
+
+    $('fastingView').dataset.view = cfg.fastingView;
+    for (const button of $('fastingLayouts').children)
+      button.setAttribute('aria-pressed', button.dataset.fastingView === cfg.fastingView);
+    $('fastingPrevious').setAttribute('aria-label', 'Previous ' + cfg.fastingView);
+    $('fastingNext').setAttribute('aria-label', 'Next ' + cfg.fastingView);
+    $('fastingToday').hidden = fastingKey === today;
+    const range = () => typeof fastingWeekFormat.formatRange === 'function' ? fastingWeekFormat.formatRange(first, last) :
+      fastingWeekFormat.format(first) + ' – ' + fastingWeekFormat.format(last);
+    $('fastingMonth').textContent = week ? range() :
+      date.toLocaleDateString('en-GB', { timeZone:'UTC', month:'long', year:'numeric' });
+    grid.innerHTML = '<span aria-hidden="true"></span>'.repeat(blanks) + Array.from({ length:days }, (_, i) => {
+      const key = dayShift(startKey, i);
       const mark = fastingRecords[key] || '';
       const selected = key === fastingKey;
       const label = prettyKey(key) + (mark ? ', ' + fastingLabels[mark] : '');
-      return `<button type="button" class="fast-day" data-date="${key}" data-status="${mark}"
-        tabindex="${selected ? 0 : -1}" aria-label="${label}" aria-pressed="${selected}" ${key === today ? 'aria-current="date"' : ''}>${i + 1}</button>`;
+      return '<button type="button" class="fast-day" data-date="' + key + '" data-mark="' + mark +
+        '" tabindex="' + (selected ? 0 : -1) + '" aria-label="' + label + '" aria-pressed="' + selected +
+        '" aria-controls="fastingDetail"' + (key === today ? ' aria-current="date"' : '') +
+        '><span>' + Number(key.slice(-2)) + '</span><small aria-hidden="true">' + (fastingSymbols[mark] || '') + '</small></button>';
     }).join('');
-    if (restoreFocus) $('fastingDays').querySelector('[aria-pressed="true"]').focus();
+    if (restoreFocus || focusInGrid) grid.querySelector('[aria-pressed="true"]').focus();
+
     const entries = Object.entries(fastingRecords);
-    const completed = entries.filter(([key, mark]) => key.startsWith(month) && mark === 'fasted').length;
-    const due = entries.filter(([, mark]) => mark === 'due').length;
-    $('fastingSummary').textContent = completed + ' fasted this month · ' + due + ' to make up across all dates';
-    $('fastingDate').textContent = prettyKey(fastingKey);
-    $('fastingLocation').textContent = cfg.location;
+    const due = entries.filter(([, mark]) => mark === 'due').map(([key]) => key).sort();
+    $('fastingCompleted').textContent = entries.filter(([key, mark]) => key >= startKey && key <= endKey && mark === 'fasted').length;
+    $('fastingPeriodLabel').textContent = 'fasted this ' + cfg.fastingView;
+    $('fastingDue').textContent = due.length;
+    $('fastingDueDates').innerHTML = due.length ? due.map(key =>
+      '<button type="button" class="text-button" data-date="' + key + '">' + prettyKey(key) + '</button>').join('') :
+      '<p>No missed fasts logged.</p>';
+
+    $('fastingRelative').textContent = fastingKey === today ? 'Today' : '';
+    $('fastingDate').textContent = date.toLocaleDateString('en-GB', {
+      timeZone:'UTC', weekday:'long', day:'numeric', month:'long', ...(date.getUTCFullYear() !== dateAtNoonUTC(today).getUTCFullYear() && { year:'numeric' })
+    });
+
     const times = getDay(fastingKey);
-    const estimated = !!times.valid && isEstimated(times, 'fajr');
-    $('fastingFajr').textContent = fmt(times.fajr) + (estimated ? ' · est.' : '');
+    const estimated = times.valid && isEstimated(times, 'fajr');
+    $('fastingFajr').textContent = fmt(times.fajr);
+    $('fastingEstimated').hidden = !estimated;
     $('fastingIftar').textContent = fmt(times.maghrib);
     const minutes = times.maghrib && times.fajr ? Math.round((times.maghrib - times.fajr) / 60000) : 0;
     $('fastingDuration').textContent = minutes > 0 ? Math.floor(minutes / 60) + 'h ' + minutes % 60 + 'm' : '—';
-    $('fastingEstimate').textContent = times.sourceFallback ? 'Local fallback is in use for this date.' :
-      estimated ? 'The Fajr time uses a twilight estimate.' : !times.fajr ? 'Fajr is unavailable under the selected method.' : '';
+    $('fastingLengthLabel').hidden = minutes <= 0;
+    $('fastingEstimate').textContent = times.sourceFallback ? 'Using local times for this date.' :
+      !times.fajr ? 'Fajr is unavailable under the selected method.' : '';
 
     const mark = fastingRecords[fastingKey] || '';
-    for (const button of document.querySelectorAll('[data-fast-status]')) {
-      const status = button.dataset.fastStatus;
-      if (status) button.setAttribute('aria-pressed', mark === status);
-      else button.disabled = !mark;
-    }
+    const quick = $('fastingQuickAction'), badge = $('fastingMark');
+    const completed = mark === 'fasted' || mark === 'made-up';
+    quick.dataset.fastStatus = mark === 'due' ? 'made-up' : mark === 'made-up' ? 'made-up' : 'fasted';
+    quick.textContent = completed ? '✓ ' + fastingLabels[mark] : mark === 'due' ? 'Mark as made up' : 'Mark as fasted';
+    quick.setAttribute('aria-disabled', completed);
+    badge.textContent = fastingLabels[mark] || '';
+    badge.hidden = mark !== 'due';
+    $('fastingMadeUp').hidden = mark === 'due' || mark === 'made-up';
+    const missed = document.querySelector('[data-fast-status="due"]');
+    missed.hidden = mark === 'due';
+    const clear = document.querySelector('[data-fast-status=""]');
+    clear.hidden = clear.disabled = !mark;
     if (cfg.activeSource === 'moonsighting' && navigator.onLine) void fetchOnline(cfg.activeSource, fastingKey);
   }
+
   function selectFastingDate(key, focus = false) {
     fastingKey = key;
     fastingFollowingToday = key === todayKey();
     $('fastingStatus').textContent = '';
     renderFasting(focus);
   }
-  function changeFastingMonth(offset) {
+  function changeFastingPeriod(offset) {
+    if (cfg.fastingView === 'week') {
+      selectFastingDate(dayShift(fastingKey, offset * 7));
+      return;
+    }
     const [year, month, day] = fastingKey.split('-').map(Number);
     const last = new Date(Date.UTC(year, month + offset, 0, 12)).getUTCDate();
     const date = new Date(Date.UTC(year, month - 1 + offset, Math.min(day, last), 12));
     selectFastingDate(date.toISOString().slice(0, 10));
   }
-  $('fastingPrevious').addEventListener('click', () => changeFastingMonth(-1));
-  $('fastingNext').addEventListener('click', () => changeFastingMonth(1));
+  $('fastingPrevious').addEventListener('click', () => changeFastingPeriod(-1));
+  $('fastingNext').addEventListener('click', () => changeFastingPeriod(1));
   $('fastingToday').addEventListener('click', () => selectFastingDate(todayKey()));
-  $('fastingDays').addEventListener('click', event => {
-    const day = event.target.closest('[data-date]');
-    if (day) selectFastingDate(day.dataset.date, true);
+  $('fastingLayouts').addEventListener('click', event => {
+    const button = event.target.closest('[data-fasting-view]');
+    if (!button) return;
+    cfg.fastingView = button.dataset.fastingView;
+    store();
+    renderFasting();
   });
+  function openFastingDate(event) {
+    const day = event.target.closest('button[data-date]');
+    if (!day) return;
+    $('fastingQuickAction').focus({ preventScroll:true });
+    selectFastingDate(day.dataset.date);
+    $('fastingDetail').scrollIntoView({ block:'nearest' });
+  }
+  $('fastingDays').addEventListener('click', openFastingDate);
+  $('fastingDueDates').addEventListener('click', openFastingDate);
   $('fastingDays').addEventListener('keydown', event => {
     const offsets = { ArrowLeft:-1, ArrowRight:1, ArrowUp:-7, ArrowDown:7 };
     const step = offsets[event.key];
@@ -1532,28 +1789,78 @@
   });
   document.querySelector('.fasting-actions').addEventListener('click', event => {
     const button = event.target.closest('[data-fast-status]');
-    if (!button) return;
-    const current = button.dataset.fastStatus;
-    const updated = { ...fastingRecords };
-    if (current) updated[fastingKey] = current;
+    if (!button || button.disabled || button.getAttribute('aria-disabled') === 'true') return;
+    const mark = button.dataset.fastStatus;
+    const updated = readFastingLog();
+    if (mark) updated[fastingKey] = mark;
     else delete updated[fastingKey];
     try {
-      localStorage.setItem(fastingStore, JSON.stringify(updated));
-      fastingRecords = updated;
-      $('fastingStatus').textContent = current ? fastingLabels[current] + ' saved on this device.' : 'Entry cleared.';
-      renderFasting();
+      writeFastingLog(updated);
+      $('fastingStatus').textContent = mark ? fastingLabels[mark] + ' saved.' : 'Entry cleared.';
+      if (button.disabled || button.hidden) $('fastingQuickAction').focus({ preventScroll:true });
     } catch {
-      $('fastingStatus').textContent = 'This browser could not save the entry.';
+      $('fastingStatus').textContent = 'Could not save this entry.';
     }
   });
   window.addEventListener('storage', event => {
-    if (event.key !== fastingStore) return;
+    if (event.key !== fastingStore && event.key !== null) return;
+    fastingRecords = readFastingLog();
+    if (!$('fastingPanel').hidden) renderFasting();
+  });
+
+  $('saveFastingLog').addEventListener('click', async () => {
+    const status = $('fastingBackupStatus');
+    const backup = { format:fastingStore, entries:readFastingLog() };
+    if (!Object.keys(backup.entries).length) {
+      status.textContent = 'There are no fasting entries to save.';
+      return;
+    }
+    const file = new File([JSON.stringify(backup)], 'Salah-fasting-log.json', { type:'application/json' });
+    if (isStandalone() && navigator.canShare?.({ files:[file] })) {
+      try {
+        await navigator.share({ files:[file] });
+        status.textContent = 'Fasting log shared.';
+        return;
+      } catch (error) {
+        if (error.name === 'AbortError') return;
+      }
+    }
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(file);
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(link.href), 30000);
+    status.textContent = 'Fasting log ready to save.';
+  });
+  $('chooseFastingLog').addEventListener('click', () => $('restoreFastingLog').click());
+  $('restoreFastingLog').addEventListener('change', async () => {
+    const input = $('restoreFastingLog'), file = input.files?.[0];
+    const status = $('fastingBackupStatus');
+    if (!file) return;
+    input.value = '';
+    let entries;
     try {
-      const saved = JSON.parse(event.newValue || '{}');
-      fastingRecords = Object.fromEntries(Object.entries(saved).filter(([key, value]) =>
-        key.length === 10 && Number.isFinite(+dateAtNoonUTC(key)) && Object.hasOwn(fastingLabels, value)));
-      if (!$('fastingPanel').hidden) renderFasting();
-    } catch {}
+      if (file.size > 1048576) throw Error('File too large');
+      const backup = JSON.parse(await file.text());
+      if (backup.format !== fastingStore || !backup.entries || Array.isArray(backup.entries) ||
+          typeof backup.entries !== 'object') throw Error('Invalid backup');
+      entries = validFastingRecords(backup.entries);
+      if (Object.keys(entries).length !== Object.keys(backup.entries).length) throw Error('Invalid entries');
+    } catch {
+      status.textContent = 'Choose a fasting log saved from Salah.';
+      return;
+    }
+    try {
+      const current = readFastingLog();
+      const restored = { ...entries, ...current };
+      const added = Object.keys(restored).length - Object.keys(current).length;
+      writeFastingLog(restored);
+      status.textContent = 'Restored ' + added + ' ' + (added === 1 ? 'entry' : 'entries') + '. Existing entries were kept.';
+    } catch {
+      status.textContent = 'Could not restore the fasting log.';
+    }
   });
 
   function addTestRow(label,message,state){
@@ -1609,17 +1916,7 @@
     $('testFeedback').textContent='Requesting GPS…';
     navigator.geolocation.getCurrentPosition(p=>{$('testFeedback').textContent=`GPS acquired: ±${Math.round(p.coords.accuracy)} metres. Qibla can use this position.`},e=>{$('testFeedback').textContent=`GPS permission or positioning issue: ${e.message}`},{enableHighAccuracy:true,timeout:12000,maximumAge:10000});
   });
-  $('testVibration').addEventListener('click', () => {
-    if (vibrate([40, 50, 70])) {
-      $('testFeedback').textContent = 'Vibration requested. Check for a short pulse.';
-    } else {
-      const feedback = $('testFeedback');
-      feedback.textContent = 'Vibration unavailable here. This is the visual cue.';
-      feedback.classList.remove('visual-test');
-      requestAnimationFrame(() => feedback.classList.add('visual-test'));
-      window.setTimeout(() => feedback.classList.remove('visual-test'), 850);
-    }
-  });
+  $('testVibration').addEventListener('click', () => void testCompassFeedback($('testFeedback')));
 
   const screenIds = {today:'today', compare:'comparisonPanel', qibla:'qiblaPanel', fasting:'fastingPanel', sounds:'soundPanel', settings:'settingsDialog'};
   function showScreen(target) {
@@ -1641,7 +1938,7 @@
     if (target === 'qibla') {
       renderQibla();
       if (qiblaCompassOn) void loadVariation().then(renderQibla);
-    } else if (qiblaCompassOn) stopCompass();
+    } else if (qiblaCompassOn || compassStarting) stopCompass();
     const hash = target === 'today' ? '' : '#' + target;
     if (location.hash !== hash) {
       try { window.history.replaceState(null, '', location.pathname + location.search + hash); } catch {}
@@ -1664,7 +1961,6 @@
     event.preventDefault();
     showScreen('today');
   });
-  compassStatus = 'Start the compass to use your phone’s heading.';
   showScreen(location.hash.slice(1));
   cacheAdhansAutomatically();
 

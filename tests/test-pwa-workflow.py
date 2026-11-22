@@ -31,6 +31,19 @@ try:
         page = context.new_page()
         errors = []
         page.on('pageerror', lambda error: errors.append(str(error)))
+        page.add_init_script("""(() => {
+          window.compassTones = [];
+          const create = AudioContext.prototype.createOscillator;
+          AudioContext.prototype.createOscillator = function () {
+            const tone = create.call(this);
+            const schedule = tone.frequency.setValueAtTime.bind(tone.frequency);
+            tone.frequency.setValueAtTime = (hz, at) => {
+              compassTones.push(hz);
+              return schedule(hz, at);
+            };
+            return tone;
+          };
+        })()""")
         page.clock.set_fixed_time(datetime(2026, 6, 21, 12, 0, tzinfo=timezone.utc))
         page.goto(url)
         page.wait_for_function('navigator.serviceWorker.controller !== null')
@@ -80,20 +93,35 @@ try:
         assert page.locator('#prayerList .avoid-entry').count() == 3
 
         page.locator('[data-screen-target="fasting"]').click()
-        assert 'est.' in page.locator('#fastingFajr').inner_text()
+        assert page.locator('#fastingView').get_attribute('data-view') == 'week'
+        assert page.locator('.fast-day').count() == 7
+        page.locator('#fastingNext').click()
+        assert page.locator('#fastingDate').inner_text() == 'Sunday 28 June'
+        page.locator('#fastingToday').click()
+        assert page.locator('#fastingEstimated').is_visible()
         assert page.locator('#fastingIftar').inner_text() != '—'
         page.locator('[data-fast-status="due"]').click()
         assert '1 to make up' in page.locator('#fastingSummary').inner_text()
-        page.locator('[data-fast-status="made-up"]').click()
+        assert page.locator('#fastingQuickAction').inner_text() == 'Mark as made up'
+        page.locator('#fastingToMakeUp summary').click()
+        page.locator('#fastingDueDates button[data-date="2026-06-21"]').click()
+        page.locator('#fastingQuickAction').click()
         assert '0 to make up' in page.locator('#fastingSummary').inner_text()
         page.reload()
-        assert page.locator('[data-fast-status="made-up"]').get_attribute('aria-pressed') == 'true'
+        assert page.locator('#fastingQuickAction').inner_text() == '✓ Made up'
+        assert page.locator('.fast-day[aria-current="date"] small').inner_text() == '↺'
+        page.locator('[data-fasting-view="month"]').click()
         page.locator('#fastingNext').click()
         assert page.locator('#fastingMonth').inner_text() == 'July 2026'
         page.locator('#fastingToday').click()
         assert page.locator('#fastingMonth').inner_text() == 'June 2026'
         page.locator('[data-fast-status=""]').click()
         assert page.locator('[data-fast-status=""]').is_disabled()
+        page.locator('.fast-day[data-date="2026-06-20"]').click()
+        assert page.locator('#fastingDate').inner_text() == 'Saturday 20 June'
+        assert page.locator('#fastingQuickAction').evaluate('(button) => button === document.activeElement')
+        page.locator('#fastingQuickAction').click()
+        assert page.locator('#fastingCompleted').inner_text() == '1'
 
         page.locator('[data-screen-target="settings"]').click()
         page.locator('[data-palette="ocean"]').click()
@@ -101,8 +129,42 @@ try:
         assert page.locator('#touchIcon').get_attribute('href') == './icons/ocean/icon-180.png'
         assert page.locator('#appManifest').get_attribute('href') == './manifest-ocean.webmanifest'
         assert page.evaluate("fetch('./icons/ocean/icon-180.png').then(r => r.ok)")
+        page.locator('.icon-settings summary').click()
+        assert page.locator('#homeIconName').inner_text() == 'Ocean blue'
+        with page.expect_download() as download:
+            page.locator('#saveFastingLog').click()
+        backup = download.value.path()
+        assert '2026-06-20' in backup.read_text()
+        page.locator('#restoreFastingLog').set_input_files({
+            'name':'Salah-fasting-log.json', 'mimeType':'application/json',
+            'buffer':b'{"format":"salah-fasting-log","entries":{"2026-06-20":"due","2026-06-21":"due"}}',
+        })
+        page.locator('#fastingBackupStatus').get_by_text('Restored 1 entry.', exact=False).wait_for()
+        assert page.evaluate("JSON.parse(localStorage.getItem('salah-fasting-log'))") == {
+            '2026-06-20':'fasted', '2026-06-21':'due',
+        }
+        install = context.new_page()
+        install.goto(page.locator('#homeIconPage').evaluate('(link) => link.href'))
+        assert install.locator('link[rel="apple-touch-icon"]').get_attribute('href') == '../icons/ocean/icon-180.png'
+        assert install.evaluate("fetch('../manifest-ocean.webmanifest').then(r => r.json()).then(m => m.start_url)") == './?icon=ocean'
+        install.close()
+        page.locator('[data-icon-choice="minaret"]').click()
+        assert page.locator('#touchIcon').get_attribute('href') == './icons/minaret/icon-180.png'
+        assert page.locator('body').get_attribute('data-accent') == 'ocean'
+        install = context.new_page()
+        install.goto(page.locator('#homeIconPage').evaluate('(link) => link.href'))
+        assert install.locator('link[rel="apple-touch-icon"]').get_attribute('href') == '../icons/minaret/icon-180.png'
+        assert install.evaluate("fetch('../manifest-minaret.webmanifest').then(r => r.json()).then(m => m.start_url)") == './?icon=minaret'
+        install.close()
 
         page.locator('[data-screen-target="qibla"]').click()
+        assert page.locator('#qiblaView').get_attribute('data-view') == 'guide'
+        assert page.locator('#qiblaTurnAngle').is_visible()
+        assert page.locator('#qiblaArrow').is_hidden()
+        page.locator('[data-qibla-view="needle"]').click()
+        assert page.locator('#qiblaArrow').is_visible()
+        assert page.locator('#qiblaMarker').is_hidden()
+        page.locator('[data-qibla-view="guide"]').click()
         page.evaluate("""() => {
           window.vibrationPatterns = [];
           Object.defineProperty(navigator, 'vibrate', {
@@ -126,9 +188,9 @@ try:
           pointPhone(177, 7);
         }""")
         page.locator('#qiblaDial.live').wait_for()
+        page.locator('#qiblaPanel summary').click()
         assert 'WMM 2025' in page.locator('#qiblaState').inner_text()
         assert 'left' in page.locator('#qiblaCue').inner_text()
-        page.locator('#qiblaPanel summary').click()
         correction = page.locator('#declinationOverride')
         correction.fill('0')
         page.evaluate('pointPhone(115, 7); pointPhone(116, 7)')
@@ -139,6 +201,19 @@ try:
         page.evaluate("Object.defineProperty(navigator, 'vibrate', {configurable:true,value:undefined}); pointPhone(170, 7); pointPhone(113, 7)")
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'aligned'
         assert page.evaluate('vibrationPatterns.length') == 2
+        assert page.evaluate('compassTones.slice(-2)') == [740, 990]
+        page.locator('#qiblaTestFeedback').click()
+        assert 'Played the alignment chime' in page.locator('#qiblaTestStatus').inner_text()
+        page.locator('#startCompass').click()
+        page.evaluate("""() => {
+          compassTones.length = 0;
+          DeviceOrientationEvent.requestPermission = () => Promise.resolve('denied');
+        }""")
+        page.locator('#startCompass').click()
+        page.wait_for_function("compassTones.length === 2")
+        assert page.evaluate('compassTones') == [520, 370]
+        assert page.locator('#qiblaCue').inner_text() == 'Compass unavailable'
+        assert page.locator('#qiblaBearing').is_visible()
 
         context.route('https://api.bigdatacloud.net/**', lambda route: route.fulfill(
             json={'countryCode': 'GB', 'city': 'Enniskillen', 'principalSubdivision': 'Northern Ireland'}
@@ -164,6 +239,6 @@ try:
         assert not errors, errors
         context.close()
         browser.close()
-    print('PASS: offline reload, forbidden times, Donegal, fasting log, theme icons, compass cues, GPS and 25-minute reminder.')
+    print('PASS: offline reload, forbidden times, Donegal, fasting log and transfer, icon setup, compass feedback, GPS and 25-minute reminder.')
 finally:
     server.shutdown()

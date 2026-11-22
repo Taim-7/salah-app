@@ -28,7 +28,7 @@ with sync_playwright() as p:
   assert page.locator('#offlineAdhanStatus').count()==0
   assert page.locator('h1').inner_text() == 'Prayer times'
   if width==390:
-   for layout in ['compact', 'timeline', 'horizon', 'tiles']:
+   for layout in ['compact', 'timeline', 'horizon']:
     page.locator('[data-screen-target="settings"]').click()
     page.locator('#settingsLayout').select_option(layout)
     page.locator('[data-screen-target="today"]').click()
@@ -40,5 +40,5 @@ with sync_playwright() as p:
     assert page.evaluate('document.documentElement.scrollWidth-document.documentElement.clientWidth')<3, layout
   assert not errors,(width,errors)
   cases+=1;context.close()
- print('PASS',cases,'offline simulated UI widths: local prayer list, 6 tabs, 4 layouts, sound controls, no overflow, no JS exceptions')
+ print('PASS',cases,'offline simulated UI widths: local prayer list, 6 tabs, 3 layouts, sound controls, no overflow, no JS exceptions')
  b.close()
