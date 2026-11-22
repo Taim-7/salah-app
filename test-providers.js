@@ -24,6 +24,22 @@ const wrong=structuredClone(example);wrong.data.timings.Fajr='2026-11-20T06:24:0
 assert.throws(()=>P.decode('france',key,z,wrong),/date does not match/);
 const schoolWrong=structuredClone(example);schoolWrong.data.meta.method.id=1;
 assert.throws(()=>P.decode('france',key,z,schoolWrong),/Unexpected method/);
+const belfastAlias=structuredClone(example);
+belfastAlias.data.meta.timezone='Europe/Belfast';
+assert.equal(P.decode('france',key,z,belfastAlias).valid,true,'British time-zone aliases agree across seasons');
 const zoneWrong=structuredClone(example);zoneWrong.data.meta.timezone='Asia/Tokyo';
 assert.throws(()=>P.decode('france',key,z,zoneWrong),/zone mismatch/);
-console.log({passedTaybaDays:ok,unsupportedTaybaDays:missing,dateAndZoneValidation:'PASS',asrSchoolParameter:'0 = one-shadow'});
+// Tayba's published northern rule carries forward the final spring 18° day,
+// rather than switching to the closer autumn boundary during the summer.
+const summerKey='2026-07-02', lat=54.9966,lng=-7.3086;
+let spring=null;
+for(let n=1;n<=200;n++) {
+ const k=P.keyShift(summerKey,-n), pieces=k.split('-').map(Number);
+ if(globalThis.SalahSolar.solarEvents(...pieces,lat,lng,18,18).fajrRaw){spring=k;break;}
+}
+assert.ok(spring,'Spring 18° boundary found');
+const springAngles=globalThis.SalahSolar.solarEvents(...spring.split('-').map(Number),lat,lng,14.5,14.5);
+const currentAngles=globalThis.SalahSolar.solarEvents(...summerKey.split('-').map(Number),lat,lng,14.5,14.5);
+const expected=Math.ceil((currentAngles.sunriseRaw.getTime()-(springAngles.sunriseRaw-springAngles.fajrRaw))/60000)*60000;
+assert.equal(P.taybaDay(summerKey,lat,lng).fajr.getTime(),expected,'Summer Fajr uses final spring reference');
+console.log({passedTaybaDays:ok,unsupportedTaybaDays:missing,dateAndZoneValidation:'PASS',springReference:spring,asrSchoolParameter:'0 = one-shadow'});

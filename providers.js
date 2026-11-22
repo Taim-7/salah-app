@@ -17,8 +17,8 @@
   const dateDiffMs = (a, b) => a.getTime() - b.getTime();
 
   // Tayba Trust, northern latitudes: when 18 degrees cannot be reached,
-  // extend the last/next 14.5-degree sunrise/sunset interval at the dates
-  // immediately bordering the non-18-degree season. This is a *derived*
+  // carry forward the 14.5-degree sunrise/sunset interval from the final
+  // spring day with an 18-degree crossing. This is a *derived*
   // implementation of published guidance, NOT a live Tayba timetable.
   function taybaBase(key, lat, lon, side) {
     const s = dayAngles(key, lat, lon, 14.5, 14.5);
@@ -26,17 +26,16 @@
     if (Math.abs(lat) <= 48.5 || dayAngles(key, lat, lon, 18, 18)[crossing])
       return { time: s[crossing], estimated: !s[crossing], note: '14.5° crossing' };
     let nearest = null;
-    // Seek nearest actual 18-degree day on both sides (max roughly half a year).
+    // Tayba's published UK method carries the interval from the last spring
+    // day when 18° was still reached, throughout the missing-angle period.
+    // Choosing the closer autumn edge silently changes the stated method.
     for (let dist = 1; dist <= 200; dist++) {
-      for (const dir of [-1, 1]) {
-        const edgeKey = keyShift(key, dir * dist);
-        const edge = dayAngles(edgeKey, lat, lon, 18, 18);
-        if (!edge[crossing]) continue;
-        const actualEdge = dayAngles(edgeKey, lat, lon, 14.5, 14.5);
-        if (!actualEdge[crossing]) continue;
-        nearest = { edgeKey, actualEdge }; break;
-      }
-      if (nearest) break;
+      const edgeKey = keyShift(key, -dist);
+      const edge = dayAngles(edgeKey, lat, lon, 18, 18);
+      if (!edge[crossing]) continue;
+      const actualEdge = dayAngles(edgeKey, lat, lon, 14.5, 14.5);
+      if (!actualEdge[crossing]) continue;
+      nearest = { edgeKey, actualEdge }; break;
     }
     if (!nearest) return { time: null, estimated: true, note: 'No seasonal reference crossing found' };
     const p = parts(key), boundary = nearest.actualEdge;
@@ -146,9 +145,14 @@
     if (metaMethod != null && Number(metaMethod) !== spec.method) throw Error('Unexpected method from online provider');
     const returnedZone = json.data.meta?.timezone;
     if (returnedZone && returnedZone !== zone) {
-      // The API might return a different canonical alias; only accept same offsets
-      // if it can be independently tested, otherwise fail closed.
-      throw Error(`Time zone mismatch: provider returned ${returnedZone}`);
+      // UK/Irish zone names can be aliases. Accept only equivalent offsets
+      // on this date AND six months later; never trust an arbitrary different zone.
+      const aliases = ['Europe/London','Europe/Belfast','Europe/Dublin'];
+      const midpoint = new Date(`${key}T12:00:00Z`);
+      const later = new Date(midpoint); later.setUTCMonth(later.getUTCMonth() + 6);
+      const equivalent = aliases.includes(zone) && aliases.includes(returnedZone) &&
+        [midpoint, later].every(d => offsetMinutes(zone,d) === offsetMinutes(returnedZone,d));
+      if (!equivalent) throw Error(`Time zone mismatch: provider returned ${returnedZone}`);
     }
     const raw = json.data.timings;
     const names = { fajr:'Fajr', sunrise:'Sunrise', dhuhr:'Dhuhr', asr:'Asr', maghrib:'Maghrib', isha:'Isha' };
