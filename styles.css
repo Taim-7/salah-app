@@ -142,8 +142,13 @@ svg { display: block; }
 .time-row.prayer-entry { background: var(--raised); border-color: var(--line); }
 .time-row.current-prayer, .time-row.is-next.prayer-entry { background: var(--accent-deep); border-color: var(--accent); }
 .time-row.within-range { border-color: var(--warm); }
-.time-row.is-elapsed { --row-icon: var(--muted); background: var(--shade); }
-.time-row.is-elapsed :is(.time-name, .time-value, .estimate-dot) { color: var(--muted); }
+.time-row.is-elapsed {
+  --elapsed-text: color-mix(in srgb, var(--muted) 77%, var(--shade));
+  --row-icon: var(--elapsed-text);
+  background: var(--shade); border-color: transparent;
+}
+.time-row.is-elapsed :is(.time-name, .time-desc, .time-value, .estimate-dot, .range-label, .next-day) { color: var(--elapsed-text); }
+.time-row.is-elapsed :is(.time-name, .time-value) { font-weight: 560; }
 .time-icon { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid color-mix(in srgb,var(--row-icon) 24%,var(--line)); border-radius: 10px; color: var(--row-icon); background: var(--shade); }
 .time-name { font-size: 14px; color: var(--ink); font-weight: 680; line-height: 1.2; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; }
 .time-desc { color: var(--muted); font-size: 11px; line-height: 1.25; margin-top: 3px; }
@@ -328,8 +333,16 @@ input[type="file"]::file-selector-button { background: var(--raised); color: var
   color: var(--ink); background: var(--shade); box-shadow: 0 20px 75px #000b;
 }
 .occasion-dialog[open] { display: flex; flex-direction: column; }
-.occasion-dialog::backdrop { background: #03080bc7; }
-body:has(.occasion-dialog[open]) { overflow: hidden; }
+:is(.occasion-dialog, .permission-dialog)::backdrop { background: #03080bc7; }
+body:has(:is(.occasion-dialog, .permission-dialog)[open]) { overflow: hidden; }
+.permission-dialog {
+  width: min(calc(100% - 28px), 420px); padding: clamp(16px, 4vw, 26px);
+  border: 1px solid var(--line); border-radius: var(--radius); color: var(--ink);
+  background: var(--panel); box-shadow: 0 20px 75px #000b;
+}
+.permission-dialog p { margin-top: 9px; color: var(--muted); font-size: 14px; }
+.permission-actions { display: grid; gap: 8px; margin-top: 17px; }
+.permission-actions button { min-height: 44px; }
 .occasion-dialog-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 15px; border-bottom: 1px solid var(--line); background: var(--panel); }
 .occasion-dialog-header p { color: var(--muted); margin-top: 5px; font-size: 12px; }
 .occasion-dialog-header .occasion-ruling { margin-top: 7px; }
@@ -340,7 +353,7 @@ body:has(.occasion-dialog[open]) { overflow: hidden; }
 #occasionEvidence { display: grid; gap: 8px; }
 .occasion-source { padding: 9px 10px; border-radius: var(--inset-radius); border: 1px solid var(--line); background: var(--panel); }
 .occasion-source a { font-size: 13px; font-weight: 680; }
-.occasion-source p { margin-top: 4px; color: var(--muted); font-size: 13px; }
+.occasion-source p { margin-top: 4px; color: var(--ink); font-size: 13px; }
 .occasion-source blockquote { margin: 5px 0 0; font-size: 19px; line-height: 1.8; }
 #datesUnavailable { color: var(--muted); font-size: 13px; }
 .fasting-calendar-controls { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 9px; }

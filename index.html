@@ -391,6 +391,15 @@
   <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="3"/><path d="M8 3.5v5m8-5v5M4 11h16m-12 4h2m4 0h2"/></svg><span>Dates</span>
 </button><button aria-controls="soundPanel" aria-selected="false" class="" data-screen-target="sounds" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0v5l2 3H4l2-3V9M10 20h4"></path></svg><span>Sounds</span></button><button aria-controls="settingsDialog" aria-selected="false" class="" data-screen-target="settings" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M12 3v3m0 12v3M3 12h3m12 0h3m-3.7-6.7-2.1 2.1m-7.4 7.4-2.1 2.1m0-11.6 2.1 2.1m7.4 7.4 2.1 2.1"></path><circle cx="12" cy="12" r="3"></circle></svg><span>Settings</span></button></nav>
 
+<dialog class="permission-dialog" id="permissionSetup" aria-labelledby="permissionTitle">
+  <h2 id="permissionTitle">Set up Salah</h2>
+  <p id="permissionLocation">Location keeps your prayer times and Qibla up to date while Salah is open.</p>
+  <p id="permissionMotion">Motion access lets Salah use your phone’s compass for Qibla.</p>
+  <div class="permission-actions">
+    <button class="primary-button" id="allowPermissions" type="button">Allow location and compass</button>
+    <button class="secondary-button" id="skipPermissions" type="button">Use saved location</button>
+  </div>
+</dialog>
 <script src="./region.js"></script><script src="./solar.js"></script><script src="./providers.js"></script><script src="./timetable.js"></script><script src="./hijri.js"></script><script src="./audio.js"></script><script src="./app.js"></script>
 </body>
 </html>

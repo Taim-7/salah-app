@@ -3,7 +3,7 @@
   const $ = id => document.getElementById(id);
   const defaults = {
     lat: 54.9966, lng: -7.3086, location: 'Derry, Northern Ireland', timeZone: 'Europe/London',
-    autoLocation: false, method: '15-13', fajrAngle: 15, ishaAngle: 13,
+    autoLocation: true, permissionSetupDone: false, method: '15-13', fajrAngle: 15, ishaAngle: 13,
     ishaPreference: 'around-third', ishaLimit: 'half', highLatRule: 'seventh',
     activeSource: 'angles', soundChoice: 'adhan-abu-bakr', soundVolume: 40,
     reminderLead: 15, reminderEnabled: true, soundRepeat: false, qiblaSound: true,
@@ -118,7 +118,8 @@
         c.location = defaults.location;
       }
       c.timeZone = zone || defaults.timeZone;
-      c.autoLocation = !!zone && c.autoLocation === true;
+      c.autoLocation = c.autoLocation === true;
+      c.permissionSetupDone = c.permissionSetupDone === true;
       return c;
     } catch {
       return { ...defaults, accent:launchAccent, iconChoice:launchIcon };
@@ -152,7 +153,8 @@
   let selectedKey = todayKey();
   let browsing = false, dayInfo = null, gpsLoading = false, lastListRefresh = 0;
   let currentHero = null, sunChart = null;
-  let geoWatch = null, placeRequest = 0, searchRequest = 0, lastTrackingLookup = 0;
+  let geoWatch = null, geoRun = 0, placeRequest = 0, searchRequest = 0, lastTrackingLookup = 0;
+  let followingPosition = false, trackingDenied = false, requestingLaunchMotion = false;
   const comparisonOpen = () => $('comparisonPanel').open && !$('settingsDialog').hidden;
 
   function note(message) {
@@ -336,7 +338,11 @@
     $('nativeDate').value = selectedKey;
     $('locationLabel').textContent = cfg.location;
     $('timezoneLabel').textContent = cfg.timeZone === 'Europe/Dublin' ? 'Ireland time' : 'UK time';
-    $('locationMode').textContent = cfg.autoLocation ? 'Location tracking on · while app is open' : 'Fixed location';
+    renderLocationMode();
+  }
+  function renderLocationMode() {
+    $('locationMode').textContent = !cfg.autoLocation ? 'Fixed location' :
+      followingPosition ? 'Following GPS' : geoWatch === null ? 'Saved location' : 'Finding location…';
   }
   let lastHijriKey;
   function hijriDayKey(key, day, now) {
@@ -461,7 +467,7 @@
         i === nextIndex ? 'is-next' : i < currentIndex ? 'is-past' : 'is-future') : '';
       const isCurrent = e.kind === 'prayer' && e.name.key === currentPrayer;
       const activeRange = current && isBetween(now, e.at, e.end);
-      const dimmed = current && !isCurrent && !activeRange && (e.end || e.at) < now && phase !== 'is-current-marker';
+      const dimmed = current && !isCurrent && !activeRange && (e.end || e.at) <= now;
       const extra = e.end ? `<span class="range-label">to ${fmt(e.end)}</span>` : '';
       const following = dateParts(e.at, cfg.timeZone) !== selectedKey ? '<span class="next-day">+1 day</span>' : '';
       const label = isCurrent ? '<span class="phase-pill current-pill">CURRENT</span>' :
@@ -689,10 +695,12 @@
     const enteredName = $('placeInput').value.trim();
     const location = !enteredName || (changedPlace && enteredName === cfg.location) ? locationName(lat, lng) : enteredName;
     if (changedPlace) resetMagneticCorrection();
+    const follow = $('trackLocation').checked;
+    if (follow && !cfg.autoLocation) trackingDenied = false;
     cfg = {
       ...cfg, lat, lng, location, timeZone:zone, method, ishaPreference,
       fajrAngle:anglesValid ? fa : cfg.fajrAngle, ishaAngle:anglesValid ? ia : cfg.ishaAngle,
-      ishaLimit:$('ishaLimit').value, autoLocation:$('trackLocation').checked,
+      ishaLimit:$('ishaLimit').value, autoLocation:follow,
       highLatRule:$('highLatSelect').value
     };
     store();
@@ -760,12 +768,12 @@
       return '';
     }
   }
-  function fillLocation(place) {
+  function fillLocation(place, follow = false) {
     $('latInput').value = place.lat;
     $('lngInput').value = place.lng;
     $('placeInput').value = place.location;
     $('tzInput').value = place.timeZone;
-    $('trackLocation').checked = false;
+    $('trackLocation').checked = follow;
   }
   function applyLocation(place, fromTracking = false) {
     if (cfg.lat !== place.lat || cfg.lng !== place.lng) resetMagneticCorrection();
@@ -781,28 +789,46 @@
       cfg.location = name;
       store();
       render();
-      if (fromTracking && cfg.autoLocation) status('Following ' + name);
     });
   }
   function trackPosition(pos) {
     if (!cfg.autoLocation || document.hidden) return;
     const place = positionPlace(pos);
-    if (place.error) { status(place.error); return; }
+    followingPosition = !place.error;
+    renderLocationMode();
+    $('liveLocationStatus').textContent = place.error || '';
+    if (!followingPosition) return;
     const accuracyKm = (Number(pos.coords.accuracy) || 0) / 1000;
     const threshold = Math.max(place.timeZone === cfg.timeZone ? 1 : 0.2, accuracyKm);
     if (kmApart(cfg, place) < threshold) return;
     applyLocation(place, true);
-    status('Following ' + place.location);
   }
   function stopTracking() {
+    geoRun++;
     if (geoWatch !== null && navigator.geolocation) navigator.geolocation.clearWatch(geoWatch);
     geoWatch = null;
+    followingPosition = false;
+    renderLocationMode();
   }
   function startTracking() {
-    if (!cfg.autoLocation || document.hidden || !navigator.geolocation || geoWatch !== null) return;
-    geoWatch = navigator.geolocation.watchPosition(trackPosition, geoError, {
+    if (!cfg.permissionSetupDone || !cfg.autoLocation || requestingLaunchMotion || document.hidden ||
+        !window.isSecureContext || !navigator.geolocation || trackingDenied || geoWatch !== null) return;
+    const run = ++geoRun;
+    geoWatch = navigator.geolocation.watchPosition(pos => {
+      if (run === geoRun) trackPosition(pos);
+    }, error => {
+      if (run !== geoRun || document.hidden) return;
+      if (error.code === 1) {
+        trackingDenied = true;
+        stopTracking();
+      }
+      followingPosition = false;
+      renderLocationMode();
+      geoError(error);
+    }, {
       enableHighAccuracy:false, timeout:15000, maximumAge:60000
     });
+    renderLocationMode();
   }
   function showCityResults(places) {
     const root = $('cityResults');
@@ -951,7 +977,8 @@
       gpsLoading = false;
       const place = positionPlace(pos);
       if (place.error) { status(place.error); return; }
-      fillLocation(place);
+      trackingDenied = false;
+      fillLocation(place, $('trackLocation').checked);
       status('GPS position found. Save to apply.');
       void gpsTownName(place).then(name => {
         if (name && request === placeRequest && Number($('latInput').value) === place.lat &&
@@ -1332,7 +1359,7 @@
   const compassPoints = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
   const compassLetters = ['compassNorth', 'compassEast', 'compassSouth', 'compassWest'];
   const compassFailureNotes = [[520, 0, .18, .13], [370, .21, .25, .13]];
-  const alignmentLimit = 3;
+  const alignmentLimit = 2.5;
   const headingWindow = 420;
   const levelLimit = Math.cos(25 * Math.PI / 180);
   const signedTurn = (from, to) => (to - from + 540) % 360 - 180;
@@ -1407,7 +1434,7 @@
     const heading = compassReading?.heading;
     const accuracy = compassReading?.accuracy;
     const knownAccuracy = Number.isFinite(accuracy) && accuracy >= 0;
-    const canConfirm = knownAccuracy && accuracy <= 10 && compassReading.levelKnown;
+    const approximate = !knownAccuracy || accuracy > 10 || !compassReading?.levelKnown;
     const correction = Number.isFinite(magneticVariation);
     const validHeading = Number.isFinite(heading);
     const live = qiblaCompassOn && validHeading && correction;
@@ -1416,10 +1443,10 @@
     const direction = signedTurn(rotation, bearing);
     const difference = Math.abs(direction);
     const near = difference <= 15;
-    // Round close readings up so a turn beyond the threshold cannot display as 3°.
+    // Round close readings up so the display agrees with the green threshold.
     const angle = near ? Math.ceil((difference - 1e-9) * 10) / 10 : Math.round(difference);
     const inRange = difference <= alignmentLimit + 1e-9;
-    const aligned = live && inRange && canConfirm && compassReading.steady;
+    const aligned = live && inRange;
     const turn = direction < 0 ? 'left' : 'right';
     const problem = qiblaCompassOn && compassReading && !compassReading.tilted
       ? (!validHeading ? 'accuracy' : !correction && variationFailed ? 'correction' : '')
@@ -1443,11 +1470,11 @@
         'Use the true bearing below.';
     } else if (live) {
       state = aligned ? 'aligned' : near ? 'near' : 'turn';
-      cue = aligned ? 'Heading aligned · ' + angle + '° off' : inRange ?
-        (canConfirm ? 'Hold still to check alignment' : 'Approximate match · ' + angle + '° off') :
+      cue = aligned ? (approximate ? 'Approximate alignment' : 'Heading aligned') + ' · ' + angle + '° off' :
         near ? 'A little to the ' + turn : 'Turn ' + turn + ' ' + angle + '°';
-      mark = aligned ? '✓' : inRange ? '≈' : direction < 0 ? '↶' : '↷';
-      help = canConfirm ? 'Hold your phone flat.' : 'Approximate guide. Check against the fixed bearings.';
+      mark = aligned ? (approximate ? '≈' : '✓') : direction < 0 ? '↶' : '↷';
+      help = !knownAccuracy ? 'Your browser gives no compass accuracy estimate.' :
+        approximate ? 'Approximate guide. Check against the fixed bearings.' : 'Hold your phone flat.';
     } else if (qiblaCompassOn && !correction) {
       state = 'waiting'; cue = 'Finding magnetic correction'; mark = '…';
       help = 'Keep the phone flat.';
@@ -1466,9 +1493,9 @@
     $('qiblaTurnAngle').textContent = waitingForHeading ? '—' : (live ? angle : bearing.toFixed(1)) + '°';
     $('qiblaTurnLabel').textContent = live ? (inRange ? 'From Qibla' : 'Turn ' + turn) :
       waitingForHeading ? 'Compass paused' : 'From true north';
-    $('qiblaPrecisionRow').hidden = !compassReading || compassReading.tilted;
+    $('qiblaPrecisionRow').hidden = !compassReading || compassReading.tilted || (!knownAccuracy && validHeading);
     $('qiblaPrecision').textContent = accuracy < 0 ? 'Uncalibrated' : knownAccuracy ?
-      '±' + Math.ceil(accuracy) + '°' : validHeading ? 'Unknown' : 'Unavailable';
+      '±' + Math.ceil(accuracy) + '°' : 'Unavailable';
     $('compassTicks').setAttribute('transform', 'rotate(' + -rotation + ' 160 160)');
     for (const [i, id] of compassLetters.entries()) {
       const [x, y] = compassPoint(i * 90 - rotation, 120);
@@ -1481,8 +1508,8 @@
     $('qiblaArc').setAttribute('d', difference > alignmentLimit + 1e-9
       ? 'M160 ' + (160 - radius) + ' A' + radius + ' ' + radius + ' 0 0 ' + (direction < 0 ? 0 : 1) + ' ' + target : '');
 
-    if (!live || !canConfirm || difference > alignmentLimit + 1) alignmentChimed = false;
-    if (aligned && !alignmentChimed && !$('qiblaPanel').hidden && !document.hidden) {
+    if (!live || difference > alignmentLimit + 1) alignmentChimed = false;
+    if (aligned && compassReading.steady && !alignmentChimed && !$('qiblaPanel').hidden && !document.hidden) {
       playCompassChime(alignmentNotes);
       alignmentChimed = true;
     }
@@ -1532,20 +1559,21 @@
 
   function orientationHandler(event) {
     if (!qiblaCompassOn || document.hidden || $('qiblaPanel').hidden) return;
-    const webkit = 'webkitCompassHeading' in event;
     const absolute = event.absolute === true || event.type === 'deviceorientationabsolute';
+    const webkitHeading = event.webkitCompassHeading;
+    const webkit = Number.isFinite(webkitHeading) || (!absolute && 'webkitCompassHeading' in event);
     if (!webkit && (!absolute || compassSource === 'webkit')) return;
     const source = webkit ? 'webkit' : 'absolute';
     if (compassSource !== source) headingSamples.length = 0;
     compassSource = source;
-    const degrees = webkit ? event.webkitCompassHeading : event.alpha;
+    const degrees = webkit ? webkitHeading : event.alpha;
     const validHeading = Number.isFinite(degrees) && degrees >= 0 && degrees <= 360;
     const accuracy = webkit && Number.isFinite(event.webkitCompassAccuracy) ? event.webkitCompassAccuracy : null;
     const portrait = norm360(screen.orientation?.angle ?? window.orientation ?? 0) === 0;
     const levelKnown = Number.isFinite(event.beta) && Number.isFinite(event.gamma);
     const tilted = !portrait || (levelKnown && Math.cos(event.beta * Math.PI / 180) *
       Math.cos(event.gamma * Math.PI / 180) < levelLimit);
-    const usable = !tilted && validHeading && (!webkit || (accuracy !== null && accuracy >= 0 && accuracy <= 20));
+    const usable = !tilted && validHeading && (accuracy === null || (accuracy >= 0 && accuracy <= 20));
     if (!usable) headingSamples.length = 0;
     const filtered = usable ? filterHeading(norm360(webkit ? degrees : -degrees)) : { heading:null, steady:false };
     compassReading = { ...filtered, accuracy, portrait, levelKnown, tilted };
@@ -1554,6 +1582,7 @@
     headingTimer = setTimeout(() => {
       headingExpired = true;
       compassReading = null;
+      compassSource = undefined;
       headingSamples.length = 0;
       renderQibla();
     }, 8000);
@@ -1603,7 +1632,7 @@
     renderQibla();
     try {
       if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-        const permission = await DeviceOrientationEvent.requestPermission();
+        const permission = await DeviceOrientationEvent.requestPermission(true);
         if (run !== compassRun) return;
         if (permission !== 'granted') {
           failCompass('Motion access was denied. Use the bearing below.');
@@ -1637,6 +1666,8 @@
       const place = positionPlace(pos);
       if (place.error) { status.textContent = place.error; return; }
       applyLocation(place);
+      trackingDenied = false;
+      startTracking();
       status.textContent = 'Location updated.';
     }, () => {
       if (request === placeRequest) status.textContent = 'GPS unavailable. Using the saved location.';
@@ -2073,6 +2104,36 @@
     event.preventDefault();
     showScreen('today');
   });
+
+  const permissionSetup = $('permissionSetup');
+  const canUseLocation = window.isSecureContext && !!navigator.geolocation;
+  const canAskForMotion = window.isSecureContext && typeof window.DeviceOrientationEvent?.requestPermission === 'function';
+  async function finishPermissionSetup(useDevice) {
+    if (cfg.permissionSetupDone) return;
+    cfg.permissionSetupDone = true;
+    cfg.autoLocation = useDevice && canUseLocation;
+    requestingLaunchMotion = useDevice && canAskForMotion;
+    store();
+    permissionSetup.close();
+    renderLocationMode();
+    if (!useDevice) return;
+    if (cfg.qiblaSound || cfg.reminderEnabled || cfg.soundChoice !== 'off') void audio.unlock();
+    try {
+      if (requestingLaunchMotion) await window.DeviceOrientationEvent.requestPermission(true);
+    } catch {
+      // Start compass remains available for retrying from the Qibla screen.
+    } finally {
+      requestingLaunchMotion = false;
+      startTracking();
+    }
+  }
+  $('allowPermissions').addEventListener('click', () => void finishPermissionSetup(true));
+  $('skipPermissions').addEventListener('click', () => void finishPermissionSetup(false));
+  permissionSetup.addEventListener('cancel', event => {
+    event.preventDefault();
+    void finishPermissionSetup(false);
+  });
+
   showScreen(location.hash.slice(1));
   cacheAdhansAutomatically();
 
@@ -2082,4 +2143,12 @@
   renderQibla();
   if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});
   render(); startTracking(); checkPrayerSounds();
+  if (!cfg.permissionSetupDone && (canUseLocation || canAskForMotion) && typeof permissionSetup.showModal === 'function') {
+    $('permissionLocation').hidden = !canUseLocation;
+    $('permissionMotion').hidden = !canAskForMotion;
+    $('allowPermissions').textContent = canUseLocation ?
+      canAskForMotion ? 'Allow location and compass' : 'Allow location' : 'Allow compass';
+    if (!canUseLocation) $('skipPermissions').textContent = 'Not now';
+    permissionSetup.showModal();
+  }
 })();

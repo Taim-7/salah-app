@@ -22,14 +22,23 @@ for (const fast of Object.values(eid.fasts)) {
 
 const duringRamadan = upcoming(winter.dates.ramadan.from);
 assert(duringRamadan.fasts.white.from > winter.dates.fitr.from);
-assert.deepEqual(Object.keys(winter.fasts).sort(), ['arafah', 'ashura', 'white']);
+assert.deepEqual(Object.keys(winter.fasts).sort(), ['arafah', 'ashura', 'shawwal', 'white']);
+const shawwal = winter.fasts.shawwal;
+assert(shawwal.from > winter.dates.fitr.from);
+assert.match(label(shawwal.from), /^2 Shawwal /);
+assert.match(label(shawwal.to), /^(29|30) Shawwal /);
+assert.deepEqual(upcoming(winter.dates.fitr.from).fasts.shawwal, shawwal);
+assert.deepEqual(upcoming(shawwal.to).fasts.shawwal, shawwal);
+assert(occasions.white.notes.some(note => /11 to 13 Dhul-Hijjah/.test(note)));
+assert(occasions.shawwal.notes.some(note => /optional and recommended/.test(note)));
 assert.equal(label('invalid'), '');
 assert.deepEqual(Object.fromEntries(Object.entries(occasions).map(([name, occasion]) => [name, occasion.kind])), {
-  ramadan:'required', white:'sunnah', arafah:'sunnah', ashura:'sunnah', fitr:'forbidden', adha:'forbidden'
+  ramadan:'required', white:'sunnah', arafah:'sunnah', ashura:'sunnah', fitr:'forbidden', shawwal:'sunnah', adha:'forbidden'
 });
 for (const { notes, sources } of Object.values(occasions)) {
   assert(notes.every(note => note.length > 30));
   assert(sources.some(({ name, url, arabic }) => /sahih/i.test(name) && url.startsWith('https://sunnah.com/') && /\p{Script=Arabic}/u.test(arabic)));
-  assert(sources.every(({ url, meaning }) => ['quran.com', 'sunnah.com'].includes(new URL(url).hostname) && meaning.length > 30));
+  assert(sources.every(({ url, arabic, meaning }) => ['quran.com', 'sunnah.com', 'binbaz.org.sa'].includes(new URL(url).hostname) &&
+    /\p{Script=Arabic}/u.test(arabic) && meaning.length > 30));
 }
 console.log('PASS: Hijri labels, Ramadan and Eid dates, Sunnah fasts, exclusions and sources.');

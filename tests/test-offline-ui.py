@@ -28,7 +28,8 @@ with sync_playwright() as p:
     row = page.locator('[data-occasion="white"] button')
     row.press('Enter')
     assert page.locator('#occasionDialog:modal').is_visible()
-    assert page.locator('#occasionDialog blockquote[dir="rtl"]').is_visible()
+    assert page.locator('#occasionDialog blockquote[dir="rtl"]').count() == 4
+    assert page.locator('#occasionDialog blockquote[dir="rtl"]').first.is_visible()
     assert page.locator('#occasionDialogTitle').inner_text() == 'White Days'
     assert page.evaluate('document.documentElement.scrollWidth-document.documentElement.clientWidth')<3,(width,'date details')
     page.keyboard.press('Escape')

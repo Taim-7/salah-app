@@ -70,6 +70,7 @@ try:
         page.on('pageerror', lambda error: errors.append(str(error)))
         page.clock.set_fixed_time(datetime(2026, 11, 22, 10, 38, tzinfo=timezone.utc))
         page.goto(url)
+        page.locator('#skipPermissions').click()
         page.wait_for_function('navigator.serviceWorker.controller !== null')
         page.wait_for_function("""() => new Promise(resolve => {
           const req = indexedDB.open('salah-local-media-v3');
