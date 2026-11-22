@@ -12,7 +12,13 @@ Derry starts at 15° Fajr and 13° Isha, with one-shadow Asr and a one-seventh f
 
 For a local preview, run `python3 -m http.server 8000` in this folder and open `http://localhost:8000`. For Home Screen installation, serve the folder over HTTPS, open the address in Safari, then use **Share → Add to Home Screen**. Open it online once before using it offline.
 
-Sounds can play while the app is open, subject to the browser’s audio settings. Abu Bakr’s Fajr recording is paired with the regular recording for other prayers. The recordings come from [alsuleiman-lab](https://github.com/alsuleiman-lab/athkar-audio) and are used with the owner’s permission. The Calendar export starts from the displayed date and includes 15-minute alerts. A local export covers up to 60 days and an AlAdhan export covers the selected day. Import the file into a calendar that accepts `.ics` files. Export again if you change a prayer setting or move to another town.
+In **Settings**, choose Focus, Dayline, Horizon or Tiles. Dayline connects the timetable rows with a progress rail. Horizon plots the calculated altitude of the Sun and marks each scheduled prayer. A colour preset changes the surfaces, markers and app icons. A Home Screen shortcut uses the icon iOS reads when you add it.
+
+In **Sounds**, tap **Play sound** to start audio for the session. Set the pre-prayer reminder to 15, 20, 25 or 30 minutes before the next prayer. Reminders run while Salah is open. The volume slider adjusts the recording and chime through Web Audio. The phone’s volume buttons control overall loudness. Abu Bakr uses the Fajr recording at Fajr and the regular recording for the other prayers. The recordings come from [alsuleiman-lab](https://github.com/alsuleiman-lab/athkar-audio).
+
+The Qibla dial shows how far to turn when it receives a usable heading. It has a visual alignment cue and an optional chime. Browsers that support web vibration can give a pulse. The iPhone uses the visual cue and chime.
+
+In **Fasting**, select a day to see Fajr, iftar and the calculated duration. Mark a date as fasted, to make up or made up. The tracker stores your entries in this browser and works offline. Pick the dates you observe. The tracker uses the active prayer timetable and marks estimated twilight times.
 
 ## Accuracy
 
@@ -26,7 +32,7 @@ Sunrise and sunset use the visible upper edge of the Sun at a standard sea-level
 
 ## Timetable sources
 
-[Tayba option 2](https://taybatrust.org/index.php/projects/establishing-dawn/34-dp-all-loc) uses 14.5° for Fajr outside its summer interval. During that interval it uses a fixed gap before sunrise derived from the last spring date with an 18° crossing. Its Isha estimate uses 14.5° or 90 minutes after sunset subject to the 8° crossing. When that 8° crossing is unavailable, the Isha cell is blank. Choose the full Tayba model in Compare, or choose **Seasonal Tayba reference** in Settings to use it only for a missing crossing. Tayba’s data comes from Leicester. The hybrid method applies it to the selected town as an estimate. [Ibn ‘Uthaymin on late and absent twilight](https://islamqa.info/ar/answers/135415)
+[Tayba](https://taybatrust.org/index.php/projects/establishing-dawn/34-dp-all-loc) uses 14.5° for Fajr outside its summer interval. During that interval it uses a fixed gap before sunrise derived from the last spring date with an 18° crossing. Its Isha estimate uses 14.5° or 90 minutes after sunset subject to the 8° crossing. When that 8° crossing is unavailable, the Isha cell is blank. Choose the full Tayba model in Compare, or choose **Seasonal Tayba reference** in Settings to use it only for a missing crossing. Tayba’s data comes from Leicester. The hybrid method applies it to the selected town as an estimate. [Ibn ‘Uthaymin on late and absent twilight](https://islamqa.info/ar/answers/135415)
 
 [AlAdhan’s Moonsighting preset](https://aladhan.com/prayer-times-api) supplies Fajr and Isha when selected. The main timetable uses the same local sunlight calculation for the other times. Compare shows the provider's full raw table. Saved online times can be reused offline. If a date has no saved AlAdhan times, Salah shows the local replacement and leaves it out of online-source reminders. The prayer preset is separate from lunar-month announcements. For congregation times, see the [North West Islamic Centre timetable](https://waqt.uk/northwestislamiccentre/) and the [Letterkenny and Donegal timetables](https://islaminletterkenny.com/).
 

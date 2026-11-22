@@ -4,7 +4,7 @@
   const defaults = {
     lat: 54.9966, lng: -7.3086, location: 'Derry, Northern Ireland', timeZone: 'Europe/London',
     autoLocation: false, method: '15-13', fajrAngle: 15, ishaAngle: 13,
-    ishaPreference: 'around-third', ishaLimit: 'half', magneticDeclination: '', highLatRule: 'seventh', activeSource: 'angles', soundChoice: 'adhan-abu-bakr', soundVolume: 40, onlineCompare: true, calendarLead: 15, timeFormat: '12', theme: 'dark', layout: 'classic', accent: 'forest'
+    ishaPreference: 'around-third', ishaLimit: 'half', magneticDeclination: '', highLatRule: 'seventh', activeSource: 'angles', soundChoice: 'adhan-abu-bakr', soundVolume: 40, onlineCompare: true, reminderLead: 15, reminderEnabled: true, qiblaHaptic: true, qiblaChime: false, timeFormat: '12', layout: 'compact', accent: 'forest'
   };
   const names = [
     { key: 'fajr', en: 'Fajr', ar: 'الفجر', icon: 'sun-horizon', desc: 'Dawn' },
@@ -35,6 +35,16 @@
 
 
 
+  const palettes = {
+    forest:'Forest green', ocean:'Ocean blue', midnight:'Midnight navy', sand:'Amber sand', slate:'Cool slate'
+  };
+  const layouts = {
+    compact:'Compact prayer rows and a clean compass.',
+    timeline:'A timeline with markers for earlier and upcoming prayers.',
+    horizon:'A daily Sun path and a softly lit compass.',
+    tiles:'Prayer tiles and a boxed compass with separate readings.'
+  };
+  const reminderLeads = [15, 20, 25, 30];
   const summerRules = {
     seventh: 'One seventh when missing',
     relative: 'Local relative estimate',
@@ -68,12 +78,18 @@
       if (raw.fajrSoundChoice === 'adhan-fajr-abu-bakr' && c.soundChoice === 'soft') c.soundChoice = 'adhan-fajr-abu-bakr';
       if (!['soft','bell','custom','off','adhan-abu-bakr','adhan-fajr-abu-bakr','adhan-thabet'].includes(c.soundChoice)) c.soundChoice = 'soft';
       delete c.fajrSoundChoice;
-      c.soundVolume = Number.isFinite(+c.soundVolume) ? Math.max(15, Math.min(100, +c.soundVolume)) : 40;
-      c.calendarLead = 15;
+      c.soundVolume = Number.isFinite(+c.soundVolume) ? Math.max(0, Math.min(100, +c.soundVolume)) : defaults.soundVolume;
+      const lead = Number(raw.reminderLead ?? raw.calendarLead);
+      c.reminderLead = reminderLeads.includes(lead) ? lead : defaults.reminderLead;
+      c.reminderEnabled = c.reminderEnabled !== false;
+      c.qiblaHaptic = c.qiblaHaptic !== false;
+      c.qiblaChime = c.qiblaChime === true;
+      delete c.calendarLead;
+      delete c.theme;
       c.timeFormat = ['12','24'].includes(String(c.timeFormat)) ? String(c.timeFormat) : '12';
-      c.theme = 'dark';
-      c.layout = ['classic','compact','timeline'].includes(c.layout) ? c.layout : 'classic';
-      c.accent = ['forest','ocean','dusk'].includes(c.accent) ? c.accent : 'forest';
+      c.layout = Object.hasOwn(layouts, c.layout) ? c.layout : defaults.layout;
+      if (c.accent === 'dusk') c.accent = 'midnight';
+      c.accent = Object.hasOwn(palettes, c.accent) ? c.accent : defaults.accent;
       c.onlineCompare = c.onlineCompare !== false;
       if (!Object.hasOwn(summerRules, c.highLatRule)) c.highLatRule = defaults.highLatRule;
       if (![c.fajrAngle, c.ishaAngle].every(a => Number.isFinite(+a) && +a >= 6 && +a <= 22)) {
@@ -97,8 +113,6 @@
   }
 
   let cfg = loadConfig();
-  storeInitialAppearance();
-  function storeInitialAppearance() { try { const saved=JSON.parse(localStorage.getItem('salah-config') || '{}'); if(saved.theme !== 'dark')localStorage.setItem('salah-config',JSON.stringify({...saved,theme:'dark'})); } catch {} }
   const store = () => { try { localStorage.setItem('salah-config', JSON.stringify(cfg)); } catch {} };
   const anglePair = () => cfg.method === 'custom' ? [+cfg.fajrAngle, +cfg.ishaAngle] : cfg.method.split('-').map(Number);
   const todayKey = () => dateParts(new Date(), cfg.timeZone);
@@ -121,6 +135,7 @@
   const isBetween = (t, a, b) => a && b && t >= a.getTime() && t < b.getTime();
   let selectedKey = todayKey();
   let browsing = false, dayInfo = null, gpsLoading = false, lastListRefresh = 0;
+  let currentHero = null, sunChart = null;
   let geoWatch = null, placeRequest = 0, searchRequest = 0, lastTrackingLookup = 0;
 
   function note(message) {
@@ -131,7 +146,7 @@
 
   const methods = [
     { id:'angles', title:'Your angles', sub:'Local calculation' },
-    { id:'tayba', title:'Tayba option 2', sub:'Seasonal Fajr · red twilight model' },
+    { id:'tayba', title:'Tayba', sub:'Seasonal Fajr · red twilight model' },
     { id:'moonsighting', title:'AlAdhan · Moonsighting', sub:'Fajr and Isha · online' }
   ];
   const onlineKinds = ['moonsighting'];
@@ -204,7 +219,7 @@
     } finally {
       pendingOnline.delete(id);
       if (id === cacheId(kind, key) && [dayShift(selectedKey, -1), selectedKey, dayShift(selectedKey, 1),
-          todayKey(), dayShift(todayKey(), -1), dayShift(todayKey(), 1)].includes(key)) render();
+          todayKey(), dayShift(todayKey(), -1), dayShift(todayKey(), 1), fastingKey].includes(key)) render();
     }
   }
   function loadComparison(force = false) {
@@ -256,7 +271,7 @@
     const provider = readCached('moonsighting', selectedKey);
     const cols = [
       { id:'angles', title:'Your ' + anglePair().join('° / ') + '°', desc:summerRules[cfg.highLatRule], day:localDay(selectedKey) },
-      { id:'tayba', title:'Tayba option 2', desc:'Earlier Isha', day:localDay(selectedKey, 'tayba') },
+      { id:'tayba', title:'Tayba', desc:'Earlier Isha', day:localDay(selectedKey, 'tayba') },
       { id:'moonsighting', title:'AlAdhan', desc:'Moonsighting red preset', day:provider }
     ];
     const picker = $('sourcePicker');
@@ -422,13 +437,14 @@
 
     const limits = SalahSolar.daylightRestrictions(dateAtNoonUTC(selectedKey), cfg.lat, cfg.lng).map(range => ({
       at:range.start, end:range.end, title:restrictionTitles[range.key],
-      kind:'avoid', icon:'alert', desc:range.key === 'noon' ? 'Estimated midday precaution' : 'Estimated low-Sun period'
+      kind:'avoid', icon:'alert', desc:'Avoid optional prayers for about ' +
+        Math.max(5, 5 * Math.round((range.end - range.start) / 300000)) + ' minutes'
     }));
     const sorted = [...events, ...limits, thirds, half].filter(e => e.at instanceof Date && Number.isFinite(+e.at))
       .sort((a,b) => a.at - b.at);
 
     const currentIndex = current ? sorted.reduce((index,e,i) => e.at <= now ? i : index, -1) : -1;
-    const nextIndex = current ? sorted.findIndex(e => e.at > now && (e.name?.key !== 'isha' || ishaHasWindow(t))) : -1;
+    const nextIndex = current ? sorted.findIndex(e => e.at > now && e.name && e.name.key !== 'sunrise' && (e.name.key !== 'isha' || ishaHasWindow(t))) : -1;
     const list = $('prayerList');
     list.style.setProperty('--timeline-fill', Math.max(0, Math.round(100 * (currentIndex + 0.5) / sorted.length)) + '%');
     list.innerHTML = sorted.map((e,i) => {
@@ -440,7 +456,7 @@
       const following = dateParts(e.at, cfg.timeZone) !== selectedKey ? '<span class="next-day">+1 day</span>' : '';
       const label = isCurrent ? '<span class="phase-pill current-pill">CURRENT</span>' :
         i === nextIndex ? '<span class="phase-pill next-pill">NEXT</span>' : '';
-      return `<div class="time-row ${e.kind === 'prayer' ? 'prayer-entry' : e.kind === 'night' ? 'night-summary' : 'avoid-entry'} ${phase} ${isCurrent ? 'current-prayer' : ''} ${activeRange ? 'within-range' : ''}" data-event-time="${e.at.getTime()}">
+      return `<div class="time-row ${e.kind === 'prayer' ? 'prayer-entry' : e.kind === 'night' ? 'night-summary' : 'avoid-entry'} ${phase} ${isCurrent ? 'current-prayer' : ''} ${activeRange ? 'within-range' : ''}" data-event="${e.name?.key || e.kind}" data-event-time="${e.at.getTime()}">
         <span class="time-icon">${svgIcon(e.name?.icon || e.icon)}</span>
         <div class="time-text"><div class="time-name">${e.title}${e.estimated ? '<span class="estimate-dot">EST.</span>' : ''}${label}</div><div class="time-desc">${e.desc}</div></div>
         <div class="time-data"><time class="time-value" datetime="${e.at.toISOString()}">${fmt(e.at)}</time>${extra}${following}</div>
@@ -448,22 +464,74 @@
     }).join('');
     for (const [name, position] of [[names[0], 'afterbegin'], [names.at(-1), 'beforeend']]) {
       if (t[name.key]) continue;
-      list.insertAdjacentHTML(position, `<div class="time-row prayer-entry"><span class="time-icon">${svgIcon(name.icon)}</span>
+      list.insertAdjacentHTML(position, `<div class="time-row prayer-entry" data-event="${name.key}"><span class="time-icon">${svgIcon(name.icon)}</span>
         <div class="time-text"><div class="time-name">${name.en}</div><div class="time-desc">Time unavailable</div></div>
         <div class="time-data">—</div></div>`);
     }
   }
+  function drawSunChart(day) {
+    const chart = $('sunChart');
+    chart.hidden = cfg.layout !== 'horizon' || !day?.valid;
+    if (chart.hidden) { sunChart = null; return; }
+    const start = +SalahProviders.localToUtc(selectedKey, 0, 0, cfg.timeZone);
+    const localEnd = +SalahProviders.localToUtc(dayShift(selectedKey, 1), 0, 0, cfg.timeZone);
+    const end = Math.max(localEnd, day.isha ? +day.isha + 600000 : localEnd);
+    const id = [start, end, cfg.lat, cfg.lng, ...names.map(({key}) => +day[key])].join(':');
+    if (sunChart?.id === id) return;
+    const altitude = ms => SalahSolar.altitudeAt(ms, cfg.lat, cfg.lng);
+    const samples = Array.from({length:73}, (_, i) => altitude(start + (end - start) * i / 72));
+    const low = Math.min(-15, ...samples), high = Math.max(7, ...samples);
+    const x = time => 6 + 348 * (time - start) / (end - start);
+    const y = angle => 104 - 94 * (angle - low) / (high - low);
+    const path = samples.map((angle, i) => (i ? 'L' : 'M') + (6 + 348 * i / 72).toFixed(1) + ' ' + y(angle).toFixed(1)).join(' ');
+    $('sunAreaPath').setAttribute('d', path + ' L354 111 H6Z');
+    $('sunRoute').setAttribute('d', path);
+    $('sunRouteLive').setAttribute('d', path);
+    $('sunHorizon').setAttribute('d', 'M6 ' + y(0).toFixed(1) + ' H354');
+    $('sunChartDots').innerHTML = names.filter(({key}) => day[key]).map(({key, en}) => {
+      const time = +day[key];
+      return `<circle class="sun-chart-dot" cx="${x(time).toFixed(1)}" cy="${y(altitude(time)).toFixed(1)}" r="3.5"><title>${en}</title></circle>`;
+    }).join('');
+    sunChart = { id, altitude, x, y, start, end };
+    updateSunChart(Date.now());
+  }
+  function updateSunChart(now) {
+    if (!sunChart) return;
+    const { altitude, x, y, start, end } = sunChart;
+    const live = selectedKey === todayKey() && now >= start && now <= end;
+    $('sunProgressFill').setAttribute('width', live ? x(now).toFixed(1) : '0');
+    const elevation = live ? altitude(now) : null;
+    for (const id of ['sunPosition', 'sunPositionHalo']) {
+      const marker = $(id);
+      marker.style.display = live ? '' : 'none';
+      if (live) {
+        marker.setAttribute('cx', x(now).toFixed(1));
+        marker.setAttribute('cy', y(elevation).toFixed(1));
+      }
+    }
+    $('sunAltitudeLabel').textContent = live ? Math.round(elevation) + '° now' : '';
+  }
+  function updateCountdown(now = Date.now()) {
+    if (!currentHero) return;
+    const remaining = Math.max(0, Math.ceil((currentHero.at - now) / 1000));
+    const hour = Math.floor(remaining / 3600);
+    const minute = Math.floor(remaining % 3600 / 60);
+    const second = remaining % 60;
+    const timer = hour + ':' + String(minute).padStart(2, '0') + ':' + String(second).padStart(2, '0');
+    $('countdown').textContent = 'In ' + timer + currentHero.following + currentHero.estimated;
+  }
   function setHero(event, now, otherDate = false) {
+    currentHero = null;
     $('nextPrayerName').textContent = event?.en || 'Unavailable';
     $('nextPrayerArabic').textContent = event?.ar || '';
+    $('nextPrayerArabic').hidden = !event?.ar;
     $('nextPrayerTime').textContent = fmt(event?.at);
     if (!event) { $('countdown').textContent = 'No upcoming time available'; return; }
-    const estimated = event.estimated ? ' · Estimate' : '';
-    if (otherDate) { $('countdown').textContent = 'Earliest listed prayer on this date' + estimated; return; }
-    const seconds = Math.max(0, Math.floor((event.at - now) / 1000));
-    const h = Math.floor(seconds / 3600), m = Math.floor(seconds % 3600 / 60);
-    const tomorrow = dateParts(event.at, cfg.timeZone) === dayShift(selectedKey, 1) ? ' · Tomorrow' : '';
-    $('countdown').textContent = 'In ' + h + 'h ' + String(m).padStart(2, '0') + 'm' + tomorrow + estimated;
+    const estimated = event.estimated ? ' · estimate' : '';
+    if (otherDate) { $('countdown').textContent = 'First listed prayer' + estimated; return; }
+    currentHero = { at:event.at, estimated,
+      following:dateParts(event.at, cfg.timeZone) !== selectedKey ? ' · tomorrow' : '' };
+    updateCountdown(+now);
   }
   function prayerEvent(day, prayer) {
     if (!day?.valid || !day[prayer.key] || (prayer.key === 'isha' && !ishaHasWindow(day))) return null;
@@ -498,8 +566,8 @@
     if (!upcoming.length) {
       const next = t.sourceFallback ? localDay(dayShift(selectedKey, 1)) : getDay(dayShift(selectedKey, 1));
       if (!next.sourceFallback) {
-        const fajr = prayerEvent(next, prayers[0]);
-        if (fajr?.at > now) upcoming.push(fajr);
+        const first = prayers.map(p => prayerEvent(next, p)).find(event => event && event.at > now);
+        if (first) upcoming.push(first);
       }
     }
     setHero(upcoming[0], now);
@@ -512,6 +580,13 @@
       { level:'calm', label:'Selected date', desc:relativeKey(selectedKey) };
     const limits = live && SalahSolar.daylightRestrictions(dateAtNoonUTC(selectedKey), cfg.lat, cfg.lng)
       .find(window => isBetween(instant, window.start, window.end));
+    if (live && !limits && state.label === 'Between prayers') {
+      const [rise, noon] = SalahSolar.daylightRestrictions(dateAtNoonUTC(selectedKey), cfg.lat, cfg.lng);
+      if (rise?.end <= instant && instant < noon?.start) {
+        state.label = 'Duha time';
+        state.desc = 'Until about ' + fmt(noon.start);
+      }
+    }
     if (limits) {
       if (state.label === 'Between prayers') state.label = 'Forbidden time';
       state.level = 'caution';
@@ -528,6 +603,9 @@
     renderDate();
     dayInfo = getDay(selectedKey);
     if (!$('comparisonPanel').hidden) renderComparison();
+    if (!$('fastingPanel').hidden) renderFasting();
+    if (!$('soundPanel').hidden) renderReminderNext();
+    drawSunChart(dayInfo);
     $('timesTag').textContent = cfg.timeZone === 'Europe/Dublin' ? 'Ireland time' : 'UK time';
     if (!dayInfo.valid) {
       note(dayInfo.reason); setHero(null, new Date()); $('heroHeading').textContent = 'PRAYER TIMES';
@@ -747,20 +825,37 @@
       replies.some(r => r.status === 'fulfilled') ? 'No matches. Try another name or enter coordinates.' : 'Town search is offline. Enter coordinates or use GPS.');
   }
 
+  const paletteChoices = $('paletteChoices');
+  paletteChoices.innerHTML = Object.entries(palettes).map(([id, label]) =>
+    `<button type="button" class="palette-choice" data-palette="${id}"><span class="palette-sample" aria-hidden="true"><i></i><i></i><i></i></span>${label}</button>`).join('');
   function applyAppearance() {
-    document.body.dataset.theme = 'dark';
     document.body.dataset.layout = cfg.layout;
     document.body.dataset.accent = cfg.accent;
-    $('settingsLayout').value=cfg.layout;
-    $('settingsAccent').value=cfg.accent; $('settingsTimeFormat').value=cfg.timeFormat;
-    document.querySelector('meta[name="theme-color"]').content = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#1c2d34';
+    $('settingsLayout').value = cfg.layout;
+    $('settingsTimeFormat').value = cfg.timeFormat;
+    $('stylePreview').textContent = layouts[cfg.layout];
+    for (const choice of paletteChoices.children) choice.setAttribute('aria-pressed', choice.dataset.palette === cfg.accent);
+    const background = getComputedStyle(document.body).getPropertyValue('--bg').trim();
+    document.documentElement.style.backgroundColor = background;
+    document.querySelector('meta[name="theme-color"]').content = background;
+    const iconBase = cfg.accent === 'forest' ? './icons/' : './icons/' + cfg.accent + '/';
+    $('tabIcon').href = iconBase + 'icon-192.png';
+    $('touchIcon').href = iconBase + 'icon-180.png';
+    $('appManifest').href = cfg.accent === 'forest' ? './manifest.webmanifest' : './manifest-' + cfg.accent + '.webmanifest';
   }
   function changeAppearance(kind, value) {
-    cfg[kind] = value; store(); applyAppearance();
+    cfg[kind] = value;
+    store();
+    applyAppearance();
     if (kind === 'timeFormat') render();
+    if (kind === 'layout') drawSunChart(dayInfo);
   }
-  [['settingsLayout','layout'],['settingsAccent','accent'],['settingsTimeFormat','timeFormat']].forEach(([id,key]) =>
-    $(id).addEventListener('change', () => changeAppearance(key,$(id).value)));
+  $('settingsLayout').addEventListener('change', () => changeAppearance('layout', $('settingsLayout').value));
+  $('settingsTimeFormat').addEventListener('change', () => changeAppearance('timeFormat', $('settingsTimeFormat').value));
+  paletteChoices.addEventListener('click', event => {
+    const choice = event.target.closest('[data-palette]');
+    if (choice) changeAppearance('accent', choice.dataset.palette);
+  });
   applyAppearance();
 
   $('closeSettings').addEventListener('click', () => showScreen('today')); 
@@ -834,20 +929,32 @@
     if (document.hidden) stopTracking();
     else {
       if (!browsing) selectedKey = todayKey();
-      render(); startTracking(); void cacheAdhansAutomatically();
+      if (fastingFollowingToday) fastingKey = todayKey();
+      render();
+      startTracking();
+      cacheAdhansAutomatically();
+      checkPrayerSounds();
     }
   });
+  setInterval(() => {
+    if (document.hidden || $('today').hidden || selectedKey !== todayKey()) return;
+    const now = Date.now();
+    if (currentHero && currentHero.at <= now && dayInfo?.valid) renderHero(dayInfo);
+    else updateCountdown(now);
+  }, 1000);
   let lastToday = todayKey();
   setInterval(() => {
     if (document.hidden) return;
     const localDay = todayKey();
     if (localDay !== lastToday) {
       if (!browsing) selectedKey = localDay;
+      if (fastingFollowingToday) fastingKey = localDay;
       lastToday = localDay;
       render();
     }
-    if (dayInfo?.valid && selectedKey === localDay) {
+    if (dayInfo?.valid && selectedKey === localDay && !$('today').hidden) {
       renderHero(dayInfo);
+      updateSunChart(Date.now());
       if (Date.now() - lastListRefresh >= 30000) renderPrayerList(dayInfo);
     }
     checkPrayerSounds();
@@ -866,317 +973,252 @@
     renderComparison();
   });
 
-  let audioCtx = null, soundSeen = new Set();
-  let savedAudioObjectUrl = null, mediaPlayer = null;
+  const audio = SalahAudio.create(cfg.soundVolume);
+  const reminderNotes = [[550, 0, .25, .09], [740, .27, .30, .09]];
+  const softNotes = [[660, 0, .42, .12], [830, .4, .55, .11]];
+  const bellNotes = [[880, 0, .7, .15], [1320, .12, .65, .09]];
+  const alignmentNotes = [[740, 0, .13, .08], [990, .14, .24, .10]];
+  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const ADHAN_RECORDINGS = Object.freeze({
+    'adhan-abu-bakr':'https://raw.githubusercontent.com/alsuleiman-lab/athkar-audio/main/fajr-adhan/fajr-abu-bakr.mp3',
+    'adhan-fajr-abu-bakr':'https://raw.githubusercontent.com/alsuleiman-lab/athkar-audio/main/fajr-adhan/abu-bakr.mp3',
+    'adhan-thabet':'https://raw.githubusercontent.com/alsuleiman-lab/athkar-audio/main/fajr-adhan/thabet.mp3'
+  });
+  const recordings = new Map(), pendingRecordings = new Map();
+  let savedSound, customUpdate = 0, lastAudioCacheAttempt = null, toastTimer, soundRequest = 0;
+
   function audioDb() {
     return new Promise((resolve, reject) => {
-      if (!window.indexedDB) { reject(Error('Local media storage unsupported')); return; }
-      const request = indexedDB.open('salah-local-media-v3',1);
-      request.onupgradeneeded = () => { if (!request.result.objectStoreNames.contains('audio')) request.result.createObjectStore('audio'); };
+      if (!window.indexedDB) { reject(Error('Local media storage unavailable')); return; }
+      const request = indexedDB.open('salah-local-media-v3', 1);
+      request.onupgradeneeded = () => {
+        if (!request.result.objectStoreNames.contains('audio')) request.result.createObjectStore('audio');
+      };
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error || Error('Storage error'));
+      request.onblocked = () => reject(Error('Media storage is busy'));
     });
   }
-  async function audioData(action, blob, key='custom') {
+  async function audioData(action, blob, key = 'custom') {
     const db = await audioDb();
     try {
-      return await new Promise((resolve,reject) => {
-        const tx = db.transaction('audio', action==='read' ? 'readonly' : 'readwrite');
-        const req = action==='read' ? tx.objectStore('audio').get(key) :
-          action==='write' ? tx.objectStore('audio').put(blob,key) : tx.objectStore('audio').delete(key);
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-        tx.onerror = () => reject(tx.error);
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction('audio', action === 'read' ? 'readonly' : 'readwrite');
+        const store = tx.objectStore('audio');
+        const req = action === 'read' ? store.get(key) : action === 'write' ? store.put(blob, key) : store.delete(key);
+        tx.oncomplete = () => resolve(req.result);
+        tx.onabort = () => reject(tx.error || Error('Media storage operation failed'));
+        tx.onerror = () => reject(tx.error || req.error || Error('Media storage unavailable'));
       });
     } finally { db.close(); }
   }
-  async function updateAudioStatus() {
+  async function loadCustomSound() {
+    const update = customUpdate;
     try {
       const blob = await audioData('read');
-      if (savedAudioObjectUrl) URL.revokeObjectURL(savedAudioObjectUrl);
-      savedAudioObjectUrl = blob ? URL.createObjectURL(blob) : null;
-      $('savedAudioStatus').textContent = blob ? `Audio saved locally · ${(blob.size/1048576).toFixed(1)} MB` : 'No custom sound saved on this device.';
-    } catch { $('savedAudioStatus').textContent = 'Custom audio cannot be stored in this browser.'; }
+      if (update !== customUpdate) return;
+      savedSound = blob;
+      $('savedAudioStatus').textContent = blob ? 'Saved locally · ' + (blob.size / 1048576).toFixed(1) + ' MB' :
+        'No imported audio saved.';
+    } catch { $('savedAudioStatus').textContent = 'Custom audio storage is unavailable.'; }
   }
+  async function readRecording(choice) {
+    if (recordings.has(choice)) return recordings.get(choice);
+    if (pendingRecordings.has(choice)) return pendingRecordings.get(choice);
+    const task = (async () => {
+      let blob;
+      try { blob = await audioData('read', null, choice); } catch {}
+      if (!blob && navigator.onLine) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 15000);
+        try {
+          const response = await fetch(ADHAN_RECORDINGS[choice], { cache:'force-cache', signal:controller.signal });
+          if (!response.ok) return null;
+          blob = await response.blob();
+          if (blob.size < 10000 || blob.size > 8 * 1048576) return null;
+          try { await audioData('write', blob, choice); } catch {}
+        } catch { return null; }
+        finally { clearTimeout(timer); }
+      }
+      if (blob) recordings.set(choice, blob);
+      return blob;
+    })();
+    pendingRecordings.set(choice, task);
+    try { return await task; } finally { pendingRecordings.delete(choice); }
+  }
+  function cacheAdhansAutomatically() {
+    if (lastAudioCacheAttempt !== null && Date.now() - lastAudioCacheAttempt < 600000) return;
+    lastAudioCacheAttempt = Date.now();
+    for (const choice of Object.keys(ADHAN_RECORDINGS)) void readRecording(choice);
+  }
+
+  function stopSound() {
+    soundRequest++;
+    audio.stop();
+  }
+
+  async function playSound(choice = cfg.soundChoice, fromTap = false) {
+    const request = ++soundRequest;
+    const status = $('soundStatus');
+    if (choice === 'off' || choice === 'soft' || choice === 'bell') {
+      audio.stop();
+      const ready = fromTap ? await audio.unlock() : audio.ready();
+      if (request !== soundRequest) return;
+      if (choice === 'off') { status.textContent = ready ? 'Prayer-time sound is silent. Reminder audio is ready.' : 'Prayer-time sound is silent.'; return; }
+      status.textContent = ready && audio.chime(choice === 'bell' ? bellNotes : softNotes) ? 'Playing chime.' :
+        'Tap Play sound to start audio for this session.';
+      return;
+    }
+
+    const blob = choice === 'custom' ? Promise.resolve(savedSound) : readRecording(choice);
+    const url = navigator.onLine ? ADHAN_RECORDINGS[choice] : null;
+    status.textContent = 'Loading sound…';
+    try {
+      if (choice === 'custom' && !savedSound) throw Error('Import an audio file first.');
+      const mode = await audio.play(blob, url, fromTap, () => { status.textContent = 'Audio finished.'; });
+      if (!mode || request !== soundRequest) return;
+      status.textContent = mode === 'device' && isIOS ? 'Playing. Use the iPhone’s volume buttons for this recording.' :
+        choice === 'custom' ? 'Playing your sound.' : 'Playing adhan.';
+    } catch (error) {
+      if (request !== soundRequest) return;
+      status.textContent = error instanceof DOMException ? 'Audio playback was blocked. Tap Play sound with Salah open.' : error.message;
+    }
+  }
+
   $('customAudio').addEventListener('change', async () => {
     const file = $('customAudio').files?.[0];
     if (!file) return;
-    if (!(file.type.startsWith('audio/') || /\.(mp3|m4a|wav|aac)$/i.test(file.name)) || file.size > 8*1048576 || file.size === 0) {
-      $('soundStatus').textContent = 'Choose an audio file under 8 MB.'; return;
+    if (!(file.type.startsWith('audio/') || /[.](mp3|m4a|wav|aac|ogg|flac)$/i.test(file.name)) || !file.size || file.size > 8 * 1048576) {
+      $('soundStatus').textContent = 'Choose an audio file up to 8 MB.';
+      return;
     }
+    const update = ++customUpdate;
     try {
-      await audioData('write',file);
-      stopMedia(); cfg.soundChoice='custom'; $('soundChoice').value='custom';store(); updateVolumeUI();
-      await updateAudioStatus(); $('soundStatus').textContent='Custom sound saved locally. Test it to check playback.';
-    } catch(e) { $('soundStatus').textContent=`Could not save sound: ${e.message}.` }
+      await audioData('write', file);
+      if (update !== customUpdate) return;
+      savedSound = file;
+      stopSound();
+      cfg.soundChoice = 'custom';
+      $('soundChoice').value = 'custom';
+      $('savedAudioStatus').textContent = 'Saved locally · ' + (file.size / 1048576).toFixed(1) + ' MB';
+      $('soundStatus').textContent = 'Sound saved. Tap Play sound to check it.';
+      store();
+    } catch { $('soundStatus').textContent = 'Could not save the imported sound.'; }
   });
-
   $('clearAudio').addEventListener('click', async () => {
+    const update = ++customUpdate;
     try {
       await audioData('delete');
-      stopMedia();
-      if (cfg.soundChoice === 'custom') {
-        cfg.soundChoice = 'soft';
-        $('soundChoice').value = 'soft';
-        updateVolumeUI();
-        store();
-      }
-      await updateAudioStatus();
-      $('soundStatus').textContent = 'Saved custom sound removed.';
-    } catch {
-      $('soundStatus').textContent = 'Unable to remove the saved sound.';
-    }
+      if (update !== customUpdate) return;
+      stopSound();
+      savedSound = null;
+      $('customAudio').value = '';
+      $('savedAudioStatus').textContent = 'No imported audio saved.';
+      if (cfg.soundChoice === 'custom') { cfg.soundChoice = 'soft'; $('soundChoice').value = 'soft'; store(); }
+      $('soundStatus').textContent = 'Saved sound removed.';
+    } catch { $('soundStatus').textContent = 'Could not remove the saved sound.'; }
   });
-
-  void updateAudioStatus();
-
-  function audioTone(ctx, freq, at, duration, volume) {
-    const osc = ctx.createOscillator(), gain = ctx.createGain();
-    osc.type = 'sine'; osc.frequency.setValueAtTime(freq, at);
-    gain.gain.setValueAtTime(.0001,at);
-    gain.gain.exponentialRampToValueAtTime(volume*(cfg.soundVolume/100),at+.03);
-    gain.gain.exponentialRampToValueAtTime(.0001,at+duration);
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.start(at); osc.stop(at+duration+.03);
-  }
-  const ADHAN_RECORDINGS = Object.freeze({
-    'adhan-abu-bakr': 'https://raw.githubusercontent.com/alsuleiman-lab/athkar-audio/main/fajr-adhan/fajr-abu-bakr.mp3',
-    'adhan-fajr-abu-bakr': 'https://raw.githubusercontent.com/alsuleiman-lab/athkar-audio/main/fajr-adhan/abu-bakr.mp3',
-    'adhan-thabet': 'https://raw.githubusercontent.com/alsuleiman-lab/athkar-audio/main/fajr-adhan/thabet.mp3'
-  });
-  const cachedAdhanUrls = new Map();
-  const adhanChoices = Object.keys(ADHAN_RECORDINGS);
-  let cachingAdhans = null;
-  let lastAudioCacheAttempt = 0;
-  async function loadSavedAdhans() {
-    for (const choice of adhanChoices) {
-      if (cachedAdhanUrls.has(choice)) continue;
-      try {
-        const blob = await audioData('read', null, choice);
-        if (blob && blob.size >= 10000) cachedAdhanUrls.set(choice, URL.createObjectURL(blob));
-      } catch {}
-    }
-  }
-  async function cacheAdhansAutomatically() {
-    if (cachingAdhans) return cachingAdhans;
-    if (!navigator.onLine || Date.now() - lastAudioCacheAttempt < 10 * 60000) return;
-    lastAudioCacheAttempt = Date.now();
-    cachingAdhans = (async () => {
-      await loadSavedAdhans();
-      const choices = [cfg.soundChoice, ...adhanChoices].filter((x,i,arr)=>ADHAN_RECORDINGS[x] && arr.indexOf(x) === i);
-      for (const choice of choices) {
-        if (cachedAdhanUrls.has(choice)) continue;
-        try {
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 12000);
-          const result = await fetch(ADHAN_RECORDINGS[choice], { cache:'force-cache', signal:controller.signal })
-            .finally(() => clearTimeout(timeout));
-          if (!result.ok) continue;
-          const blob = await result.blob();
-          if (blob.size < 10000 || blob.size > 8 * 1048576) continue;
-          await audioData('write', blob, choice);
-          cachedAdhanUrls.set(choice, URL.createObjectURL(blob));
-        } catch {}
-      }
-    })();
-    try { await cachingAdhans; } finally { cachingAdhans = null; }
-  }
-  void loadSavedAdhans().then(() => cacheAdhansAutomatically());
-
-  function stopMedia() {
-    if (!mediaPlayer) return;
-    mediaPlayer.pause();
-    mediaPlayer.currentTime = 0;
-  }
-  async function playMedia(source, label) {
-    try {
-      if (!mediaPlayer) mediaPlayer = new Audio(source);
-      else {
-        stopMedia();
-        if (mediaPlayer.src !== source) mediaPlayer.src = source;
-      }
-      mediaPlayer.preload = 'auto';
-      mediaPlayer.volume = cfg.soundVolume / 100;
-      mediaPlayer.onended = () => { $('soundStatus').textContent = 'Audio finished.'; };
-      mediaPlayer.onerror = () => { $('soundStatus').textContent = 'Audio could not load.'; };
-      await mediaPlayer.play();
-      $('soundStatus').textContent = label;
-      return true;
-    } catch {
-      $('soundStatus').textContent = 'Audio could not play. Tap Play sound while Salah is open.';
-      return false;
-    }
-  }
-  function playAdhan(choice = cfg.soundChoice) {
-    const local = cachedAdhanUrls.get(choice);
-    const source = local || ADHAN_RECORDINGS[choice];
-    if (!source || (!local && !navigator.onLine)) {
-      $('soundStatus').textContent = 'This adhan is unavailable offline. Open Salah online to save it.';
-      return false;
-    }
-    return playMedia(source, local ? 'Playing adhan.' : 'Playing adhan from the internet.');
-  }
-
-  function playReminderChime() {
-    try {
-      audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended') void audioCtx.resume().catch(() => {});
-      const a=audioCtx.currentTime+.02;
-      audioTone(audioCtx,550,a,.25,.06);audioTone(audioCtx,740,a+.28,.30,.06);
-    } catch {}
-  }
-
-  async function playSound(choice = cfg.soundChoice) {
-    if (choice === 'off') { $('soundStatus').textContent = 'Sound is set to Silent.'; return false; }
-    if (choice.startsWith('adhan-')) return playAdhan(choice);
-    if (choice === 'custom') {
-      if (savedAudioObjectUrl) return playMedia(savedAudioObjectUrl, 'Playing your saved sound.');
-      $('soundStatus').textContent = 'Import a custom audio file first.';
-      return false;
-    }
-    try {
-      stopMedia();
-      audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended') await audioCtx.resume();
-      const t = audioCtx.currentTime + 0.04;
-      if (choice === 'bell') {
-        audioTone(audioCtx, 880, t, 0.7, 0.095);
-        audioTone(audioCtx, 1320, t + 0.12, 0.65, 0.045);
-      } else {
-        audioTone(audioCtx, 660, t, 0.48, 0.08);
-        audioTone(audioCtx, 830, t + 0.48, 0.62, 0.07);
-      }
-      $('soundStatus').textContent = 'Playing chime.';
-      return true;
-    } catch {
-      $('soundStatus').textContent = 'Audio could not play. Tap Play sound while Salah is open.';
-      return false;
-    }
-  }
-
   $('soundChoice').value = cfg.soundChoice;
-  $('soundVolume').value=String(cfg.soundVolume);
-  $('soundVolumeLabel').textContent=`${cfg.soundVolume}%`;
-  $('soundVolume').addEventListener('input',()=>{
-    cfg.soundVolume=+ $('soundVolume').value;
-    $('soundVolumeLabel').textContent=`${cfg.soundVolume}%`;
-    if (mediaPlayer) mediaPlayer.volume = cfg.soundVolume / 100;
+  $('soundVolume').value = String(cfg.soundVolume);
+  $('soundVolumeLabel').textContent = cfg.soundVolume + '%';
+  $('iosVolumeNote').hidden = !isIOS;
+  $('soundVolume').addEventListener('input', () => {
+    cfg.soundVolume = Number($('soundVolume').value);
+    $('soundVolumeLabel').textContent = cfg.soundVolume + '%';
+    audio.setLevel(cfg.soundVolume);
     store();
   });
-  function updateVolumeUI() {
-    const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
-    const streamedOrCustom = cfg.soundChoice.startsWith('adhan-') || cfg.soundChoice==='custom';
-    document.querySelector('.volume-controls').classList.toggle('hidden',ios && streamedOrCustom);
-    $('iosVolumeNote').classList.toggle('hidden',!(ios && streamedOrCustom));
-  }
-  updateVolumeUI();
-  $('calendarLead').value = String(cfg.calendarLead);
   $('soundChoice').addEventListener('change', () => {
-    stopMedia();
-    cfg.soundChoice = $('soundChoice').value; store(); updateVolumeUI(); void cacheAdhansAutomatically();
-    $('soundStatus').textContent = 'Sound saved. Test it using Play sound.';
+    stopSound();
+    cfg.soundChoice = $('soundChoice').value;
+    store();
+    $('soundStatus').textContent = 'Sound saved. Tap Play sound to hear it.';
   });
-  $('testSound').addEventListener('click', () => { void playSound(); });
-  $('stopSound').addEventListener('click', () => {
-    stopMedia();
-    $('soundStatus').textContent='Sound stopped.';
-  });
+  $('testSound').addEventListener('click', () => { void playSound(cfg.soundChoice, true); });
+  $('stopSound').addEventListener('click', () => { stopSound(); $('soundStatus').textContent = 'Sound stopped.'; });
+  void loadCustomSound();
 
-  function checkPrayerSounds() {
-    if (document.hidden || cfg.soundChoice === 'off') return;
-    const now = Date.now(), today = todayKey();
-    const days = [dayShift(today, -1), today, dayShift(today, 1)];
-    soundSeen = new Set([...soundSeen].filter(id => days.includes(id.slice(0, 10))));
-    for (const key of days) {
+  let soundSeen = new Set();
+  try { soundSeen = new Set(JSON.parse(sessionStorage.getItem('salah-reminders') || '[]')); } catch {}
+  function rememberSound(id) {
+    soundSeen.add(id);
+    try { sessionStorage.setItem('salah-reminders', JSON.stringify([...soundSeen])); } catch {}
+  }
+  function showReminder(message) {
+    const toast = $('reminderToast');
+    clearTimeout(toastTimer);
+    toast.hidden = false;
+    $('reminderMessage').textContent = message;
+    toastTimer = setTimeout(() => { toast.hidden = true; }, 30000);
+  }
+  $('dismissReminder').addEventListener('click', () => { $('reminderToast').hidden = true; });
+  function reminderEvents() {
+    const today = todayKey();
+    const events = [];
+    for (const key of [dayShift(today, -1), today, dayShift(today, 1)]) {
       const day = getDay(key);
       if (!day.valid || day.sourceFallback) continue;
       for (const p of prayers) {
         if (p.key === 'isha' && !day.nextFajr) continue;
         const event = prayerEvent(day, p);
-        if (!event) continue;
-        const at = event.at.getTime();
-        const id = key + ':' + p.key;
-        const pre = id + ':before';
-        const reminder = at - cfg.calendarLead * 60000;
-        if (now >= reminder && now < reminder + 45000 && !soundSeen.has(pre)) {
-          soundSeen.add(pre);
-          playReminderChime();
-          $('soundStatus').textContent = p.en + ' is about 15 minutes away' + (event.estimated ? ' (estimate).' : '.');
-        }
-        if (now >= at && now < at + 45000 && !soundSeen.has(id)) {
-          soundSeen.add(id);
-          const choice = cfg.soundChoice === 'adhan-abu-bakr' && p.key !== 'fajr' ? 'adhan-fajr-abu-bakr' : cfg.soundChoice;
-          void playSound(choice);
-        }
+        if (event) events.push({ ...event, date:key });
       }
     }
+    return events;
   }
-
-  function iCalStamp(date) {
-    return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  function renderReminderNext(events = reminderEvents()) {
+    $('reminderLead').disabled = !cfg.reminderEnabled;
+    if (!cfg.reminderEnabled) { $('reminderNext').textContent = 'Pre-prayer reminders are off.'; return; }
+    const lead = cfg.reminderLead * 60000;
+    const now = Date.now();
+    const next = events.find(event => event.at - lead > now);
+    if (!next) { $('reminderNext').textContent = 'No upcoming reminder available.'; return; }
+    const when = new Date(+next.at - lead);
+    const tomorrow = dateParts(when, cfg.timeZone) !== todayKey();
+    $('reminderNext').textContent = (tomorrow ? 'Tomorrow at ' : 'Next at ') + fmt(when) +
+      ' · ' + next.en + (next.estimated ? ' (estimate)' : '');
   }
-  function escapeCal(text) {
-    return text.replace(/\r\n?/g, '\n').replace(/[\\;,\n]/g, char => char === '\n' ? '\\n' : '\\' + char);
-  }
-  const calEncoder = new TextEncoder();
-  function foldCal(line) {
-    if (calEncoder.encode(line).length <= 75) return line;
-    let out = '', width = 0;
-    for (const char of line) {
-      const bytes = calEncoder.encode(char).length;
-      if (width + bytes > 75) { out += '\r\n '; width = 1; }
-      out += char;
-      width += bytes;
-    }
-    return out;
-  }
-  function makeCalendar() {
-    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Salah//Prayer calendar//EN',
-      'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:Salah prayer reminders'];
-    const online = cfg.activeSource === 'moonsighting';
-    const dayCount = online ? 1 : 60;
-    const source = methods.find(m => m.id === cfg.activeSource).title;
-    let eventCount = 0, skipped = 0;
-    for (let i = 0; i < dayCount; i++) {
-      const key = dayShift(selectedKey, i);
-      const day = getDay(key);
-      for (const prayer of prayers) {
-        const event = day.sourceFallback || (prayer.key === 'isha' && !day.nextFajr) ? null : prayerEvent(day, prayer);
-        if (!event) { skipped++; continue; }
-        eventCount++;
-        const summary = prayer.en + ' · Salah' + (event.estimated ? ' (estimate)' : '');
-        const description = cfg.location + ' · ' + source +
-          (event.estimated ? ' · Modelled twilight estimate' : ' · Calculated time');
-        lines.push('BEGIN:VEVENT',
-          'UID:salah-' + cfg.activeSource + '-' + prayer.key + '-' + key + '-' + cfg.lat + '-' + cfg.lng + '@salah.local',
-          'DTSTAMP:' + iCalStamp(new Date()), 'DTSTART:' + iCalStamp(event.at),
-          'DTEND:' + iCalStamp(new Date(+event.at + 60000)),
-          'SUMMARY:' + escapeCal(summary), 'DESCRIPTION:' + escapeCal(description),
-          'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + escapeCal(summary),
-          'TRIGGER:-PT' + cfg.calendarLead + 'M', 'END:VALARM', 'END:VEVENT');
-      }
-    }
-    lines.push('END:VCALENDAR');
-    return { ics:lines.map(foldCal).join('\r\n') + '\r\n', online, eventCount, skipped };
-  }
-  $('exportCalendar').addEventListener('click', () => {
-    const result = makeCalendar();
-    if (!result.eventCount) {
-      $('calendarStatus').textContent = 'No times to export for this source and date.';
-      return;
-    }
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(new Blob([result.ics], { type:'text/calendar;charset=utf-8' }));
-    link.href = url;
-    link.download = 'salah-' + selectedKey + '-' + cfg.activeSource + '.ics';
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 30000);
-    const span = result.online ? ' for the selected date.' : ' for 60 days from the selected date.';
-    const skipped = result.skipped ? ' Skipped ' + result.skipped + ' unavailable prayer windows.' : '';
-    $('calendarStatus').textContent = 'Exported ' + result.eventCount + ' events' + span + skipped;
+  $('reminderLead').value = String(cfg.reminderLead);
+  $('reminderEnabled').checked = cfg.reminderEnabled;
+  $('reminderLead').addEventListener('change', () => {
+    cfg.reminderLead = Number($('reminderLead').value);
+    store();
+    renderReminderNext();
   });
+  $('reminderEnabled').addEventListener('change', () => {
+    cfg.reminderEnabled = $('reminderEnabled').checked;
+    store();
+    renderReminderNext();
+  });
+
+  function checkPrayerSounds() {
+    if (document.hidden) return;
+    const now = Date.now(), today = todayKey();
+    const days = [dayShift(today, -1), today, dayShift(today, 1)];
+    const events = reminderEvents();
+    if (!$('soundPanel').hidden) renderReminderNext(events);
+    soundSeen = new Set([...soundSeen].filter(id => days.includes(id.slice(0, 10))));
+    for (const event of events) {
+      const at = event.at.getTime();
+      const id = event.date + ':' + event.key;
+      const pre = id + ':before';
+      const reminder = at - cfg.reminderLead * 60000;
+      const estimate = event.estimated ? ' (estimate)' : '';
+      if (cfg.reminderEnabled && now >= reminder && now < reminder + 45000 && !soundSeen.has(pre)) {
+        rememberSound(pre);
+        audio.chime(reminderNotes);
+        showReminder(event.en + ' at ' + fmt(event.at) + estimate + ' · ' + cfg.reminderLead + ' minutes away');
+      }
+      if (now >= at && now < at + 45000 && !soundSeen.has(id)) {
+        rememberSound(id);
+        if (cfg.soundChoice === 'off') continue;
+        const choice = cfg.soundChoice === 'adhan-abu-bakr' && event.key !== 'fajr' ? 'adhan-fajr-abu-bakr' : cfg.soundChoice;
+        showReminder(event.en + ' · ' + fmt(event.at) + estimate);
+        void playSound(choice);
+      }
+    }
+  }
 
   const KAABA={lat:21.422487,lng:39.826206};
   const norm360=x=>(x%360+360)%360;
@@ -1187,49 +1229,102 @@
     const x=Math.cos(phi1)*Math.sin(phi2)-Math.sin(phi1)*Math.cos(phi2)*Math.cos(dl);
     return norm360(Math.atan2(y,x)/rad);
   }
-  const compassPoints=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
-
-  let qiblaHeading = null, magneticVariation = null, qiblaCompassOn = false, lastAlignment = false;
-  let compassSensorAccuracy = NaN, variationPromise = null, variationKey = '';
-  const bearingNow = () => qiblaBearing(cfg.lat, cfg.lng);
+  const compassPoints = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  const compassLetters = ['compassNorth', 'compassEast', 'compassSouth', 'compassWest'];
+  let compassReading = null, magneticVariation = null, qiblaCompassOn = false, lastAlignment = false;
+  let variationPromise = null, variationKey = '', compassStatus = '', orientationTimer = null;
+  const supportsVibration = () => typeof navigator.vibrate === 'function';
+  function vibrate(pattern) {
+    try { return supportsVibration() && navigator.vibrate(pattern); }
+    catch { return false; }
+  }
+  function compassPoint(degrees, radius) {
+    const angle = degrees * Math.PI / 180;
+    return [160 + radius * Math.sin(angle), 160 - radius * Math.cos(angle)];
+  }
+  function pointText(degrees, radius) {
+    return compassPoint(degrees, radius).map(value => value.toFixed(1)).join(' ');
+  }
+  $('compassTicks').innerHTML = Array.from({length:60}, (_, i) => {
+    const major = i % 5 === 0;
+    return `<path class="compass-tick${major ? ' major' : ''}" d="M${pointText(i * 6, major ? 132 : 137)} L${pointText(i * 6, 144)}"/>`;
+  }).join('');
 
   function resetMagneticCorrection() {
     cfg.magneticDeclination = '';
     $('declinationOverride').value = '';
     variationKey = '';
     magneticVariation = null;
+    lastAlignment = false;
+  }
+  function qiblaDistance(lat, lng) {
+    return kmApart({ lat, lng }, KAABA);
   }
   function renderQibla() {
-    const bearing = bearingNow();
-    $('qiblaBearing').textContent = bearing.toFixed(1) + '°';
-    $('qiblaCardinal').textContent = compassPoints[Math.round(bearing / 22.5) % 16];
-    $('qiblaPosition').textContent = cfg.location + ' · true-north bearing';
+    const bearing = qiblaBearing(cfg.lat, cfg.lng);
     const override = $('declinationOverride').value.trim();
     const delta = override !== '' ? Number(override) : magneticVariation;
-    const reliable = Number.isFinite(compassSensorAccuracy) && compassSensorAccuracy >= 0 && compassSensorAccuracy <= 20;
-    const live = Number.isFinite(qiblaHeading) && Number.isFinite(delta) && Math.abs(delta) <= 180 && qiblaCompassOn && reliable;
-    const difference = live ? (bearing - qiblaHeading - delta + 540) % 360 - 180 : 0;
-    $('qiblaArrow').style.transform = 'translate(-50%, -50%) rotate(' + (live ? difference : bearing).toFixed(2) + 'deg)';
-    $('qiblaDial').classList.toggle('live', live);
-    const aligned = live && Math.abs(difference) <= 4 && compassSensorAccuracy <= 8;
-    $('qiblaDial').classList.toggle('aligned', aligned);
-    $('qiblaAligned').textContent = aligned ? 'Aligned within compass accuracy' :
-      live ? Math.round(Math.abs(difference)) + '° ' + (difference > 0 ? 'right' : 'left') + ' · turn the phone' :
-      'True-north reference';
-    if (aligned && !lastAlignment && $('qiblaHaptic').checked && typeof navigator.vibrate === 'function') {
-      try { navigator.vibrate([35, 35, 65]); } catch {}
+    const correction = Number.isFinite(delta) && Math.abs(delta) <= 180;
+    const accuracy = compassReading?.accuracy;
+    const fixedReference = !qiblaCompassOn || !compassReading || compassReading.tilted || !correction;
+    const reliable = Number.isFinite(accuracy) && accuracy >= 0 && accuracy <= 20;
+    const approximate = !fixedReference && compassReading.kind === 'absolute';
+    const live = !fixedReference && (reliable || approximate);
+    const rotation = live ? norm360(compassReading.heading + delta) : 0;
+    const direction = (bearing - rotation + 540) % 360 - 180;
+    const angle = Math.round(Math.abs(direction));
+    const inAlignmentRange = Math.abs(direction) <= (lastAlignment ? 7 : 4);
+    const aligned = live && reliable && accuracy <= 8 && inAlignmentRange;
+    const alignmentCue = aligned || (approximate && inAlignmentRange);
+    const near = live && angle <= 15;
+    const turn = direction < 0 ? 'left' : 'right';
+    const dial = $('qiblaDial');
+    dial.classList.toggle('live', live);
+    dial.classList.toggle('aligned', aligned);
+
+    $('qiblaBearing').textContent = bearing.toFixed(1) + '°';
+    $('qiblaCardinal').textContent = compassPoints[Math.round(bearing / 22.5) % 16];
+    $('qiblaDistance').textContent = Math.round(qiblaDistance(cfg.lat, cfg.lng)).toLocaleString('en-GB') + ' km';
+    $('qiblaPosition').textContent = cfg.location;
+    $('compassTicks').setAttribute('transform', `rotate(${-rotation} 160 160)`);
+    for (const [i, id] of compassLetters.entries()) {
+      const [x, y] = compassPoint(i * 90 - rotation, 119);
+      $(id).setAttribute('x', x.toFixed(1));
+      $(id).setAttribute('y', y.toFixed(1));
     }
-    lastAlignment = aligned;
-    if (live) {
-      $('qiblaState').textContent = 'Magnetic heading ' + Math.round(qiblaHeading) + '° · correction ' + delta.toFixed(1) + '° ' +
-        (override === '' ? '(WMM 2025)' : '(manual)');
-      $('qiblaAccuracy').textContent = 'Sensor uncertainty about ±' + Math.round(compassSensorAccuracy) + '°. Hold flat, away from metal.';
-    } else if (qiblaCompassOn && Number.isFinite(compassSensorAccuracy) && !reliable) {
-      $('qiblaAccuracy').textContent = 'Compass reading is not accurate enough for a live pointer. Calibrate away from metal and try again.';
-    } else {
-      $('qiblaAccuracy').textContent = 'Hold the phone flat, away from magnets and metal. The bearing is measured clockwise from true north.';
+    $('qiblaArrow').setAttribute('transform', 'translate(' + pointText(direction, 99) + ')');
+    $('qiblaArc').setAttribute('d', live && angle > 5
+      ? `M160 61 A99 99 0 0 ${direction < 0 ? 0 : 1} ${pointText(direction, 99)}` : '');
+
+    const cue = $('qiblaAligned');
+    const weak = qiblaCompassOn && !live && !!compassReading;
+    cue.dataset.state = aligned ? 'aligned' : near ? 'near' : live ? 'turn' : weak ? 'weak' : 'reference';
+    dial.dataset.state = cue.dataset.state;
+    $('qiblaCueMark').textContent = aligned ? '✓' : live ? (direction < 0 ? '↶' : '↷') : '◇';
+    const cueText = aligned ? 'Facing the Qibla' : live && angle <= 4 ? 'Near the Qibla · check accuracy' :
+      live ? 'Turn ' + (near ? 'slightly ' : '') + turn + ' · ' + angle + '°' :
+      compassReading?.tilted ? 'Hold your phone level' :
+      weak ? 'Use the true-north bearing' : 'True-north reference';
+    if ($('qiblaCue').textContent !== cueText) $('qiblaCue').textContent = cueText;
+    $('qiblaTurnAngle').textContent = aligned ? '✓' : live ? angle + '°' : bearing.toFixed(1) + '°';
+    $('qiblaTurnLabel').textContent = aligned ? 'Qibla' : live && angle <= 4 ? 'Near Qibla' : live ? 'Turn ' + turn : 'From true north';
+
+    $('qiblaPrecision').textContent = Number.isFinite(accuracy) && accuracy >= 0 ? '±' + Math.round(accuracy) + '°' :
+      approximate ? 'Unknown' : '—';
+    $('qiblaPrecisionNote').textContent = approximate ? 'Approximate heading' : reliable ? 'Reported by phone' : weak ? 'Reference view' : 'Sensor off';
+    $('qiblaAccuracy').textContent = approximate ? 'This sensor gives an approximate heading. Use a calibrated compass to verify close alignment.' :
+      weak && !compassReading?.tilted && !reliable ? 'Compass reading is not accurate enough for a live pointer. Calibrate away from metal and try again.' :
+      reliable && live ? 'Sensor uncertainty about ±' + Math.round(accuracy) + '°. Hold level away from metal.' : 'The bearing is measured clockwise from true north.';
+    const state = live ? 'Heading ' + Math.round(rotation) + '° true · ' + (override === '' ? 'WMM 2025' : 'manual correction') : compassStatus;
+    if ($('qiblaState').textContent !== state) $('qiblaState').textContent = state;
+
+    if (alignmentCue && !lastAlignment && !$('qiblaPanel').hidden && !document.hidden) {
+      if (cfg.qiblaHaptic) vibrate([35, 35, 60]);
+      if (cfg.qiblaChime) audio.chime(alignmentNotes);
     }
+    lastAlignment = alignmentCue;
   }
+
   async function loadVariation() {
     const now = new Date();
     const lat = cfg.lat, lng = cfg.lng;
@@ -1252,55 +1347,83 @@
     return variationPromise;
   }
   function orientationHandler(event) {
-    if (document.hidden || $('qiblaPanel').hidden) return;
-    const heading = event.webkitCompassHeading;
-    const accuracy = event.webkitCompassAccuracy;
-    qiblaHeading = Number.isFinite(heading) && heading >= 0 ? norm360(heading) : null;
-    compassSensorAccuracy = Number.isFinite(accuracy) ? accuracy : NaN;
-    if (qiblaHeading === null || !Number.isFinite(compassSensorAccuracy))
-      $('qiblaState').textContent = 'Heading or accuracy unavailable. Use the true-north bearing.';
-    else if (compassSensorAccuracy < 0)
-      $('qiblaState').textContent = 'Calibrate the compass away from metal and try again.';
-    else if (compassSensorAccuracy > 20)
-      $('qiblaState').textContent = 'Compass reading too uncertain. Use the true-north bearing.';
+    if (!qiblaCompassOn || document.hidden || $('qiblaPanel').hidden) return;
+    const magnetic = event.webkitCompassHeading;
+    const absolute = event.absolute && Number.isFinite(event.alpha);
+    if ((!Number.isFinite(magnetic) || magnetic < 0) && !absolute) return;
+    const webkit = Number.isFinite(magnetic) && magnetic >= 0;
+    const portrait = !(screen.orientation?.angle ?? window.orientation ?? 0);
+    const tilted = Math.abs(event.beta || 0) > 35 || Math.abs(event.gamma || 0) > 35;
+    compassReading = {
+      kind:webkit ? 'webkit' : 'absolute', tilted:tilted || !portrait,
+      heading:norm360(webkit ? magnetic : 360 - event.alpha),
+      accuracy:webkit && Number.isFinite(event.webkitCompassAccuracy) ? event.webkitCompassAccuracy : null
+    };
+    compassStatus = !portrait ? 'Turn the phone upright to portrait orientation.' :
+      tilted ? 'Set the phone flat to use the compass.' :
+      webkit && !(compassReading.accuracy >= 0 && compassReading.accuracy <= 20 && compassReading.accuracy !== null) ?
+        'Compass accuracy is too low. Move away from metal and recalibrate.' :
+        'Waiting for magnetic correction…';
+    renderQibla();
+  }
+  function stopCompass() {
+    clearTimeout(orientationTimer);
+    window.removeEventListener('deviceorientation', orientationHandler);
+    window.removeEventListener('deviceorientationabsolute', orientationHandler);
+    qiblaCompassOn = false;
+    compassReading = null;
+    lastAlignment = false;
+    compassStatus = 'Start the compass to use your phone’s heading.';
+    $('startCompass').textContent = 'Start compass';
     renderQibla();
   }
   $('startCompass').addEventListener('click', async () => {
-    if (!window.isSecureContext) { $('qiblaState').textContent = 'Compass access requires HTTPS.'; return; }
-    if (typeof DeviceOrientationEvent === 'undefined') {
-      $('qiblaState').textContent = 'This device provides no compass heading.';
-      return;
+    if (qiblaCompassOn) { stopCompass(); return; }
+    if (typeof DeviceOrientationEvent === 'undefined' || !window.isSecureContext) {
+      compassStatus = 'Use HTTPS on a phone with a compass sensor.';
+      renderQibla(); return;
     }
     try {
+      if (cfg.qiblaChime) void audio.unlock();
       if (typeof DeviceOrientationEvent.requestPermission === 'function' &&
           await DeviceOrientationEvent.requestPermission() !== 'granted') {
-        $('qiblaState').textContent = 'Motion permission denied. Use the true-north bearing.';
-        return;
+        compassStatus = 'Motion permission denied. Use the true-north bearing.';
+        renderQibla(); return;
       }
       if ($('qiblaPanel').hidden) return;
       qiblaCompassOn = true;
-      $('startCompass').textContent = 'Compass active';
-      $('qiblaState').textContent = 'Waiting for a usable compass reading…';
+      $('startCompass').textContent = 'Stop compass';
+      compassStatus = 'Waiting for a usable compass reading…';
       window.addEventListener('deviceorientation', orientationHandler);
-      if (!await loadVariation() && !$('declinationOverride').value.trim())
-        $('qiblaState').textContent = 'Magnetic correction unavailable. Enter a local correction or use the true-north bearing.';
+      window.addEventListener('deviceorientationabsolute', orientationHandler);
+      orientationTimer = setTimeout(() => {
+        if (!compassReading && qiblaCompassOn) {
+          compassStatus = 'No compass heading received. Use the true-north bearing.';
+          renderQibla();
+        }
+      }, 4500);
+      if (!await loadVariation() && !$('declinationOverride').value.trim() && qiblaCompassOn)
+        compassStatus = 'Magnetic correction unavailable. Enter a local correction or use the true-north bearing.';
       renderQibla();
     } catch {
-      $('qiblaState').textContent = 'Compass access failed. Use the true-north bearing.';
+      compassStatus = 'Compass access failed. Use the true-north bearing.';
+      renderQibla();
     }
   });
   $('qiblaGPS').addEventListener('click', () => {
-    if (!navigator.geolocation) { $('qiblaState').textContent = 'GPS unavailable.'; return; }
-    $('qiblaState').textContent = 'Getting current GPS position…';
+    if (!navigator.geolocation) { compassStatus = 'GPS unavailable.'; renderQibla(); return; }
+    compassStatus = 'Getting current GPS position…';
+    renderQibla();
     const request = ++placeRequest;
     navigator.geolocation.getCurrentPosition(pos => {
       if (request !== placeRequest) return;
       const place = positionPlace(pos);
-      if (place.error) { $('qiblaState').textContent = place.error; return; }
+      if (place.error) { compassStatus = place.error; renderQibla(); return; }
       applyLocation(place);
-      $('qiblaState').textContent = 'Position updated for Qibla and prayer times.';
+      compassStatus = 'Position updated for Qibla and prayers.';
+      renderQibla();
     }, () => {
-      if (request === placeRequest) $('qiblaState').textContent = 'GPS unavailable. Keeping the saved position.';
+      if (request === placeRequest) { compassStatus = 'GPS unavailable. Keeping the saved position.'; renderQibla(); }
     }, { enableHighAccuracy:true, timeout:12000, maximumAge:15000 });
   });
   $('declinationOverride').value = cfg.magneticDeclination;
@@ -1316,13 +1439,123 @@
     if (qiblaCompassOn) void loadVariation().then(renderQibla);
     renderQibla();
   });
+  $('qiblaHaptic').checked = cfg.qiblaHaptic;
+  $('qiblaHapticControl').hidden = !supportsVibration();
+  $('qiblaChime').checked = cfg.qiblaChime;
+  $('qiblaHapticHint').textContent = supportsVibration() ? '' : 'This browser uses the visual cue and optional chime for alignment.';
+  $('qiblaHaptic').addEventListener('change', () => {
+    cfg.qiblaHaptic = $('qiblaHaptic').checked;
+    store();
+  });
+  $('qiblaChime').addEventListener('change', () => {
+    cfg.qiblaChime = $('qiblaChime').checked;
+    store();
+    if (cfg.qiblaChime) void audio.unlock().then(ready => { if (ready && cfg.qiblaChime) audio.chime(alignmentNotes); });
+  });
 
-  $('qiblaHaptic').addEventListener('change',()=>{
-    if($('qiblaHaptic').checked && typeof navigator.vibrate!=='function'){
-      $('qiblaState').textContent='iPhone Safari does not offer vibration to web apps; the visual alignment cue still works.';
+  const fastingLabels = { fasted:'Fasted', due:'To make up', 'made-up':'Made up' };
+  const fastingStore = 'salah-fasting-log';
+  let fastingKey = todayKey();
+  let fastingFollowingToday = true;
+  let fastingRecords = {};
+  try {
+    const saved = JSON.parse(localStorage.getItem(fastingStore) || '{}');
+    fastingRecords = Object.fromEntries(Object.entries(saved).filter(([key, value]) =>
+      key.length === 10 && Number.isFinite(+dateAtNoonUTC(key)) && Object.hasOwn(fastingLabels, value)));
+  } catch {}
+
+  function renderFasting(restoreFocus = false) {
+    const date = dateAtNoonUTC(fastingKey), today = todayKey();
+    const month = fastingKey.slice(0, 7), year = date.getUTCFullYear(), index = date.getUTCMonth();
+    const first = new Date(Date.UTC(year, index, 1, 12));
+    const days = new Date(Date.UTC(year, index + 1, 0, 12)).getUTCDate();
+    const fill = (first.getUTCDay() + 6) % 7;
+    $('fastingMonth').textContent = date.toLocaleDateString('en-GB', { timeZone:'UTC', month:'long', year:'numeric' });
+    const blank = '<span aria-hidden="true"></span>'.repeat(fill);
+    $('fastingDays').innerHTML = blank + Array.from({ length:days }, (_, i) => {
+      const key = month + '-' + String(i + 1).padStart(2, '0');
+      const mark = fastingRecords[key] || '';
+      const selected = key === fastingKey;
+      const label = prettyKey(key) + (mark ? ', ' + fastingLabels[mark] : '');
+      return `<button type="button" class="fast-day" data-date="${key}" data-status="${mark}"
+        tabindex="${selected ? 0 : -1}" aria-label="${label}" aria-pressed="${selected}" ${key === today ? 'aria-current="date"' : ''}>${i + 1}</button>`;
+    }).join('');
+    if (restoreFocus) $('fastingDays').querySelector('[aria-pressed="true"]').focus();
+    const entries = Object.entries(fastingRecords);
+    const completed = entries.filter(([key, mark]) => key.startsWith(month) && mark === 'fasted').length;
+    const due = entries.filter(([, mark]) => mark === 'due').length;
+    $('fastingSummary').textContent = completed + ' fasted this month · ' + due + ' to make up across all dates';
+    $('fastingDate').textContent = prettyKey(fastingKey);
+    $('fastingLocation').textContent = cfg.location;
+    const times = getDay(fastingKey);
+    const estimated = !!times.valid && isEstimated(times, 'fajr');
+    $('fastingFajr').textContent = fmt(times.fajr) + (estimated ? ' · est.' : '');
+    $('fastingIftar').textContent = fmt(times.maghrib);
+    const minutes = times.maghrib && times.fajr ? Math.round((times.maghrib - times.fajr) / 60000) : 0;
+    $('fastingDuration').textContent = minutes > 0 ? Math.floor(minutes / 60) + 'h ' + minutes % 60 + 'm' : '—';
+    $('fastingEstimate').textContent = times.sourceFallback ? 'Local fallback is in use for this date.' :
+      estimated ? 'The Fajr time uses a twilight estimate.' : !times.fajr ? 'Fajr is unavailable under the selected method.' : '';
+
+    const mark = fastingRecords[fastingKey] || '';
+    for (const button of document.querySelectorAll('[data-fast-status]')) {
+      const status = button.dataset.fastStatus;
+      if (status) button.setAttribute('aria-pressed', mark === status);
+      else button.disabled = !mark;
+    }
+    if (cfg.activeSource === 'moonsighting' && navigator.onLine) void fetchOnline(cfg.activeSource, fastingKey);
+  }
+  function selectFastingDate(key, focus = false) {
+    fastingKey = key;
+    fastingFollowingToday = key === todayKey();
+    $('fastingStatus').textContent = '';
+    renderFasting(focus);
+  }
+  function changeFastingMonth(offset) {
+    const [year, month, day] = fastingKey.split('-').map(Number);
+    const last = new Date(Date.UTC(year, month + offset, 0, 12)).getUTCDate();
+    const date = new Date(Date.UTC(year, month - 1 + offset, Math.min(day, last), 12));
+    selectFastingDate(date.toISOString().slice(0, 10));
+  }
+  $('fastingPrevious').addEventListener('click', () => changeFastingMonth(-1));
+  $('fastingNext').addEventListener('click', () => changeFastingMonth(1));
+  $('fastingToday').addEventListener('click', () => selectFastingDate(todayKey()));
+  $('fastingDays').addEventListener('click', event => {
+    const day = event.target.closest('[data-date]');
+    if (day) selectFastingDate(day.dataset.date, true);
+  });
+  $('fastingDays').addEventListener('keydown', event => {
+    const offsets = { ArrowLeft:-1, ArrowRight:1, ArrowUp:-7, ArrowDown:7 };
+    const step = offsets[event.key];
+    if (!step) return;
+    event.preventDefault();
+    selectFastingDate(dayShift(fastingKey, step), true);
+  });
+  document.querySelector('.fasting-actions').addEventListener('click', event => {
+    const button = event.target.closest('[data-fast-status]');
+    if (!button) return;
+    const current = button.dataset.fastStatus;
+    const updated = { ...fastingRecords };
+    if (current) updated[fastingKey] = current;
+    else delete updated[fastingKey];
+    try {
+      localStorage.setItem(fastingStore, JSON.stringify(updated));
+      fastingRecords = updated;
+      $('fastingStatus').textContent = current ? fastingLabels[current] + ' saved on this device.' : 'Entry cleared.';
+      renderFasting();
+    } catch {
+      $('fastingStatus').textContent = 'This browser could not save the entry.';
     }
   });
-  
+  window.addEventListener('storage', event => {
+    if (event.key !== fastingStore) return;
+    try {
+      const saved = JSON.parse(event.newValue || '{}');
+      fastingRecords = Object.fromEntries(Object.entries(saved).filter(([key, value]) =>
+        key.length === 10 && Number.isFinite(+dateAtNoonUTC(key)) && Object.hasOwn(fastingLabels, value)));
+      if (!$('fastingPanel').hidden) renderFasting();
+    } catch {}
+  });
+
   function addTestRow(label,message,state){
     const row=document.createElement('div');row.className=`test-result test-${state}`;
     const strong=document.createElement('strong');strong.textContent=label;
@@ -1334,28 +1567,31 @@
     addTestRow('App installation',window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true?'Home Screen mode':'Open in Safari or add to Home Screen',window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true?'pass':'info');
     addTestRow('Connection',navigator.onLine?'Online now':'Offline now',navigator.onLine?'pass':'info');
     addTestRow('Offline files','serviceWorker' in navigator?(navigator.serviceWorker.controller?'Offline worker controls this page':'Worker not controlling the page yet — reload after installation'):'No service worker support','serviceWorker' in navigator && navigator.serviceWorker.controller?'pass':'info');
-    addTestRow('Local calendar','Export .ics above; test delivery in iOS Calendar','info');
+    addTestRow('Prayer reminders', cfg.reminderEnabled ? cfg.reminderLead + ' minutes early while Salah is open' : 'Turned off','info');
     addTestRow('Notification API', ('Notification' in window && 'serviceWorker' in navigator)?`Supported · ${Notification.permission}`:'Not exposed by this browser',('Notification' in window&&'serviceWorker' in navigator)?'pass':'info');
     addTestRow('Background push','No server connected — not available in this build','info');
     addTestRow('Motion sensor',typeof DeviceOrientationEvent!=='undefined'?'Permission and compass test available':'Not exposed','info');
-    addTestRow('Vibration',typeof navigator.vibrate==='function'?'Browser exposes vibration':'Not supported (normal for iPhone Safari)',typeof navigator.vibrate==='function'?'pass':'info');
+    addTestRow('Vibration',supportsVibration()?'Browser supports vibration':'Visual cue and optional compass chime',supportsVibration()?'pass':'info');
   }
   $('runBasicChecks').addEventListener('click',basicChecks);
   $('testAdhan').addEventListener('click',async()=>{
     $('testFeedback').textContent='Requesting adhan…';
-    await playSound();
-    $('testFeedback').textContent=$('soundStatus').textContent+' Listen to confirm. A playing promise does not prove the speaker is audible.';
+    await playSound(cfg.soundChoice.startsWith('adhan-') ? cfg.soundChoice : 'adhan-abu-bakr', true);
+    $('testFeedback').textContent = $('soundStatus').textContent;
   });
   let testingChimeTimer=null;
-  $('testEarlyChime').addEventListener('click',()=>{
-    if(testingChimeTimer)clearTimeout(testingChimeTimer);
-    playReminderChime();
-    $('testFeedback').textContent='A short test chime just played. A second will be requested in 10 seconds while the app stays visible.';
-    testingChimeTimer=setTimeout(()=>{
-      if(!document.hidden){playReminderChime();$('testFeedback').textContent='10-second foreground alert requested. Did you hear it? iOS may silence it after backgrounding.'}
-      else $('testFeedback').textContent='The app was hidden; it cannot guarantee background audio.';
-      testingChimeTimer=null;
-    },10000);
+  $('testEarlyChime').addEventListener('click', async () => {
+    clearTimeout(testingChimeTimer);
+    if (!await audio.unlock()) {
+      $('testFeedback').textContent = 'Audio unavailable. Tap Play sound to try again.';
+      return;
+    }
+    audio.chime(reminderNotes);
+    $('testFeedback').textContent = 'Keep Salah open to hear another chime in 10 seconds.';
+    testingChimeTimer = setTimeout(() => {
+      const played = !document.hidden && audio.chime(reminderNotes);
+      $('testFeedback').textContent = played ? '10-second reminder played.' : 'Open Salah and tap Play sound to start audio.';
+    }, 10000);
   });
   $('testNotification').addEventListener('click',async()=>{
     const show=m=>$('testFeedback').textContent=m;
@@ -1364,7 +1600,7 @@
       const permission=await Notification.requestPermission();
       if(permission!=='granted'){show(`Notification permission: ${permission}`);return}
       const ready=await Promise.race([navigator.serviceWorker.ready, new Promise((_,reject)=>setTimeout(()=>reject(Error('No service worker ready within 8 seconds')),8000))]);
-      await ready.showNotification('Salah test',{body:'This is a test notification, not a prayer reminder.',icon:'./icons/icon-192.png',tag:'salah-self-test'});
+      await ready.showNotification('Salah test',{body:'This is a test notification, not a prayer reminder.',icon:$('tabIcon').href,tag:'salah-self-test'});
       show('Test notification sent to the system. Check Notification Centre; background scheduled alerts still require a push server.');
     } catch(err){show(`Notification test failed: ${err.message}`)}
   });
@@ -1373,13 +1609,19 @@
     $('testFeedback').textContent='Requesting GPS…';
     navigator.geolocation.getCurrentPosition(p=>{$('testFeedback').textContent=`GPS acquired: ±${Math.round(p.coords.accuracy)} metres. Qibla can use this position.`},e=>{$('testFeedback').textContent=`GPS permission or positioning issue: ${e.message}`},{enableHighAccuracy:true,timeout:12000,maximumAge:10000});
   });
-  $('testVibration').addEventListener('click',()=>{
-    const supported=typeof navigator.vibrate==='function';
-    const accepted=supported?navigator.vibrate([40,50,70]):false;
-    $('testFeedback').textContent=supported?`Vibration pattern ${accepted?'accepted by browser':'not accepted'}; physical feedback still needs checking.`:'iPhone Safari does not provide the web vibration API. The Qibla dial uses a visual alignment cue.';
+  $('testVibration').addEventListener('click', () => {
+    if (vibrate([40, 50, 70])) {
+      $('testFeedback').textContent = 'Vibration requested. Check for a short pulse.';
+    } else {
+      const feedback = $('testFeedback');
+      feedback.textContent = 'Vibration unavailable here. This is the visual cue.';
+      feedback.classList.remove('visual-test');
+      requestAnimationFrame(() => feedback.classList.add('visual-test'));
+      window.setTimeout(() => feedback.classList.remove('visual-test'), 850);
+    }
   });
 
-  const screenIds = {today:'today', compare:'comparisonPanel', qibla:'qiblaPanel', sounds:'soundPanel', settings:'settingsDialog'};
+  const screenIds = {today:'today', compare:'comparisonPanel', qibla:'qiblaPanel', fasting:'fastingPanel', sounds:'soundPanel', settings:'settingsDialog'};
   function showScreen(target) {
     if (!screenIds[target]) target = 'today';
     for (const [name,id] of Object.entries(screenIds)) {
@@ -1391,18 +1633,19 @@
       button.setAttribute('aria-selected', active ? 'true' : 'false');
       button.tabIndex = active ? 0 : -1;
     });
+    if (target === 'today' && dayInfo?.valid) { renderHero(dayInfo); renderPrayerList(dayInfo); updateSunChart(Date.now()); }
     if (target === 'settings') showSettings();
     if (target === 'compare') renderComparison();
+    if (target === 'fasting') renderFasting();
+    if (target === 'sounds') { renderReminderNext(); basicChecks(); }
     if (target === 'qibla') {
       renderQibla();
       if (qiblaCompassOn) void loadVariation().then(renderQibla);
-    } else if (qiblaCompassOn) {
-      window.removeEventListener('deviceorientation', orientationHandler);
-      qiblaCompassOn = false;
-      qiblaHeading = null;
-      $('startCompass').textContent = 'Start compass';
+    } else if (qiblaCompassOn) stopCompass();
+    const hash = target === 'today' ? '' : '#' + target;
+    if (location.hash !== hash) {
+      try { window.history.replaceState(null, '', location.pathname + location.search + hash); } catch {}
     }
-    try { window.history.replaceState(null,'',location.pathname+location.search+'#'+target); } catch {}
     window.scrollTo({top:0,behavior:'instant'});
   }
   document.querySelector('.app-dock').addEventListener('click', e => {
@@ -1417,7 +1660,13 @@
     const next=e.key==='Home'?0:e.key==='End'?controls.length-1:(idx+(e.key==='ArrowRight'?1:-1)+controls.length)%controls.length;
     controls[next].tabIndex=0;controls[next].focus();showScreen(controls[next].dataset.screenTarget);
   });
-  showScreen(['today','compare','qibla','sounds','settings'].includes(location.hash.slice(1))?location.hash.slice(1):'today');
+  document.querySelector('.brand').addEventListener('click', event => {
+    event.preventDefault();
+    showScreen('today');
+  });
+  compassStatus = 'Start the compass to use your phone’s heading.';
+  showScreen(location.hash.slice(1));
+  cacheAdhansAutomatically();
 
   window.addEventListener('online', () => { $('offlineIndicator').hidden=true; failedOnline.clear(); loadComparison(); void cacheAdhansAutomatically(); });
   window.addEventListener('offline', () => { $('offlineIndicator').hidden=false; render(); });
@@ -1425,5 +1674,5 @@
   basicChecks();
   renderQibla();
   if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});
-  render(); startTracking();
+  render(); startTracking(); checkPrayerSounds();
 })();

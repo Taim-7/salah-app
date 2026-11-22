@@ -242,6 +242,6 @@
     return withNight(today, next);
   }
 
-  root.SalahSolar = { calculateFullDay, calculateDay, solarEvents, daylightRestrictions, shiftDate, withNight };
+  root.SalahSolar = { calculateFullDay, calculateDay, solarEvents, altitudeAt:altitude, daylightRestrictions, shiftDate, withNight };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.SalahSolar;
 })(typeof window !== 'undefined' ? window : globalThis);

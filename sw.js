@@ -1,10 +1,14 @@
 const BASE = new URL(self.registration.scope);
 const PREFIX = 'salah-static:' + BASE.pathname + ':';
-const CACHE_NAME = PREFIX + 'v21';
+const CACHE_NAME = PREFIX + 'v22';
+const paletteFiles = ['ocean', 'midnight', 'sand', 'slate'].flatMap(name => [
+  './manifest-' + name + '.webmanifest',
+  ...[180, 192, 512].map(size => './icons/' + name + '/icon-' + size + '.png')
+]);
 const FILES = [
-  './', './index.html', './styles.css', './region.js', './solar.js', './providers.js', './app.js',
+  './', './index.html', './styles.css', './region.js', './solar.js', './providers.js', './audio.js', './app.js',
   './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-180.png',
-  './vendor/magvar/magvar.mjs', './vendor/magvar/utils.mjs', './vendor/magvar/WMMCOF2025.mjs'
+  './vendor/magvar/magvar.mjs', './vendor/magvar/utils.mjs', './vendor/magvar/WMMCOF2025.mjs', ...paletteFiles
 ].map(path => new URL(path, BASE).href);
 const index = new URL('./index.html', BASE).href;
 

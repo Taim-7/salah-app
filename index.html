@@ -4,18 +4,18 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
-<meta content="#1b2930" name="theme-color"/>
+<meta content="#0c1717" name="theme-color"/>
 <meta content="yes" name="apple-mobile-web-app-capable"/>
 <meta content="default" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="Salah" name="apple-mobile-web-app-title"/>
-<meta content="Prayer times, comparison, Qibla direction and Calendar reminders." name="description"/>
-<link href="./manifest.webmanifest" rel="manifest"/>
-<link href="./icons/icon-192.png" rel="icon" type="image/png"/>
-<link href="./icons/icon-180.png" rel="apple-touch-icon"/>
+<meta content="Prayer times, Qibla direction, fasting tracker and sound reminders for the UK and Ireland." name="description"/>
+<link id="appManifest" href="./manifest.webmanifest" rel="manifest"/>
+<link id="tabIcon" href="./icons/icon-192.png" rel="icon" type="image/png"/>
+<link id="touchIcon" href="./icons/icon-180.png" rel="apple-touch-icon"/>
 <link href="./styles.css" rel="stylesheet"/>
 <title>Salah — Prayer times</title>
 </head>
-<body data-accent="forest" data-layout="classic" data-theme="dark"><span id="top"></span>
+<body data-accent="forest" data-layout="compact" data-theme="dark"><span id="top"></span>
 <div class="site-shell">
 <header class="masthead">
 <a aria-label="Salah — Prayer times" class="brand" href="#today">
@@ -25,7 +25,44 @@
 
 </header>
 <main><section aria-label="Prayer times" class="app-screen" data-screen="today" id="today"><div class="heading-line"><div><h1>Prayer times</h1><div class="location-line"><svg aria-hidden="true" fill="none" viewbox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z" stroke="currentColor" stroke-width="1.8"></path><circle cx="12" cy="10" r="2.8" stroke="currentColor" stroke-width="1.8"></circle></svg><span id="locationLabel">Derry, Northern Ireland</span><span class="light-divider">·</span><span id="timezoneLabel">Europe/London</span><span class="light-divider">·</span><span id="locationMode">Fixed location</span></div></div><div class="date-nav"><button aria-label="Previous day" class="day-arrow" id="previousDay" type="button">‹</button><button class="day-picker-button" id="dateButton" type="button"><span id="dateLabel">Today</span><span id="dateSubLabel"></span></button><button aria-label="Next day" class="day-arrow" id="nextDay" type="button">›</button><input aria-label="Choose a date" class="hidden-date" id="nativeDate" type="date"/></div></div><p aria-live="polite" class="location-live-status" id="liveLocationStatus"></p><p id="offlineIndicator" class="offline-indicator" hidden>Offline · local calculation available</p><div class="notice hidden" id="notice" role="status"></div><div class="dashboard">
-<section aria-label="Upcoming prayer" class="hero-card"><div class="hero-top"><span class="hero-overline" id="heroHeading">NEXT PRAYER</span><span class="hero-method" id="heroMethod">15° / 13°</span></div><div class="hero-content"><div class="hero-name" id="nextPrayerName">—</div><div class="hero-arabic" dir="rtl" id="nextPrayerArabic" lang="ar">الصلاة</div><div class="hero-time" id="nextPrayerTime">--:--</div><p aria-live="off" class="hero-countdown" id="countdown">Calculating times…</p></div><div class="hero-bottom"><span class="hero-live-message" id="heroLiveMessage" role="status">Today</span><span class="hero-live-time" id="heroLiveTime"></span></div></section>
+<section aria-label="Upcoming prayer" class="hero-card">
+  <div class="hero-top">
+    <span class="hero-overline" id="heroHeading">Next prayer</span>
+    <span class="hero-method" id="heroMethod">15° / 13°</span>
+  </div>
+  <div class="hero-content">
+    <div class="hero-prayer">
+      <div class="hero-arabic" dir="rtl" id="nextPrayerArabic" lang="ar"></div>
+      <div class="hero-name" id="nextPrayerName">—</div>
+    </div>
+    <div class="hero-digits">
+      <div class="hero-time" id="nextPrayerTime">—</div>
+      <p class="hero-countdown" id="countdown">Calculating times…</p>
+    </div>
+  </div>
+  <div class="sun-chart" id="sunChart" hidden>
+    <svg viewBox="0 0 360 115" role="img" aria-labelledby="sunChartTitle sunChartDescription">
+      <title id="sunChartTitle">The Sun's path today</title>
+      <desc id="sunChartDescription">Calculated solar altitude. Dots mark the prayer timetable.</desc>
+      <defs>
+        <linearGradient id="sunArea" x2="0" y2="1" gradientUnits="objectBoundingBox">
+          <stop offset="0" class="sun-area-top"/><stop offset="1" class="sun-area-bottom"/>
+        </linearGradient>
+        <clipPath id="sunProgress"><rect id="sunProgressFill" width="0" height="115"/></clipPath>
+      </defs>
+      <path id="sunAreaPath" fill="url(#sunArea)"/>
+      <path id="sunHorizon" class="sun-horizon"/>
+      <path id="sunRoute" class="sun-route"/>
+      <path id="sunRouteLive" class="sun-route-live" clip-path="url(#sunProgress)"/>
+      <g id="sunChartDots"></g><circle id="sunPositionHalo" r="8"/><circle id="sunPosition" r="3.6"/>
+    </svg>
+    <div class="sun-chart-label"><span>Sun’s altitude</span><span id="sunAltitudeLabel"></span></div>
+  </div>
+  <div class="hero-bottom">
+    <span class="hero-live-message" id="heroLiveMessage" role="status">Today</span>
+    <span class="hero-live-time" id="heroLiveTime"></span>
+  </div>
+</section>
 <section aria-label="Prayer timetable" class="times-panel"><div class="panel-head"><div><h2>Timetable</h2></div><span class="tiny-pill" id="timesTag">Local time</span></div><div class="times-list" id="prayerList"><p class="loading">Calculating prayer times…</p></div>
 <details class="study-links prayer-limits">
   <summary>About the forbidden times</summary>
@@ -77,14 +114,154 @@
   <p><a href="https://waqt.uk/northwestislamiccentre/" rel="noopener" target="_blank">North West Islamic Centre timetable</a> · <a href="https://islaminletterkenny.com/" rel="noopener" target="_blank">Letterkenny and Donegal timetables</a></p>
 </details>
 </section><section aria-labelledby="qiblaTitle" class="qibla-panel app-screen" data-screen="qibla" hidden="" id="qiblaPanel">
-<div class="qibla-heading"><div><h2 id="qiblaTitle">Qibla finder</h2></div><span aria-hidden="true" class="qibla-kaaba"><svg fill="none" viewbox="0 0 48 48"><path d="m11 17 13-7 13 7v18l-13 7-13-7z" stroke="currentColor" stroke-width="2"></path><path d="m11 17 13 7 13-7M24 24v18M11 24l13 7 13-7" opacity=".6" stroke="currentColor" stroke-width="1.5"></path><path d="M11 21l13 7 13-7" stroke="currentColor" stroke-width="3"></path></svg></span></div>
-<div class="qibla-content"><div class="compass-holder"><div aria-label="Qibla compass dial" class="compass-outer" id="qiblaDial"><span class="cardinal north">N</span><span class="cardinal east">E</span><span class="cardinal south">S</span><span class="cardinal west">W</span><div class="compass-arrow" id="qiblaArrow"><span class="compass-arrow-head"></span><span class="compass-arrow-tail"></span></div><div class="compass-dot"></div></div><div aria-live="off" class="compass-aligned" id="qiblaAligned">Align the gold pointer with the top of your phone</div></div>
-<div class="qibla-readout"><span class="qibla-mini">DIRECTION FROM TRUE NORTH</span><strong class="qibla-bearing" id="qiblaBearing">—°</strong><span class="qibla-compasspoint" id="qiblaCardinal">—</span><div class="qibla-info" id="qiblaPosition">Using your selected location</div><button class="primary-button" id="startCompass" type="button">Start compass</button><button class="secondary-button" id="qiblaGPS" type="button">Use GPS for Qibla and prayers</button><p class="qibla-state" id="qiblaState" role="status">Start the compass to request motion access.</p><label class="declination-label" for="declinationOverride">Magnetic correction (° east, optional)</label><div class="declination-fields"><input id="declinationOverride" max="180" min="-180" placeholder="Automatic WMM 2025" step="0.1" type="number"/><button class="secondary-button" id="clearDeclination" type="button">Auto</button></div><p class="qibla-help" id="qiblaAccuracy">Hold the phone flat, away from magnets and metal.</p><label class="quiet-toggle" hidden=""><input checked="" id="qiblaHaptic" type="checkbox"/><span>Gentle vibration on alignment, when supported</span></label></div></div>
-</section><section aria-labelledby="soundTitle" class="sound-panel app-screen" data-screen="sounds" hidden="" id="soundPanel"><div class="comparison-header"><div><h2 id="soundTitle">Sound &amp; alerts</h2></div></div><div class="alert-grid"><div><label class="block-label" for="soundChoice">Adhan or alert sound</label><select id="soundChoice"><option value="soft">Gentle chime</option><option value="adhan-abu-bakr">Abu Bakr · Fajr and regular</option><option value="adhan-fajr-abu-bakr">Abu Bakr + Echo</option><option value="adhan-thabet">Thabet</option><option value="bell">Clear bell</option><option value="custom">My imported sound</option><option value="off">Silent</option></select><div class="custom-sound-row"><label for="customAudio">Import an audio file on this phone</label><input accept="audio/mpeg,audio/mp4,audio/wav,audio/x-m4a,audio/*" id="customAudio" type="file"/><span id="savedAudioStatus">No imported audio saved.</span><button class="text-button" id="clearAudio" type="button">Remove saved audio</button></div><label class="block-label" for="soundVolume">Sound level</label><div class="volume-controls"><input aria-label="Sound level" id="soundVolume" max="100" min="15" step="5" type="range" value="40"/><output for="soundVolume" id="soundVolumeLabel">40%</output></div><p class="ios-volume-note hidden" id="iosVolumeNote">Use your iPhone volume buttons for adhan loudness.</p><div class="alert-actions"><button class="secondary-button" id="testSound" type="button">Play sound</button><button class="secondary-button" id="stopSound" type="button">Stop sound</button></div><p class="alert-status" id="soundStatus" role="status">Select a sound and press Play sound.</p></div><div class="calendar-box"><strong>15-minute prayer reminders</strong><p>Export times from the displayed date with 15-minute Calendar alerts. Import the file into your calendar to receive them.</p><label class="block-label" for="calendarLead">Calendar reminder</label><select id="calendarLead"><option selected="selected" value="15">15 minutes before</option></select><button class="secondary-button" id="exportCalendar" type="button">Export prayer calendar (.ics)</button><p class="alert-status" id="calendarStatus" role="status"></p></div></div><section aria-labelledby="testTitle" class="device-tests" id="deviceTests"><div class="test-head"><div><h3 id="testTitle">Device checks</h3></div><button class="secondary-button" id="runBasicChecks" type="button">Run checks</button></div><div aria-live="polite" class="test-results" id="testResults"></div><div class="test-buttons"><button class="secondary-button" id="testAdhan" type="button">Test adhan</button><button class="secondary-button" id="testEarlyChime" type="button">10-second alert</button><button class="secondary-button" id="testNotification" type="button">Test notification</button><button class="secondary-button" id="testGPS" type="button">Test GPS</button><button class="secondary-button" id="testVibration" type="button">Test vibration</button></div><p class="test-feedback" id="testFeedback" role="status"></p><p class="test-note">Salah plays sounds while it is open. For alerts when the screen is locked, use the Calendar export.</p></section></section><section aria-labelledby="settingsTitle" class="app-screen settings-screen" data-screen="settings" hidden="" id="settingsDialog"><form class="settings-sheet"><header class="dialog-heading"><div><h2 id="settingsTitle">Settings</h2></div><button aria-hidden="true" aria-label="Close settings" class="close-dialog" hidden="" id="closeSettings" tabindex="-1" type="button">✕</button></header><div class="dialog-scroll"><section class="settings-group" id="appearanceSettings"><h3>Appearance</h3><p>Choose a colour and timetable view.</p>
+<header class="qibla-heading">
+  <div><h2 id="qiblaTitle">Qibla</h2><p id="qiblaPosition">Using your selected location</p></div>
+  <button class="secondary-button" id="qiblaGPS" type="button">Use GPS</button>
+</header>
+<div class="qibla-content">
+  <div class="compass-holder">
+    <div class="compass-aligned" id="qiblaAligned" data-state="reference">
+      <span id="qiblaCueMark" aria-hidden="true">◇</span><span id="qiblaCue">True-north reference</span>
+    </div>
+    <div class="compass-outer" id="qiblaDial">
+      <svg class="compass-art" viewBox="0 0 320 320" aria-hidden="true">
+        <circle class="compass-outline" cx="160" cy="160" r="149"/>
+        <circle class="compass-inner-ring" cx="160" cy="160" r="115"/>
+        <g id="compassTicks"></g>
+        <g class="compass-labels"><text id="compassNorth">N</text><text id="compassEast">E</text><text id="compassSouth">S</text><text id="compassWest">W</text></g>
+        <path class="phone-pointer" d="M160 7l8 15-8-3-8 3z"/>
+        <path class="qibla-arc" id="qiblaArc"/>
+        <g id="qiblaArrow" class="qibla-target">
+          <rect x="-11" y="-11" width="22" height="22" rx="6"/>
+          <path d="M-6-1 0-5l6 4v6H-6zM-6 0H6"/>
+        </g>
+      </svg>
+      <div class="compass-centre" aria-hidden="true">
+        <strong id="qiblaTurnAngle">—</strong><span id="qiblaTurnLabel">From true north</span>
+      </div>
+    </div>
+    <p class="compass-hold" id="qiblaHold">Hold your phone level, away from metal.</p>
+  </div>
+  <div class="qibla-readout">
+    <dl class="compass-stats">
+      <div><dt>True bearing</dt><dd id="qiblaBearing">—</dd><small id="qiblaCardinal"></small></div>
+      <div><dt>To Makkah</dt><dd id="qiblaDistance">—</dd><small>Great-circle distance</small></div>
+      <div><dt>Sensor accuracy</dt><dd id="qiblaPrecision">—</dd><small id="qiblaPrecisionNote">Reference view</small></div>
+    </dl>
+    <button class="primary-button" id="startCompass" type="button">Start compass</button>
+    <p class="qibla-state" id="qiblaState" role="status">Start the compass to use your phone’s heading.</p>
+    <p class="qibla-help" id="qiblaAccuracy">The bearing is measured clockwise from true north.</p>
+    <label class="tracking-toggle" id="qiblaHapticControl" hidden><input id="qiblaHaptic" type="checkbox"/><span>Vibrate near alignment</span></label>
+    <label class="tracking-toggle"><input id="qiblaChime" type="checkbox"/><span>Play a chime on alignment</span></label>
+    <p class="setting-hint" id="qiblaHapticHint"></p>
+    <details class="study-links">
+      <summary>Magnetic correction</summary>
+      <label class="block-label" for="declinationOverride">Degrees east</label>
+      <div class="declination-fields"><input id="declinationOverride" max="180" min="-180" placeholder="Automatic WMM 2025" step="0.1" type="number"/><button class="secondary-button" id="clearDeclination" type="button">Use automatic</button></div>
+    </details>
+  </div>
+</div>
+</section>
 
-<label class="block-label" for="settingsLayout">Timetable view</label><select id="settingsLayout"><option value="classic">Classic</option><option value="compact">Focus</option><option value="timeline">Dayline</option></select>
-<label class="block-label" for="settingsAccent">Colour preset</label><select id="settingsAccent"><option value="forest">Forest green</option><option value="ocean">Ocean blue</option><option value="dusk">Evening plum</option></select>
-<label class="block-label" for="settingsTimeFormat">Clock</label><select id="settingsTimeFormat"><option value="12">12-hour (6:30 pm)</option><option value="24">24-hour (18:30)</option></select></section><section class="settings-group"><h3>Location</h3><p>Find a UK or Ireland town, or use your phone’s location.</p><div class="city-search-row"><input aria-label="Town search" id="cityQuery" placeholder="Search UK or Ireland town" type="search"/><button class="secondary-button" id="citySearch" type="button">Find town</button></div><div aria-label="City search results" class="city-results" id="cityResults" role="group"></div><div class="setting-action-row"><button class="secondary-button" id="setDerry" type="button">Derry default</button><button class="secondary-button" id="setGPS" type="button">Use current GPS</button></div><label class="tracking-toggle"><input id="trackLocation" type="checkbox"/><span>Follow my location while Salah is open</span></label><div class="field-grid"><label>Latitude <input id="latInput" inputmode="decimal" max="89" min="-89" step="0.0001" type="number"/></label><label>Longitude <input id="lngInput" inputmode="decimal" max="180" min="-180" step="0.0001" type="number"/></label></div><div class="field-grid"><label>Place name <input id="placeInput" maxlength="110" placeholder="Derry, Northern Ireland" type="text"/></label><label>Time zone <select id="tzInput" disabled><option value="Europe/London">UK (London)</option><option value="Europe/Dublin">Ireland (Dublin)</option></select></label></div><div class="form-note" id="gpsStatus" role="status"></div><p class="setting-hint">The time zone comes from the saved coordinates. Town search includes nearby places offline and can look up other towns through Open-Meteo. GPS can send coordinates to BigDataCloud to look up a place name.</p></section><section class="settings-group"><h3>Online comparison</h3><label class="tracking-toggle"><input checked="" id="onlineCompare" type="checkbox"/><span>Fetch online prayer-time comparisons automatically</span></label><p class="setting-hint">When on, Salah sends the selected coordinates and date to the AlAdhan API. Your selected AlAdhan timetable still fetches times when this switch is off. Previously loaded dates can work offline.</p></section><section class="settings-group"><h3>Fajr and Isha angles</h3><div aria-label="Calculation angles" class="option-group" role="radiogroup"><label class="option-card"><input name="method" type="radio" value="15-13"/><span><strong>15° / 13°</strong><small>15° Fajr · 13° Isha</small></span></label><label class="option-card"><input name="method" type="radio" value="12-12"/><span><strong>French UOIF · 12° / 12°</strong><small>12° Fajr · 12° Isha</small></span></label><label class="option-card"><input name="method" type="radio" value="18-17"/><span><strong>Muslim World League · 18° / 17°</strong><small>MWL angle pair · uses your summer rule</small></span></label><label class="option-card"><input name="method" type="radio" value="custom"/><span><strong>Custom angles</strong><small>Choose both values yourself</small></span></label></div><div class="field-grid" id="customAngles"><label>Fajr angle <input id="fajrAngleInput" inputmode="decimal" max="22" min="6" step="0.5" type="number"/></label><label>Isha angle <input id="ishaAngleInput" inputmode="decimal" max="22" min="6" step="0.5" type="number"/></label></div><p class="setting-hint">Angles estimate the religious signs. A missing crossing tells you about the Sun’s position.</p></section>
+<section aria-labelledby="fastingTitle" class="fasting-panel app-screen" data-screen="fasting" id="fastingPanel" hidden>
+  <header class="panel-heading"><h2 id="fastingTitle">Fasting tracker</h2><button type="button" class="secondary-button" id="fastingToday">Today</button></header>
+  <div class="fasting-content">
+    <div class="fasting-calendar">
+      <div class="month-nav">
+        <button class="day-arrow" id="fastingPrevious" type="button" aria-label="Previous month">‹</button>
+        <h3 id="fastingMonth"></h3>
+        <button class="day-arrow" id="fastingNext" type="button" aria-label="Next month">›</button>
+      </div>
+      <div class="fasting-weekdays" aria-hidden="true"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+      <div id="fastingDays" class="fasting-days" role="group" aria-labelledby="fastingMonth"></div>
+      <p class="fasting-month-summary" id="fastingSummary"></p>
+    </div>
+    <div class="fasting-detail">
+      <p class="fasting-date" id="fastingDate"></p>
+      <p class="setting-hint" id="fastingLocation"></p>
+      <dl class="fasting-times">
+        <div><dt>Fajr · start fast</dt><dd id="fastingFajr">—</dd></div>
+        <div><dt>Maghrib · iftar</dt><dd id="fastingIftar">—</dd></div>
+        <div><dt>Duration</dt><dd id="fastingDuration">—</dd></div>
+      </dl>
+      <p class="setting-hint" id="fastingEstimate"></p>
+      <div class="fasting-actions" role="group" aria-label="Mark the selected fast">
+        <button class="secondary-button" type="button" data-fast-status="fasted">Fasted</button>
+        <button class="secondary-button" type="button" data-fast-status="due">To make up</button>
+        <button class="secondary-button" type="button" data-fast-status="made-up">Made up</button>
+        <button class="text-button" type="button" data-fast-status="">Clear</button>
+      </div>
+      <p id="fastingStatus" class="form-note" role="status"></p>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="soundTitle" class="sound-panel app-screen" data-screen="sounds" hidden id="soundPanel">
+  <header class="panel-heading"><h2 id="soundTitle">Sounds &amp; reminders</h2></header>
+  <div class="alert-grid">
+    <div class="sound-card">
+      <label class="block-label" for="soundChoice">Prayer-time sound</label>
+      <select id="soundChoice">
+        <option value="soft">Gentle chime</option>
+        <option value="adhan-abu-bakr">Abu Bakr</option>
+        <option value="adhan-fajr-abu-bakr">Abu Bakr + Echo</option>
+        <option value="adhan-thabet">Thabet</option>
+        <option value="bell">Clear bell</option>
+        <option value="custom">My imported sound</option>
+        <option value="off">Silent</option>
+      </select>
+      <label class="block-label" for="soundVolume">Sound level</label>
+      <div class="volume-controls"><input id="soundVolume" max="100" min="0" step="1" type="range" value="40"/><output for="soundVolume" id="soundVolumeLabel">40%</output></div>
+      <p class="setting-hint" id="iosVolumeNote" hidden>Use the phone’s volume buttons to adjust overall loudness.</p>
+      <div class="alert-actions"><button class="primary-button" id="testSound" type="button">Play sound</button><button class="secondary-button" id="stopSound" type="button">Stop</button></div>
+      <p class="alert-status" id="soundStatus" role="status">Tap Play sound to start audio for this session.</p>
+      <details class="study-links custom-sound-row">
+        <summary>Import a sound</summary>
+        <label class="block-label" for="customAudio">Audio file · up to 8 MB</label>
+        <input accept="audio/mpeg,audio/mp4,audio/wav,audio/x-m4a,audio/*" id="customAudio" type="file"/>
+        <p id="savedAudioStatus">No imported audio saved.</p>
+        <button class="text-button" id="clearAudio" type="button">Remove saved audio</button>
+      </details>
+    </div>
+    <div class="reminder-card">
+      <label class="tracking-toggle"><input id="reminderEnabled" type="checkbox"/><strong>Pre-prayer reminder</strong></label>
+      <label class="block-label" for="reminderLead">Remind me</label>
+      <select id="reminderLead">
+        <option value="15">15 minutes before</option><option value="20">20 minutes before</option>
+        <option value="25">25 minutes before</option><option value="30">30 minutes before</option>
+      </select>
+      <p id="reminderNext" class="reminder-next"></p>
+      <p class="setting-hint">Salah shows reminders while it’s open. Tap Play sound to hear them. Locking the phone pauses scheduled reminders.</p>
+    </div>
+  </div>
+  <details class="device-tests study-links" id="deviceTests">
+    <summary>Device checks</summary>
+    <div class="test-head"><button class="secondary-button" id="runBasicChecks" type="button">Run checks</button></div>
+    <div aria-live="polite" class="test-results" id="testResults"></div>
+    <div class="test-buttons">
+      <button class="secondary-button" id="testAdhan" type="button">Test adhan</button>
+      <button class="secondary-button" id="testEarlyChime" type="button">10-second alert</button>
+      <button class="secondary-button" id="testNotification" type="button">Test notification</button>
+      <button class="secondary-button" id="testGPS" type="button">Test GPS</button>
+      <button class="secondary-button" id="testVibration" type="button">Test vibration</button>
+    </div>
+    <p class="test-feedback" id="testFeedback" role="status"></p>
+  </details>
+</section>
+<section aria-labelledby="settingsTitle" class="app-screen settings-screen" data-screen="settings" hidden="" id="settingsDialog"><form class="settings-sheet"><header class="dialog-heading"><div><h2 id="settingsTitle">Settings</h2></div><button aria-hidden="true" aria-label="Close settings" class="close-dialog" hidden="" id="closeSettings" tabindex="-1" type="button">✕</button></header><div class="dialog-scroll"><section class="settings-group" id="appearanceSettings">
+  <h3>Appearance</h3>
+  <div class="field-grid appearance-fields">
+    <label for="settingsLayout">App style
+      <select id="settingsLayout"><option value="compact">Focus</option><option value="timeline">Dayline</option><option value="horizon">Horizon</option><option value="tiles">Tiles</option></select>
+    </label>
+    <label for="settingsTimeFormat">Clock
+      <select id="settingsTimeFormat"><option value="12">12-hour</option><option value="24">24-hour</option></select>
+    </label>
+  </div>
+  <p class="setting-hint" id="stylePreview"></p>
+  <p class="block-label" id="paletteLabel">Colour preset</p>
+  <div class="palette-choices" id="paletteChoices" role="group" aria-labelledby="paletteLabel"></div>
+</section><section class="settings-group"><h3>Location</h3><p>Find a UK or Ireland town, or use your phone’s location.</p><div class="city-search-row"><input aria-label="Town search" id="cityQuery" placeholder="Search UK or Ireland town" type="search"/><button class="secondary-button" id="citySearch" type="button">Find town</button></div><div aria-label="City search results" class="city-results" id="cityResults" role="group"></div><div class="setting-action-row"><button class="secondary-button" id="setDerry" type="button">Derry default</button><button class="secondary-button" id="setGPS" type="button">Use current GPS</button></div><label class="tracking-toggle"><input id="trackLocation" type="checkbox"/><span>Follow my location while Salah is open</span></label><div class="field-grid"><label>Latitude <input id="latInput" inputmode="decimal" max="89" min="-89" step="0.0001" type="number"/></label><label>Longitude <input id="lngInput" inputmode="decimal" max="180" min="-180" step="0.0001" type="number"/></label></div><div class="field-grid"><label>Place name <input id="placeInput" maxlength="110" placeholder="Derry, Northern Ireland" type="text"/></label><label>Time zone <select id="tzInput" disabled><option value="Europe/London">UK (London)</option><option value="Europe/Dublin">Ireland (Dublin)</option></select></label></div><div class="form-note" id="gpsStatus" role="status"></div><p class="setting-hint">The time zone comes from the saved coordinates. Town search includes nearby places offline and can look up other towns through Open-Meteo. GPS can send coordinates to BigDataCloud to look up a place name.</p></section><section class="settings-group"><h3>Online comparison</h3><label class="tracking-toggle"><input checked="" id="onlineCompare" type="checkbox"/><span>Fetch online prayer-time comparisons automatically</span></label><p class="setting-hint">When on, Salah sends the selected coordinates and date to the AlAdhan API. Your selected AlAdhan timetable still fetches times when this switch is off. Previously loaded dates can work offline.</p></section><section class="settings-group"><h3>Fajr and Isha angles</h3><div aria-label="Calculation angles" class="option-group" role="radiogroup"><label class="option-card"><input name="method" type="radio" value="15-13"/><span><strong>15° / 13°</strong><small>15° Fajr · 13° Isha</small></span></label><label class="option-card"><input name="method" type="radio" value="12-12"/><span><strong>French UOIF · 12° / 12°</strong><small>12° Fajr · 12° Isha</small></span></label><label class="option-card"><input name="method" type="radio" value="18-17"/><span><strong>Muslim World League · 18° / 17°</strong><small>MWL angle pair · uses your summer rule</small></span></label><label class="option-card"><input name="method" type="radio" value="custom"/><span><strong>Custom angles</strong><small>Choose both values yourself</small></span></label></div><div class="field-grid" id="customAngles"><label>Fajr angle <input id="fajrAngleInput" inputmode="decimal" max="22" min="6" step="0.5" type="number"/></label><label>Isha angle <input id="ishaAngleInput" inputmode="decimal" max="22" min="6" step="0.5" type="number"/></label></div><p class="setting-hint">Angles estimate the religious signs. A missing crossing tells you about the Sun’s position.</p></section>
 <section class="settings-group">
   <h3>Isha</h3>
   <label class="block-label" for="ishaLimit">Ordinary Isha cutoff</label>
@@ -120,8 +297,11 @@
   </details>
 </section></div>
 <footer class="dialog-actions"><p id="settingsStatus" class="form-note" role="status"></p><button class="primary-button" id="saveSettings" type="button">Save settings</button></footer></form></section></main>
-</div><nav aria-label="Main navigation" class="app-dock" role="tablist"><button aria-controls="today" aria-selected="true" class="is-active" data-screen-target="today" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M12 4v3m0 10v3M4 12h3m10 0h3"></path></svg><span>Prayers</span></button><button aria-controls="comparisonPanel" aria-selected="false" class="" data-screen-target="compare" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M3 8h18M3 16h18M7 5v6m10 2v6"></path></svg><span>Compare</span></button><button aria-controls="qiblaPanel" aria-selected="false" class="" data-screen-target="qibla" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="m10 10 7-4-4 7-7 4z"></path></svg><span>Qibla</span></button><button aria-controls="soundPanel" aria-selected="false" class="" data-screen-target="sounds" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0v5l2 3H4l2-3V9M10 20h4"></path></svg><span>Sounds</span></button><button aria-controls="settingsDialog" aria-selected="false" class="" data-screen-target="settings" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M12 3v3m0 12v3M3 12h3m12 0h3m-3.7-6.7-2.1 2.1m-7.4 7.4-2.1 2.1m0-11.6 2.1 2.1m7.4 7.4 2.1 2.1"></path><circle cx="12" cy="12" r="3"></circle></svg><span>Settings</span></button></nav>
+</div><aside id="reminderToast" class="reminder-toast" hidden><p id="reminderMessage" role="status"></p><button type="button" class="text-button" id="dismissReminder" aria-label="Dismiss prayer reminder">×</button></aside>
+<nav aria-label="Main navigation" class="app-dock" role="tablist"><button aria-controls="today" aria-selected="true" class="is-active" data-screen-target="today" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M12 4v3m0 10v3M4 12h3m10 0h3"></path></svg><span>Prayers</span></button><button aria-controls="comparisonPanel" aria-selected="false" class="" data-screen-target="compare" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M3 8h18M3 16h18M7 5v6m10 2v6"></path></svg><span>Compare</span></button><button aria-controls="qiblaPanel" aria-selected="false" class="" data-screen-target="qibla" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="m10 10 7-4-4 7-7 4z"></path></svg><span>Qibla</span></button><button aria-controls="fastingPanel" aria-selected="false" data-screen-target="fasting" role="tab" type="button">
+  <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="3"/><path d="M8 3.5v5M16 3.5v5M8.5 14l2.4 2.4 4.6-4.6"/></svg><span>Fasting</span>
+</button><button aria-controls="soundPanel" aria-selected="false" class="" data-screen-target="sounds" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0v5l2 3H4l2-3V9M10 20h4"></path></svg><span>Sounds</span></button><button aria-controls="settingsDialog" aria-selected="false" class="" data-screen-target="settings" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M12 3v3m0 12v3M3 12h3m12 0h3m-3.7-6.7-2.1 2.1m-7.4 7.4-2.1 2.1m0-11.6 2.1 2.1m7.4 7.4 2.1 2.1"></path><circle cx="12" cy="12" r="3"></circle></svg><span>Settings</span></button></nav>
 
-<script src="./region.js"></script><script src="./solar.js"></script><script src="./providers.js"></script><script src="./app.js"></script>
+<script src="./region.js"></script><script src="./solar.js"></script><script src="./providers.js"></script><script src="./audio.js"></script><script src="./app.js"></script>
 </body>
 </html>

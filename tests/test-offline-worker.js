@@ -47,11 +47,15 @@ const tick=async(type,request)=>{
  await caches.open('salah-static:/salah-app/:v15');
  await caches.open('salah-static:/other-app/:v15');
  await tick('install');
- assert.equal(stores.has('salah-static:/salah-app/:v21'),true);
+ assert.equal(stores.has('salah-static:/salah-app/:v22'),true);
  await tick('activate');
  assert.equal(stores.has('salah-static:/salah-app/:v15'),false);
  assert.equal(stores.has('salah-static:/other-app/:v15'),true);
- const urls=['','index.html','styles.css','region.js','solar.js','providers.js','app.js','manifest.webmanifest','icons/icon-192.png','icons/icon-512.png','icons/icon-180.png','vendor/magvar/magvar.mjs','vendor/magvar/utils.mjs','vendor/magvar/WMMCOF2025.mjs'];
+ const urls=['','index.html','styles.css','region.js','solar.js','providers.js','audio.js','app.js','manifest.webmanifest','icons/icon-192.png','icons/icon-512.png','icons/icon-180.png','vendor/magvar/magvar.mjs','vendor/magvar/utils.mjs','vendor/magvar/WMMCOF2025.mjs'];
+ for(const preset of ['ocean','midnight','sand','slate']) {
+  urls.push('manifest-'+preset+'.webmanifest');
+  for(const size of [180,192,512]) urls.push('icons/'+preset+'/icon-'+size+'.png');
+ }
  for(const u of urls){
   const resp=await tick('fetch',{url:base+u,method:'GET',mode:u?'same-origin':'navigate'});
   assert(resp?.ok,`Not cached offline: ${u}`);
@@ -64,5 +68,5 @@ const tick=async(type,request)=>{
  const cross=await tick('fetch',{url:'https://api.aladhan.com/test',method:'GET',mode:'cors'});
  assert.equal(cross,undefined);
  assert.equal(requests,2);
- console.log('PASS: 14 precached URLs; offline shell and scripts; navigation fallback; missing script 503; cross-origin bypass');
+ console.log('PASS: 31 precached URLs; offline shell and scripts; navigation fallback; missing script 503; cross-origin bypass');
 })().catch(e=>{console.error(e);process.exitCode=1});

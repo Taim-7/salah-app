@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from os import environ
@@ -66,14 +66,10 @@ try:
         assert page.locator('#prayerList .avoid-entry').count() == 3
         assert page.locator('#prayerList').get_by_text('Time unavailable').count() == 2
         page.locator('[data-screen-target="sounds"]').click()
-        with page.expect_download() as pending:
-            page.locator('#exportCalendar').click()
-        calendar = pending.value.path().read_bytes()
-        assert b'UID:salah-angles-dhuhr-2026-06-21' in calendar
-        assert b'UID:salah-angles-fajr-2026-06-21' not in calendar
-        assert b'UID:salah-angles-isha-2026-06-21' not in calendar
-        assert all(len(line) <= 75 for line in calendar.split(b'\r\n'))
-        assert b'TRIGGER:-PT15M\r\n' in calendar
+        assert page.locator('#exportCalendar').count() == 0
+        assert page.locator('#reminderLead option').evaluate_all('(options) => options.map(o => +o.value)') == [15, 20, 25, 30]
+        page.locator('#reminderLead').select_option('25')
+        assert page.locator('#reminderLead').input_value() == '25'
 
         page.locator('[data-screen-target="settings"]').click()
         page.locator('#highLatSelect').select_option('tayba')
@@ -83,8 +79,35 @@ try:
         assert page.locator('#prayerList').get_by_text('Time unavailable').count() == 0
         assert page.locator('#prayerList .avoid-entry').count() == 3
 
+        page.locator('[data-screen-target="fasting"]').click()
+        assert 'est.' in page.locator('#fastingFajr').inner_text()
+        assert page.locator('#fastingIftar').inner_text() != '—'
+        page.locator('[data-fast-status="due"]').click()
+        assert '1 to make up' in page.locator('#fastingSummary').inner_text()
+        page.locator('[data-fast-status="made-up"]').click()
+        assert '0 to make up' in page.locator('#fastingSummary').inner_text()
+        page.reload()
+        assert page.locator('[data-fast-status="made-up"]').get_attribute('aria-pressed') == 'true'
+        page.locator('#fastingNext').click()
+        assert page.locator('#fastingMonth').inner_text() == 'July 2026'
+        page.locator('#fastingToday').click()
+        assert page.locator('#fastingMonth').inner_text() == 'June 2026'
+        page.locator('[data-fast-status=""]').click()
+        assert page.locator('[data-fast-status=""]').is_disabled()
+
+        page.locator('[data-screen-target="settings"]').click()
+        page.locator('[data-palette="ocean"]').click()
+        page.locator('#settingsLayout').select_option('horizon')
+        assert page.locator('#touchIcon').get_attribute('href') == './icons/ocean/icon-180.png'
+        assert page.locator('#appManifest').get_attribute('href') == './manifest-ocean.webmanifest'
+        assert page.evaluate("fetch('./icons/ocean/icon-180.png').then(r => r.ok)")
+
         page.locator('[data-screen-target="qibla"]').click()
         page.evaluate("""() => {
+          window.vibrationPatterns = [];
+          Object.defineProperty(navigator, 'vibrate', {
+            configurable:true, value:pattern => { vibrationPatterns.push(pattern); return true; }
+          });
           window.addEventListener('deviceorientation', event => {
             if (event.isTrusted) event.stopImmediatePropagation();
           }, true);
@@ -93,14 +116,29 @@ try:
           };
         }""")
         page.locator('#startCompass').click()
-        page.wait_for_function("document.querySelector('#startCompass').textContent === 'Compass active'")
+        page.wait_for_function("document.querySelector('#startCompass').textContent === 'Stop compass'")
         page.evaluate("""() => {
+          window.pointPhone = (heading, accuracy) => {
           const event = new Event('deviceorientation');
-          Object.defineProperties(event, { webkitCompassHeading: { value: 115 }, webkitCompassAccuracy: { value: 7 } });
+          Object.defineProperties(event, { webkitCompassHeading: { value: heading }, webkitCompassAccuracy: { value: accuracy } });
           window.dispatchEvent(event);
+          };
+          pointPhone(177, 7);
         }""")
         page.locator('#qiblaDial.live').wait_for()
         assert 'WMM 2025' in page.locator('#qiblaState').inner_text()
+        assert 'left' in page.locator('#qiblaCue').inner_text()
+        page.locator('#qiblaPanel summary').click()
+        correction = page.locator('#declinationOverride')
+        correction.fill('0')
+        page.evaluate('pointPhone(115, 7); pointPhone(116, 7)')
+        assert page.locator('#qiblaAligned').get_attribute('data-state') == 'aligned'
+        assert page.evaluate('vibrationPatterns.length') == 1
+        page.evaluate('pointPhone(170, 7); pointPhone(112, 7)')
+        assert page.evaluate('vibrationPatterns.length') == 2
+        page.evaluate("Object.defineProperty(navigator, 'vibrate', {configurable:true,value:undefined}); pointPhone(170, 7); pointPhone(113, 7)")
+        assert page.locator('#qiblaAligned').get_attribute('data-state') == 'aligned'
+        assert page.evaluate('vibrationPatterns.length') == 2
 
         context.route('https://api.bigdatacloud.net/**', lambda route: route.fulfill(
             json={'countryCode': 'GB', 'city': 'Enniskillen', 'principalSubdivision': 'Northern Ireland'}
@@ -115,9 +153,17 @@ try:
         page.locator('[data-screen-target="today"]').click()
         assert page.locator('#locationLabel').inner_text().startswith('Enniskillen')
         assert page.locator('#timezoneLabel').inner_text() == 'UK time'
+        asr = datetime.fromisoformat(page.locator('[data-event="asr"] time').get_attribute('datetime'))
+        page.clock.set_fixed_time(asr - timedelta(minutes=25) + timedelta(seconds=2))
+        page.evaluate("document.dispatchEvent(new Event('visibilitychange'))")
+        assert 'Asr' in page.locator('#reminderMessage').inner_text()
+        assert '25 minutes away' in page.locator('#reminderMessage').inner_text()
+        page.locator('#dismissReminder').click()
+        page.evaluate("document.dispatchEvent(new Event('visibilitychange'))")
+        assert page.locator('#reminderToast').is_hidden()
         assert not errors, errors
         context.close()
         browser.close()
-    print('PASS: offline reload, three forbidden rows, Donegal selection, seasonal fallback, calendar omission, offline compass, and GPS place labels.')
+    print('PASS: offline reload, forbidden times, Donegal, fasting log, theme icons, compass cues, GPS and 25-minute reminder.')
 finally:
     server.shutdown()

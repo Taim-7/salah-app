@@ -12,7 +12,7 @@ with sync_playwright() as p:
  page.set_content((root/'index.html').read_text());page.add_style_tag(path=str(root/'styles.css'))
  page.evaluate(clock);page.evaluate(mock)
  page.evaluate("""Object.defineProperty(window,'localStorage',{configurable:true,value:{getItem(k){return k==='salah-config'?JSON.stringify({version4:true,version5:true,version6:true,version7:true,audioDefaultV13:true,soundChoice:'adhan-abu-bakr',method:'15-13',activeSource:'moonsighting',onlineCompare:false,timeZone:'Europe/London',lat:54.9966,lng:-7.3086}):null},setItem(){},removeItem(){}}})""")
- for f in ['region.js','solar.js','providers.js','app.js']:page.add_script_tag(path=str(root/f))
+ for f in ['region.js','solar.js','providers.js','audio.js','app.js']:page.add_script_tag(path=str(root/f))
  page.wait_for_function('window.mockCalls.length>=3',timeout=5000)
  assert 'fallback' in page.locator('#heroMethod').inner_text().lower()
  page.evaluate('window.recovered=true;window.dispatchEvent(new Event("online"))')

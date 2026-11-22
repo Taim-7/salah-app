@@ -8,7 +8,7 @@ with sync_playwright() as p:
   errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
   page.set_content((root/'index.html').read_text());page.add_style_tag(path=str(root/'styles.css'))
   page.evaluate("""Object.defineProperty(window,'localStorage',{configurable:true,value:{getItem(k){return k==='salah-config'?JSON.stringify({version4:true,version5:true,version6:true,version7:true,audioDefaultV13:true,method:'15-13',activeSource:'moonsighting',onlineCompare:false,timeZone:'Europe/London',lat:54.9966,lng:-7.3086}):null},setItem(){},removeItem(){}}});Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>false});window.fetch=()=>Promise.reject(new Error('offline'));void 0;""")
-  for f in ['region.js','solar.js','providers.js','app.js']:page.add_script_tag(path=str(root/f))
+  for f in ['region.js','solar.js','providers.js','audio.js','app.js']:page.add_script_tag(path=str(root/f))
   assert 'LOCAL FALLBACK' in page.locator('#heroMethod').inner_text(), page.locator('#heroMethod').inner_text()
   page.locator('[data-screen-target="compare"]').click()
   assert 'LOCAL FALLBACK' in page.locator('#comparisonStatus').inner_text()

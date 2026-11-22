@@ -2,13 +2,13 @@
   "id": "./",
   "name": "Salah \u2014 Prayer Times",
   "short_name": "Salah",
-  "description": "Prayer times, Qibla compass and reminders",
+  "description": "Prayer times, Qibla, fasting and sound reminders for the UK and Ireland",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#18272c",
-  "theme_color": "#18272c",
+  "background_color": "#0b1515",
+  "theme_color": "#0b1515",
   "lang": "en-GB",
   "icons": [
     {
