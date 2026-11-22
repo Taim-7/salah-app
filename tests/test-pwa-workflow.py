@@ -28,10 +28,14 @@ try:
         )
         context = browser.new_context(viewport={'width': 390, 'height': 844}, timezone_id='America/Los_Angeles')
         context.route('https://**/*', lambda route: route.abort())
+        aladhan_requests = []
+        context.on('request', lambda request: aladhan_requests.append(request.url)
+                   if request.url.startswith('https://api.aladhan.com/') else None)
         page = context.new_page()
         errors = []
         page.on('pageerror', lambda error: errors.append(str(error)))
         page.add_init_script("""(() => {
+          Object.defineProperty(navigator, 'vibrate', { configurable: true, value: () => true });
           window.compassTones = [];
           const create = AudioContext.prototype.createOscillator;
           AudioContext.prototype.createOscillator = function () {
@@ -47,7 +51,13 @@ try:
         page.clock.set_fixed_time(datetime(2026, 6, 21, 12, 0, tzinfo=timezone.utc))
         page.goto(url)
         page.wait_for_function('navigator.serviceWorker.controller !== null')
+        page.locator('[data-screen-target="compare"]').click()
+        assert not aladhan_requests
+        with page.expect_request(lambda request: request.url.startswith('https://api.aladhan.com/')):
+            page.locator('#refreshSources').click()
+        assert len(aladhan_requests) == 1
         context.set_offline(True)
+        page.locator('[data-screen-target="today"]').click()
         page.reload()
         assert page.locator('#offlineIndicator').is_visible()
         assert page.locator('#timezoneLabel').inner_text() == 'UK time'
@@ -61,6 +71,7 @@ try:
         assert page.locator('#summerCompareBody').get_by_text('Seasonal Tayba reference').count() == 1
 
         page.locator('[data-screen-target="settings"]').click()
+        assert page.locator('#onlineCompare').count() == 0
         page.locator('#cityQuery').fill('Buncrana')
         page.locator('#citySearch').click()
         page.locator('#cityResults button').filter(has_text='Buncrana').click()
@@ -135,11 +146,12 @@ try:
         page.locator('[data-screen-target="settings"]').click()
         page.locator('[data-palette="ocean"]').click()
         page.locator('#settingsLayout').select_option('horizon')
-        assert page.locator('#touchIcon').get_attribute('href') == './icons/ocean/icon-180.png?v=25'
-        assert page.locator('#appManifest').get_attribute('href') == './manifest-ocean.webmanifest'
-        assert page.evaluate("fetch('./icons/ocean/icon-180.png').then(r => r.ok)")
+        assert page.locator('#touchIcon').get_attribute('href') == './icons/themed/ocean/mihrab-180.png'
+        assert page.locator('#appManifest').get_attribute('href') == './manifest-ocean-mihrab.webmanifest'
+        assert page.evaluate("fetch('./icons/themed/ocean/mihrab-180.png').then(r => r.ok)")
         page.locator('.icon-settings summary').click()
-        assert page.locator('#homeIconName').inner_text() == 'Ocean blue · Compass'
+        assert page.locator('#homeIconName').inner_text() == 'Mihrab'
+        assert page.locator('[data-icon-choice]').all_inner_texts() == ['Mihrab', 'Minaret', 'Compass', 'Prayer mat']
         with page.expect_download() as download:
             page.locator('#saveFastingLog').click()
         backup = download.value.path()
@@ -154,26 +166,29 @@ try:
         }
         install = context.new_page()
         install.goto(page.locator('#homeIconPage').evaluate('(link) => link.href'))
-        assert install.locator('link[rel="apple-touch-icon"]').get_attribute('href') == '../icons/ocean/icon-180.png?v=25'
-        assert install.evaluate("fetch('../manifest-ocean.webmanifest').then(r => r.json()).then(m => m.start_url)") == './?icon=ocean'
+        assert install.locator('link[rel="apple-touch-icon"]').get_attribute('href') == '../icons/themed/ocean/mihrab-180.png'
+        assert install.evaluate("fetch('../manifest-ocean-mihrab.webmanifest').then(r => r.json()).then(m => m.start_url)") == './?icon=mihrab&palette=ocean'
         install.close()
         page.locator('[data-icon-choice="minaret"]').click()
-        assert page.locator('#touchIcon').get_attribute('href') == './icons/minaret/icon-180.png'
-        assert page.locator('body').get_attribute('data-accent') == 'ocean'
+        for palette in ['midnight', 'forest', 'sand', 'slate', 'ocean']:
+            page.locator(f'[data-palette="{palette}"]').click()
+            assert page.locator('body').get_attribute('data-accent') == palette
+            assert page.locator('#homeIconName').inner_text() == 'Minaret'
+            assert page.locator('#touchIcon').get_attribute('href') == f'./icons/themed/{palette}/minaret-180.png'
+            assert page.locator('[data-icon-choice] img').evaluate_all('images => images.map(image => image.getAttribute("src"))') == [
+                f'./icons/themed/{palette}/{design}-180.png' for design in ['mihrab', 'minaret', 'compass', 'mat']
+            ]
         install = context.new_page()
         install.goto(page.locator('#homeIconPage').evaluate('(link) => link.href'))
-        assert install.locator('link[rel="apple-touch-icon"]').get_attribute('href') == '../icons/minaret/icon-180.png'
-        assert install.evaluate("fetch('../manifest-minaret.webmanifest').then(r => r.json()).then(m => m.start_url)") == './?icon=minaret'
+        assert install.locator('link[rel="apple-touch-icon"]').get_attribute('href') == '../icons/themed/ocean/minaret-180.png'
+        assert install.evaluate("fetch('../manifest-ocean-minaret.webmanifest').then(r => r.json()).then(m => m.start_url)") == './?icon=minaret&palette=ocean'
         install.close()
 
         page.locator('[data-screen-target="qibla"]').click()
         assert page.locator('#qiblaView').get_attribute('data-view') == 'guide'
         assert page.locator('#qiblaTurnAngle').is_visible()
-        assert page.locator('#qiblaArrow').is_hidden()
-        page.locator('[data-qibla-view="needle"]').click()
-        assert page.locator('#qiblaArrow').is_visible()
-        assert page.locator('#qiblaMarker').is_hidden()
-        page.locator('[data-qibla-view="guide"]').click()
+        assert page.locator('#qiblaArrow').count() == 0
+        assert page.locator('#qiblaLayouts').count() == 0
         page.evaluate("""() => {
           window.vibrationPatterns = [];
           Object.defineProperty(navigator, 'vibrate', {
@@ -200,28 +215,24 @@ try:
         page.locator('#qiblaPanel summary').click()
         assert 'WMM 2025' in page.locator('#qiblaState').inner_text()
         assert 'left' in page.locator('#qiblaCue').inner_text()
+        assert page.locator('#qiblaAligned').get_attribute('data-state') == 'turn'
+        assert page.locator('#qiblaArc').evaluate('arc => getComputedStyle(arc).stroke') == 'rgb(255, 133, 137)'
         correction = page.locator('#declinationOverride')
         correction.fill('0')
+        page.evaluate('pointPhone(125, 7)')
+        assert page.locator('#qiblaAligned').get_attribute('data-state') == 'near'
+        assert page.locator('#qiblaArc').evaluate('arc => getComputedStyle(arc).stroke') == 'rgb(241, 197, 109)'
         page.evaluate('pointPhone(115, 7); pointPhone(116, 7)')
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'aligned'
+        assert page.locator('#qiblaTurnLabel').inner_text() == 'Qibla'
+        assert page.locator('#qiblaMarker rect').evaluate('marker => getComputedStyle(marker).stroke') == 'rgb(114, 220, 163)'
         assert page.evaluate('vibrationPatterns.length') == 1
         page.evaluate('pointPhone(170, 7); pointPhone(112, 7)')
         assert page.evaluate('vibrationPatterns.length') == 2
-        page.locator('#qiblaTestFeedback').click()
-        assert page.evaluate('vibrationPatterns.at(-1)') == [180, 100, 220]
-        page.locator('#qiblaFelt').select_option('no')
-        page.locator('#copyPhoneReport').click()
-        report = page.locator('#phoneReport').input_value()
-        assert 'Salah v25 phone test' in report
-        assert 'Web vibration test: Accepted' in report
-        assert 'Pulse felt in last test: no' in report
-        assert 'Buncrana' not in report and 'Mozilla/' not in report
         page.evaluate("Object.defineProperty(navigator, 'vibrate', {configurable:true,value:undefined}); pointPhone(170, 7); pointPhone(113, 7)")
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'aligned'
-        assert page.evaluate('vibrationPatterns.length') == 3
+        assert page.evaluate('vibrationPatterns.length') == 2
         assert page.evaluate('compassTones.slice(-2)') == [740, 990]
-        page.locator('#qiblaTestFeedback').click()
-        assert 'Played the alignment chime' in page.locator('#qiblaTestStatus').inner_text()
         page.locator('#startCompass').click()
         page.evaluate("""() => {
           compassTones.length = 0;
@@ -232,6 +243,20 @@ try:
         assert page.evaluate('compassTones') == [520, 370]
         assert page.locator('#qiblaCue').inner_text() == 'Compass unavailable'
         assert page.locator('#qiblaBearing').is_visible()
+        page.evaluate("""Object.defineProperty(navigator, 'vibrate', {
+            configurable:true, value:pattern => { vibrationPatterns.push(pattern); return true; }
+        })""")
+        page.locator('[data-screen-target="sounds"]').click()
+        page.locator('#deviceTests summary').click()
+        page.locator('#testVibration').click()
+        assert page.evaluate('vibrationPatterns.at(-1)') == [180, 100, 220]
+        page.locator('#qiblaFelt').select_option('no')
+        page.locator('#copyPhoneReport').click()
+        report = page.locator('#phoneReport').input_value()
+        assert 'Salah v26 phone test' in report
+        assert 'Web vibration test: Accepted' in report
+        assert 'Pulse felt in last test: no' in report
+        assert 'Buncrana' not in report and 'Mozilla/' not in report
 
         context.route('https://api.bigdatacloud.net/**', lambda route: route.fulfill(
             json={'countryCode': 'GB', 'city': 'Enniskillen', 'principalSubdivision': 'Northern Ireland'}

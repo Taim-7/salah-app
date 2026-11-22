@@ -205,77 +205,79 @@ input[type="file"]::file-selector-button { background: var(--raised); color: var
   border-radius: 8px; color: var(--muted); font-size: 12px; font-weight: 680; white-space: nowrap;
 }
 .view-options button[aria-pressed="true"] { background: var(--raised); color: var(--accent); border-color: var(--line); }
+.qibla-panel {
+  --qibla-turn: #ff8589;
+  --qibla-near: #f1c56d;
+  --qibla-aligned: #72dca3;
+  --qibla-face: #171a27;
+  --qibla-edge: #0d111c;
+  --qibla-line: #383f53;
+}
 .qibla-content { display: grid; gap: 13px; margin-top: 13px; }
-.compass-holder {
-  position: relative; min-width: 0; padding: clamp(11px, 3.2vw, 18px);
-  background: radial-gradient(ellipse at 51% 44%, var(--wash), transparent 68%), var(--shade);
-  border: 1px solid var(--line); border-radius: var(--radius);
-}
-.qibla-content[data-view="guide"] .compass-holder { padding: 0; background: transparent; border: 0; }
-.compass-controls { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 9px; }
-.compass-chime { display: inline-flex; align-items: center; gap: 7px; min-height: 38px; font-size: 12px; color: var(--muted); }
+.compass-holder { min-width: 0; text-align: center; }
+.compass-controls { display: flex; align-items: center; gap: 9px; flex: 0 0 auto; }
+.compass-chime { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; font-size: 12px; color: var(--muted); }
 .compass-chime input { margin: 0; appearance: auto; }
+:is(.compass-status, .compass-outer) { --guide-signal: #c4d0ea; }
+:is(.compass-status, .compass-outer)[data-state="turn"] { --guide-signal: var(--qibla-turn); }
+:is(.compass-status, .compass-outer):is([data-state="near"], [data-state="weak"]) { --guide-signal: var(--qibla-near); }
+:is(.compass-status, .compass-outer)[data-state="aligned"] { --guide-signal: var(--qibla-aligned); }
 .compass-status {
-  --cue-colour: var(--accent);
-  display: flex; align-items: center; gap: 10px; padding: 9px 11px; min-height: 54px;
-  color: var(--cue-colour); border: 1px solid var(--line); border-radius: var(--inset-radius);
-  background: var(--shade);
-  border-color: color-mix(in srgb, var(--line) 76%, var(--cue-colour));
-  background: color-mix(in srgb, var(--shade) 93%, var(--cue-colour));
+  display: flex; align-items: center; justify-content: center; gap: 10px; padding: 10px;
+  min-height: 53px; border: 1px solid var(--qibla-line); border-radius: 14px;
+  color: var(--guide-signal); background: var(--qibla-edge);
+  border-color: color-mix(in srgb, var(--qibla-line) 52%, var(--guide-signal));
+  background: color-mix(in srgb, var(--qibla-edge) 90%, var(--guide-signal));
 }
-.compass-status[data-state="turn"] { --cue-colour: var(--danger); }
-.compass-status:is([data-state="near"], [data-state="weak"]) { --cue-colour: var(--warm); }
-.compass-status[data-state="aligned"] { --cue-colour: var(--ok); }
 #qiblaCueMark {
-  width: 30px; height: 30px; flex: 0 0 30px; display: grid; place-items: center; border-radius: 50%;
-  border: 1px solid currentColor; font-size: 18px; line-height: 1; font-weight: 710;
+  width: 30px; height: 30px; flex: 0 0 30px; display: grid; place-items: center;
+  border: 1px solid currentColor; border-radius: 50%; font-size: 18px; line-height: 1; font-weight: 710;
 }
-.compass-status[data-state="aligned"] #qiblaCueMark { background: var(--ok); color: var(--bg); border-color: var(--ok); }
-#qiblaCue { color: var(--ink); font-size: clamp(16px, 4.4vw, 22px); line-height: 1.17; font-weight: 720; letter-spacing: -.025em; }
-.qibla-help { color: var(--muted); font-size: 12px; line-height: 1.3; margin-top: 3px; }
-.compass-outer { --needle: var(--accent); position: relative; width: min(100%, 346px, max(226px, 47vh)); margin: 12px auto; }
-.compass-outer[data-state="turn"] { --needle: var(--danger); }
-.compass-outer[data-state="near"] { --needle: var(--warm); }
-.compass-outer.aligned { --needle: var(--ok); }
+.compass-status[data-state="aligned"] #qiblaCueMark { background: var(--guide-signal); color: var(--qibla-edge); border-color: var(--guide-signal); }
+#qiblaCue { font-size: clamp(15px, 4.15vw, 21px); line-height: 1.22; font-weight: 720; letter-spacing: -.02em; }
+.qibla-help {
+  display: table; margin: 3px auto 9px; padding: 5px 9px; max-width: 100%; border: 1px solid var(--qibla-line);
+  border-radius: 14px; background: var(--qibla-edge); color: var(--muted); font-size: 12px; line-height: 1.3;
+}
+.compass-outer {
+  position: relative; width: min(100%, 360px, max(226px, 47vh)); margin: 12px auto 8px;
+}
 .compass-art { width: 100%; height: auto; aspect-ratio: 1; overflow: visible; }
-.compass-face-centre { stop-color: var(--raised); }
-.compass-face-edge { stop-color: var(--bg); }
-.compass-outline { fill: url(#compassFace); stroke: var(--line); stroke-width: 1.5; }
-.compass-inner-ring, .compass-cross { fill: none; stroke: var(--line); stroke-width: 1; }
-.compass-cross { stroke-dasharray: 2 7; opacity: .85; }
-.compass-outer.aligned .compass-outline { stroke: var(--ok); stroke-width: 2; }
-.compass-tick { stroke: var(--muted); stroke-width: 1; opacity: .49; stroke-linecap: round; }
+.compass-face-centre { stop-color: var(--qibla-face); }
+.compass-face-edge { stop-color: var(--qibla-edge); }
+.compass-outline { fill: url(#compassFace); stroke: var(--qibla-line); stroke-width: 1.7; }
+.compass-outer:is([data-state="near"], [data-state="aligned"]) .compass-outline {
+  stroke: color-mix(in srgb, var(--qibla-line) 26%, var(--guide-signal)); stroke-width: 2;
+}
+.compass-tick { stroke: #bdc6d5; stroke-width: 1; opacity: .39; stroke-linecap: round; }
 .compass-tick.major { stroke-width: 1.5; opacity: .64; }
-.compass-tick.cardinal { stroke: var(--accent); stroke-width: 2; opacity: .9; }
-.compass-labels text { font-size: 13px; font-weight: 760; text-anchor: middle; dominant-baseline: central; fill: var(--muted); }
-#compassNorth { fill: var(--accent); }
-.phone-pointer { fill: var(--ink); }
-.qibla-arc { fill: none; stroke: var(--needle); stroke-width: 4; stroke-linecap: round; opacity: .82; }
-.qibla-marker circle { fill: var(--panel); stroke: var(--needle); stroke-width: 1.4; }
-.qibla-marker path { fill: none; stroke: var(--needle); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.compass-tick.cardinal { stroke: #f1ce89; stroke-width: 2.1; opacity: .95; }
+.compass-labels text {
+  font-size: 13px; font-weight: 720; text-anchor: middle; dominant-baseline: central; fill: #bdc6d5;
+}
+#compassNorth { fill: #f1ce89; }
+.phone-pointer { fill: var(--guide-signal); }
+.qibla-arc { fill: none; stroke: var(--guide-signal); stroke-width: 4.5; stroke-linecap: round; opacity: .9; }
+.qibla-marker { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--guide-signal) 38%, transparent)); }
+.qibla-marker rect { fill: var(--qibla-edge); stroke: var(--guide-signal); stroke-width: 1.7; }
+.qibla-marker path { fill: none; stroke: var(--guide-signal); stroke-width: 1.4; stroke-linecap: round; }
 .qibla-angle {
-  position: absolute; inset: 31%; display: flex; flex-direction: column; justify-content: center; align-items: center;
-  border: 1px solid var(--line); border-radius: 50%; background: var(--shade); line-height: 1;
+  position: absolute; inset: 32%; display: flex; flex-direction: column; justify-content: center; align-items: center;
+  border: 1px solid var(--qibla-line); border-radius: 50%; background: var(--qibla-edge); line-height: 1;
 }
 .qibla-angle strong {
-  font-size: clamp(35px, 11.2vw, 57px); font-weight: 660; letter-spacing: -.065em;
-  color: var(--ink); font-variant-numeric: tabular-nums;
+  font-size: clamp(35px, 11.2vw, 57px); font-weight: 640; letter-spacing: -.055em;
+  color: #f4f6fd; font-variant-numeric: tabular-nums;
 }
-.compass-outer:not(.live) .qibla-angle strong { font-size: clamp(27px, 8.2vw, 41px); }
-.qibla-angle span { margin-top: 7px; font-size: 11px; font-weight: 650; color: var(--needle); }
-.compass-outer.aligned .qibla-angle { border-color: var(--ok); }
-.compass-outer.aligned .qibla-angle strong { color: var(--ok); }
-.qibla-content[data-view="guide"] :is(.qibla-target, .needle-pin, .compass-cross, .compass-inner-ring) { display: none; }
-.qibla-content[data-view="needle"] :is(.qibla-angle, .qibla-marker) { display: none; }
-.needle-tail { fill: none; stroke: var(--muted); stroke-width: 6; stroke-linecap: round; opacity: .5; }
-.needle-head { fill: var(--needle); stroke: var(--bg); stroke-width: .7; stroke-linejoin: round; }
-.needle-fold { fill: var(--bg); opacity: .22; }
-.needle-pin { fill: var(--panel); stroke: var(--needle); stroke-width: 2; }
+.compass-outer:not(.live) .qibla-angle strong { font-size: clamp(26px, 8vw, 39px); }
+.qibla-angle span { margin-top: 8px; font-size: 12px; font-weight: 700; color: var(--guide-signal); }
+.compass-outer.aligned .qibla-angle { border-color: var(--guide-signal); }
+.compass-outer.aligned .qibla-angle strong { color: var(--guide-signal); }
 #startCompass { display: block; width: 100%; min-height: 44px; }
 .compass-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 6px; }
 .compass-stats > div {
-  min-width: 0; padding: 9px 6px; text-align: center; background: var(--shade);
-  border: 1px solid var(--line); border-radius: var(--inset-radius);
+  min-width: 0; padding: 9px 6px; text-align: center; background: var(--qibla-edge);
+  border: 1px solid var(--qibla-line); border-radius: var(--inset-radius);
 }
 .compass-stats dt { color: var(--muted); font-size: 11px; line-height: 1.2; }
 .compass-stats dd { margin: 4px 0 0; color: var(--ink); font-size: clamp(14px, 4.25vw, 20px); font-weight: 720; letter-spacing: -.035em; }
@@ -283,18 +285,14 @@ input[type="file"]::file-selector-button { background: var(--raised); color: var
 .qibla-state { color: var(--muted); font-size: 12px; }
 .qibla-readout .block-label { margin-top: 12px; }
 .declination-fields { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 7px; }
-.phone-test { margin: 5px 0 12px; padding: 11px; border: 1px solid var(--line); border-radius: var(--inset-radius); background: var(--shade); }
-.phone-test h3 { font-size: 15px; }
-.phone-test #qiblaTestStatus:empty, .phone-test #phoneReportStatus:empty { margin: 0; }
-.phone-test #qiblaFeltField { margin-top: 8px; }
-.phone-test #qiblaFelt { max-width: 240px; }
-.phone-test #copyPhoneReport { padding-inline: 0; }
-.phone-test textarea {
+#phoneReportStatus:empty { margin: 0; }
+#qiblaFeltField { margin-top: 8px; }
+#qiblaFelt { max-width: 240px; }
+#copyPhoneReport { padding-inline: 0; }
+#phoneReport {
   display: block; width: 100%; min-width: 0; padding: 9px; resize: vertical; border: 1px solid var(--line);
   border-radius: 8px; color: var(--ink); background: var(--bg); font: 12px/1.4 ui-monospace, monospace;
 }
-.iphone-haptics .compass-chime { color: var(--ink); }
-.legacy-haptic { opacity: 0; pointer-events: none; position: absolute; width: 1px; height: 1px; overflow: hidden; }
 
 .fasting-content { display: grid; gap: 12px; }
 .fasting-detail, .fasting-calendar, .sound-card, .reminder-card {
@@ -401,8 +399,7 @@ input[type="file"]::file-selector-button { background: var(--raised); color: var
 .palette-sample i { display: inline-block; width: 9px; height: 9px; margin: 7px 0 0 5px; border-radius: 8px; background: var(--accent); }
 .palette-sample i:nth-child(2) { background: var(--secondary); margin-left: 2px; }
 .palette-sample i:nth-child(3) { background: var(--night); margin-left: 2px; }
-.palette-icon { display: none; position: absolute; right: 3px; top: 2px; border-radius: 5px; }
-.palette-choices[data-match-icon="true"] .palette-icon { display: block; }
+.palette-icon { display: block; position: absolute; right: 3px; top: 2px; border-radius: 5px; }
 .app-dock {
   z-index: 100; position: fixed; bottom: calc(6px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%);
   width: min(calc(100% - 20px), 574px); background: var(--panel); border: 1px solid var(--line); border-radius: 19px;
@@ -440,10 +437,6 @@ body[data-layout="timeline"] .time-row.prayer-entry::before {
 body[data-layout="timeline"] .prayer-entry:is(.is-past,.is-now,.current-prayer)::before { background: var(--row-icon); }
 body[data-layout="timeline"] .prayer-entry:is(.is-next,.current-prayer)::before { box-shadow: 0 0 0 3px var(--accent-deep); }
 body[data-layout="timeline"] .time-row.avoid-entry:not(.within-range) { border-color: transparent; background: var(--shade); }
-body[data-layout="timeline"] .compass-holder { background: var(--shade); border-left: 2px solid var(--accent); }
-body[data-layout="timeline"] .compass-art { background: repeating-linear-gradient(0deg, transparent 0 23px, var(--line) 24px 25px); }
-body[data-layout="timeline"] .compass-face-centre { stop-color: var(--shade); }
-body[data-layout="timeline"] .compass-inner-ring { stroke-dasharray: 4 5; }
 body[data-layout="timeline"] .fast-day { border-radius: 5px; }
 body[data-layout="timeline"] :is(.sound-card,.reminder-card,.fasting-detail) { border-left: 2px solid var(--accent); }
 
@@ -489,10 +482,8 @@ body[data-layout="horizon"] .hero-time { font-size: clamp(17px, 4.3vw, 24px); }
 #sunPositionHalo { fill: var(--accent); opacity: .30; }
 body[data-layout="horizon"] .time-row.prayer-entry { border-radius: 0; border: 0; border-bottom: 1px solid var(--line); background: transparent; }
 body[data-layout="horizon"] .time-row:is(.current-prayer,.is-next).prayer-entry { border-radius: 11px; border: 1px solid var(--accent); background: var(--accent-deep); }
-body[data-layout="horizon"] .compass-holder { background: radial-gradient(ellipse at 50% 45%, var(--wash), transparent 74%), var(--bg); }
-body[data-layout="horizon"] .compass-inner-ring { stroke: var(--accent); stroke-dasharray: 1 6; opacity: .32; }
 body[data-layout="horizon"] .fasting-detail { background: radial-gradient(ellipse at 10% 0%, var(--glow), transparent 75%), var(--bg); }
-body[data-layout="horizon"] :is(.qibla-panel,.fasting-panel,.sound-panel,.comparison-panel,.settings-screen) { background: radial-gradient(ellipse at 100% 0%, var(--wash), transparent 60%), var(--panel); }
+body[data-layout="horizon"] :is(.fasting-panel,.sound-panel,.comparison-panel,.settings-screen) { background: radial-gradient(ellipse at 100% 0%, var(--wash), transparent 60%), var(--panel); }
 
 .icon-choices {
   display: grid; grid-template-columns: repeat(auto-fit,minmax(70px,1fr)); gap: 6px; margin: 0 0 10px;
@@ -525,8 +516,6 @@ body[data-layout="horizon"] :is(.qibla-panel,.fasting-panel,.sound-panel,.compar
   .dashboard { grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr); align-items: start; }
   body[data-layout="horizon"] .dashboard { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
   .qibla-content { grid-template-columns: minmax(0,1.1fr) minmax(0,1fr); gap: 23px; align-items: center; }
-  body[data-layout="horizon"] .qibla-content { grid-template-columns: minmax(0,1.4fr) minmax(0,1fr); }
-  body[data-layout="timeline"] .qibla-content { align-items: start; }
   .fasting-content { grid-template-columns: minmax(0,1fr) minmax(0,1fr); align-items: start; }
   .fasting-summary { grid-column: 1 / -1; }
   .alert-grid { grid-template-columns: minmax(0,1.15fr) minmax(0,1fr); align-items: start; }

@@ -3,7 +3,7 @@
   "name": "Salah \u2014 Prayer Times",
   "short_name": "Salah",
   "description": "Prayer times, Qibla, fasting and sound reminders for the UK and Ireland",
-  "start_url": "./?icon=forest",
+  "start_url": "./?icon=mihrab&palette=forest",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
@@ -12,16 +12,16 @@
   "lang": "en-GB",
   "icons": [
     {
-      "src": "./icons/icon-192.png",
+      "src": "./icons/themed/forest/mihrab-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "./icons/icon-512.png",
+      "src": "./icons/themed/forest/mihrab-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }

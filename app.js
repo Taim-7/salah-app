@@ -1,14 +1,14 @@
 (() => {
   'use strict';
-  const APP_VERSION = 25;
+  const APP_VERSION = 26;
   const $ = id => document.getElementById(id);
   const defaults = {
     lat: 54.9966, lng: -7.3086, location: 'Derry, Northern Ireland', timeZone: 'Europe/London',
     autoLocation: false, method: '15-13', fajrAngle: 15, ishaAngle: 13,
     ishaPreference: 'around-third', ishaLimit: 'half', magneticDeclination: '', highLatRule: 'seventh',
-    activeSource: 'angles', soundChoice: 'adhan-abu-bakr', soundVolume: 40, onlineCompare: true,
-    reminderLead: 15, reminderEnabled: true, qiblaHaptic: true, qiblaSound: true, qiblaLegacyPulse: false,
-    qiblaView: 'guide', fastingView: 'week', timeFormat: '12', layout: 'compact', accent: 'forest', iconChoice: 'match'
+    activeSource: 'angles', soundChoice: 'adhan-abu-bakr', soundVolume: 40,
+    reminderLead: 15, reminderEnabled: true, qiblaHaptic: true, qiblaSound: true,
+    fastingView: 'week', timeFormat: '12', layout: 'compact', accent: 'forest', iconChoice: 'mihrab'
   };
   const names = [
     { key: 'fajr', en: 'Fajr', ar: 'الفجر', icon: 'sun-horizon', desc: 'Dawn' },
@@ -42,14 +42,16 @@
   const palettes = {
     forest:'Forest green', ocean:'Ocean blue', midnight:'Midnight navy', sand:'Amber sand', slate:'Cool slate'
   };
-  const matchingSymbols = { forest:'Crescent', ocean:'Compass', midnight:'Minaret', sand:'Mihrab', slate:'Prayer mat' };
+  const previousMatchingIcons = { forest:'mihrab', ocean:'compass', midnight:'minaret', sand:'mihrab', slate:'mat' };
   const iconDesigns = { mihrab:'Mihrab', minaret:'Minaret', compass:'Compass', mat:'Prayer mat' };
   const layouts = ['compact', 'timeline', 'horizon'];
-  const compassViews = ['guide', 'needle'];
   const fastingViews = ['week', 'month'];
-  const iconQuery = new URLSearchParams(location.search).get('icon');
-  const launchAccent = Object.hasOwn(palettes, iconQuery) ? iconQuery : defaults.accent;
-  const launchIcon = Object.hasOwn(iconDesigns, iconQuery) ? iconQuery : defaults.iconChoice;
+  const launchQuery = new URLSearchParams(location.search);
+  const iconQuery = launchQuery.get('icon');
+  const paletteQuery = launchQuery.get('palette');
+  const launchAccent = Object.hasOwn(palettes, paletteQuery) ? paletteQuery :
+    Object.hasOwn(palettes, iconQuery) ? iconQuery : defaults.accent;
+  const launchIcon = Object.hasOwn(iconDesigns, iconQuery) ? iconQuery : previousMatchingIcons[launchAccent];
   const isStandalone = () => navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
   const reminderLeads = [15, 20, 25, 30];
   const summerRules = {
@@ -91,8 +93,8 @@
       c.reminderEnabled = c.reminderEnabled !== false;
       c.qiblaHaptic = c.qiblaHaptic !== false;
       c.qiblaSound = c.qiblaSound !== false;
-      c.qiblaLegacyPulse = c.qiblaLegacyPulse === true;
-      c.qiblaView = compassViews.includes(c.qiblaView) ? c.qiblaView : defaults.qiblaView;
+      delete c.qiblaLegacyPulse;
+      delete c.qiblaView;
       c.fastingView = fastingViews.includes(c.fastingView) ? c.fastingView : defaults.fastingView;
       delete c.qiblaChime;
       delete c.calendarLead;
@@ -101,8 +103,8 @@
       c.layout = layouts.includes(c.layout) ? c.layout : defaults.layout;
       if (c.accent === 'dusk') c.accent = 'midnight';
       c.accent = Object.hasOwn(palettes, c.accent) ? c.accent : defaults.accent;
-      if (!Object.hasOwn(iconDesigns, c.iconChoice)) c.iconChoice = defaults.iconChoice;
-      c.onlineCompare = c.onlineCompare !== false;
+      if (!Object.hasOwn(iconDesigns, c.iconChoice)) c.iconChoice = previousMatchingIcons[c.accent];
+      delete c.onlineCompare;
       if (!Object.hasOwn(summerRules, c.highLatRule)) c.highLatRule = defaults.highLatRule;
       if (![c.fajrAngle, c.ishaAngle].every(a => Number.isFinite(+a) && +a >= 6 && +a <= 22)) {
         c.fajrAngle = defaults.fajrAngle; c.ishaAngle = defaults.ishaAngle;
@@ -126,7 +128,7 @@
 
   let cfg = loadConfig();
   const store = () => { try { localStorage.setItem('salah-config', JSON.stringify(cfg)); } catch {} };
-  if (Object.hasOwn(palettes, iconQuery) || Object.hasOwn(iconDesigns, iconQuery)) store();
+  if (Object.hasOwn(palettes, paletteQuery) || Object.hasOwn(palettes, iconQuery) || Object.hasOwn(iconDesigns, iconQuery)) store();
   const anglePair = () => cfg.method === 'custom' ? [+cfg.fajrAngle, +cfg.ishaAngle] : cfg.method.split('-').map(Number);
   const todayKey = () => dateParts(new Date(), cfg.timeZone);
 
@@ -237,8 +239,10 @@
   }
   function loadComparison(force = false) {
     if (!navigator.onLine) return;
-    if (cfg.onlineCompare || force) void fetchOnline('moonsighting', selectedKey, force);
-    if (cfg.activeSource !== 'moonsighting') return;
+    if (cfg.activeSource !== 'moonsighting') {
+      if (force) void fetchOnline('moonsighting', selectedKey, true);
+      return;
+    }
     const today = todayKey();
     const requested = new Set([selectedKey, dayShift(selectedKey, 1), today, dayShift(today, -1), dayShift(today, 1)]);
     requested.forEach(key => { void fetchOnline(cfg.activeSource, key, force && (key === selectedKey || key === dayShift(selectedKey, 1))); });
@@ -322,7 +326,6 @@
     }
     if (cols[1].day.ishaReason) messages.push(cols[1].day.ishaReason);
     if (pendingOnline.has(id)) messages.push('Loading AlAdhan times…');
-    else if (!cfg.onlineCompare && cfg.activeSource !== 'moonsighting') messages.push('Automatic online comparison is off.');
     else if (failedOnline.has(id)) messages.push('AlAdhan could not be reached.');
     $('comparisonStatus').textContent = messages.join(' ');
     if ($('summerCompare').open) renderSummerComparison();
@@ -663,7 +666,6 @@
     searchRequest++;
     placeRequest++;
     gpsLoading = false;
-    $('onlineCompare').checked = cfg.onlineCompare;
     const method = document.querySelector(`input[name="method"][value="${cfg.method}"]`);
     if (method) method.checked = true;
     const end = document.querySelector(`input[name="ishaPreference"][value="${cfg.ishaPreference}"]`);
@@ -697,7 +699,7 @@
       ...cfg, lat, lng, location, timeZone:zone, method, ishaPreference,
       fajrAngle:anglesValid ? fa : cfg.fajrAngle, ishaAngle:anglesValid ? ia : cfg.ishaAngle,
       ishaLimit:$('ishaLimit').value, autoLocation:$('trackLocation').checked,
-      onlineCompare:$('onlineCompare').checked, highLatRule:$('highLatSelect').value
+      highLatRule:$('highLatSelect').value
     };
     store();
     $('tzInput').value = zone;
@@ -860,18 +862,13 @@
       replies.some(r => r.status === 'fulfilled') ? 'No matches. Try another name or enter coordinates.' : 'Town search is offline. Enter coordinates or use GPS.');
   }
 
-  const iconAsset = (id, size) => {
-    const folder = id === 'forest' ? './icons/' : './icons/' + id + '/';
-    const updated = id !== 'forest' && Object.hasOwn(palettes, id);
-    return folder + 'icon-' + size + '.png' + (updated ? '?v=' + APP_VERSION : '');
-  };
+  const iconAsset = (design, palette, size) => './icons/themed/' + palette + '/' + design + '-' + size + '.png';
   const paletteChoices = $('paletteChoices');
   paletteChoices.innerHTML = Object.entries(palettes).map(([id, label]) =>
-    `<button type="button" class="palette-choice" data-palette="${id}"><span class="palette-sample" aria-hidden="true"><i></i><i></i><i></i><img class="palette-icon" src="${iconAsset(id, 180)}" alt="" width="21" height="21"/></span>${label}</button>`).join('');
+    `<button type="button" class="palette-choice" data-palette="${id}"><span class="palette-sample" aria-hidden="true"><i></i><i></i><i></i><img class="palette-icon" alt="" width="21" height="21"/></span>${label}</button>`).join('');
   const iconChoices = $('iconChoices');
-  iconChoices.innerHTML = Object.entries({ match:'Match colour', ...iconDesigns }).map(([id, label]) =>
-    '<button type="button" data-icon-choice="' + id + '"><img width="42" height="42" alt="" src="' +
-    iconAsset(id === 'match' ? cfg.accent : id, 180) + '"/><span>' + label + '</span></button>').join('');
+  iconChoices.innerHTML = Object.entries(iconDesigns).map(([id, label]) =>
+    '<button type="button" data-icon-choice="' + id + '"><img width="42" height="42" alt=""/><span>' + label + '</span></button>').join('');
 
   function applyAppearance() {
     document.body.dataset.layout = cfg.layout;
@@ -884,20 +881,24 @@
     const dateParent = horizon ? dateSlot : $('prayerHeading');
     const dateControls = $('prayerDateControls');
     if (dateControls.parentNode !== dateParent) dateParent.append(dateControls);
-    paletteChoices.dataset.matchIcon = String(cfg.iconChoice === 'match');
-    for (const choice of paletteChoices.children) choice.setAttribute('aria-pressed', choice.dataset.palette === cfg.accent);
+    for (const choice of paletteChoices.children) {
+      choice.setAttribute('aria-pressed', choice.dataset.palette === cfg.accent);
+      choice.querySelector('img').src = iconAsset(cfg.iconChoice, choice.dataset.palette, 180);
+    }
     const background = getComputedStyle(document.body).getPropertyValue('--bg').trim();
     document.documentElement.style.backgroundColor = background;
     document.querySelector('meta[name="theme-color"]').content = background;
-    const icon = cfg.iconChoice === 'match' ? cfg.accent : cfg.iconChoice;
-    $('tabIcon').href = iconAsset(icon, 192);
-    $('touchIcon').href = iconAsset(icon, 180);
-    $('appManifest').href = icon === 'forest' ? './manifest.webmanifest' : './manifest-' + icon + '.webmanifest';
-    iconChoices.querySelector('[data-icon-choice="match"] img').src = iconAsset(cfg.accent, 180);
-    for (const choice of iconChoices.children) choice.setAttribute('aria-pressed', choice.dataset.iconChoice === cfg.iconChoice);
+    const iconKey = cfg.accent + '-' + cfg.iconChoice;
+    $('tabIcon').href = iconAsset(cfg.iconChoice, cfg.accent, 192);
+    $('touchIcon').href = iconAsset(cfg.iconChoice, cfg.accent, 180);
+    $('appManifest').href = './manifest-' + iconKey + '.webmanifest';
+    for (const choice of iconChoices.children) {
+      choice.setAttribute('aria-pressed', choice.dataset.iconChoice === cfg.iconChoice);
+      choice.querySelector('img').src = iconAsset(choice.dataset.iconChoice, cfg.accent, 180);
+    }
     $('homeIconPreview').src = $('touchIcon').href;
-    $('homeIconName').textContent = iconDesigns[icon] || palettes[icon] + ' · ' + matchingSymbols[icon];
-    $('homeIconPage').href = './install/' + icon + '.html';
+    $('homeIconName').textContent = iconDesigns[cfg.iconChoice];
+    $('homeIconPage').href = './install/' + iconKey + '.html';
     $('homeIconURL').value = $('homeIconPage').href;
     $('homeIconURL').hidden = true;
     $('homeIconHelp').textContent = isStandalone() ? 'Safari sets the icon when you add Salah to the Home Screen.' :
@@ -1305,28 +1306,12 @@
   let headingTimer = null, compassProblemTimer = null;
   let compassIssuesPlayed = new Set();
   const supportsVibration = () => typeof navigator.vibrate === 'function';
-  const safariVersion = navigator.userAgent.match(/\bVersion\/(\d+)(?:\.(\d+))?/);
-  const safariRequiresTap = isIOS && safariVersion &&
-    (+safariVersion[1] > 26 || (+safariVersion[1] === 26 && +(safariVersion[2] || 0) >= 5));
-  const canTryLegacyPulse = isIOS && !safariRequiresTap && (!safariVersion || +safariVersion[1] >= 18);
-  const phoneTest = {
-    web:'Not tested', tap:'Not tested', legacy:'Not tested', last:'None', alignment:'No alignment yet'
-  };
+  const phoneTest = { web:'Not tested', alignment:'No alignment yet' };
 
   function vibrate(pattern) {
     if (!supportsVibration()) return 'Unavailable';
     try { return navigator.vibrate(pattern) ? 'Accepted' : 'Declined'; }
     catch { return 'Declined'; }
-  }
-
-  function tryLegacyPulse() {
-    if (!canTryLegacyPulse) return 'Unavailable';
-    if (!cfg.qiblaLegacyPulse) return 'Off';
-    if (navigator.userActivation?.isActive === false) return 'No recent tap';
-    const control = $('qiblaLegacySwitch');
-    const wasChecked = control.checked;
-    $('qiblaLegacyTrigger').click();
-    return control.checked !== wasChecked ? 'Switch toggled' : 'No switch change';
   }
 
   function playCompassChime(notes) {
@@ -1419,7 +1404,7 @@
       cue = aligned ? 'Facing the Qibla' : withinTarget ? 'Near the Qibla' :
         angle <= 15 ? 'A little to the ' + turn : 'Turn ' + turn + ' ' + angle + '°';
       mark = aligned ? '✓' : withinTarget ? '↑' : direction < 0 ? '↶' : '↷';
-      help = approximate ? 'Approximate heading. Check with a calibrated compass.' : 'Keep the phone flat.';
+      help = approximate ? 'Approximate heading. Check with a calibrated compass.' : 'Hold your phone flat.';
     } else if (qiblaCompassOn && !correction) {
       state = 'waiting'; cue = 'Finding magnetic correction'; mark = '…';
       help = 'Keep the phone flat.';
@@ -1435,7 +1420,7 @@
     $('qiblaBearing').textContent = bearing.toFixed(1) + '°';
     $('qiblaCardinal').textContent = compassPoints[Math.round(bearing / 22.5) % 16];
     $('qiblaTurnAngle').textContent = aligned ? '✓' : (live ? angle : bearing.toFixed(1)) + '°';
-    $('qiblaTurnLabel').textContent = aligned ? 'Aligned' : withinTarget ? 'Near target' :
+    $('qiblaTurnLabel').textContent = aligned ? 'Qibla' : withinTarget ? 'Near the Qibla' :
       live ? 'Turn ' + turn : 'From true north';
     $('qiblaDistance').textContent = Math.round(kmApart(cfg, KAABA)).toLocaleString('en-GB') + ' km';
     $('qiblaPosition').textContent = cfg.location;
@@ -1444,23 +1429,20 @@
     $('qiblaState').textContent = live ? 'Heading ' + (Math.round(rotation) % 360) + '° true · ' +
       (override ? 'manual correction' : 'WMM 2025') : '';
     $('compassTicks').setAttribute('transform', 'rotate(' + -rotation + ' 160 160)');
-    const guide = cfg.qiblaView === 'guide';
     for (const [i, id] of compassLetters.entries()) {
-      const [x, y] = compassPoint(i * 90 - rotation, guide ? 120 : 110);
+      const [x, y] = compassPoint(i * 90 - rotation, 120);
       $(id).setAttribute('x', x.toFixed(1));
       $(id).setAttribute('y', y.toFixed(1));
     }
-    $('qiblaArrow').setAttribute('transform', 'rotate(' + direction.toFixed(1) + ' 160 160)');
-    const radius = guide ? 97 : 106;
+    const radius = 97;
     const target = pointText(direction, radius);
     $('qiblaMarker').setAttribute('transform', 'translate(' + target + ')');
-    $('qiblaArc').setAttribute('d', angle > 5 && (live || guide)
+    $('qiblaArc').setAttribute('d', angle > 5
       ? 'M160 ' + (160 - radius) + ' A' + radius + ' ' + radius + ' 0 0 ' + (direction < 0 ? 0 : 1) + ' ' + target : '');
 
     if (withinTarget && !lastAlignment && !$('qiblaPanel').hidden && !document.hidden) {
       const web = cfg.qiblaHaptic ? vibrate(alignmentPulse) : 'Off';
-      const legacy = web === 'Accepted' ? 'Skipped' : tryLegacyPulse();
-      phoneTest.alignment = 'Web vibration ' + web.toLowerCase() + ', older Safari pulse ' + legacy.toLowerCase();
+      phoneTest.alignment = 'Web vibration ' + web.toLowerCase();
       playCompassChime(alignmentNotes);
     }
     if (live) lastAlignment = withinTarget;
@@ -1606,23 +1588,6 @@
   $('qiblaHaptic').checked = cfg.qiblaHaptic;
   $('qiblaHapticControl').hidden = !supportsVibration();
   $('qiblaChime').checked = cfg.qiblaSound;
-  $('iphoneHaptics').hidden = !isIOS;
-  $('qiblaLegacyControl').hidden = !canTryLegacyPulse;
-  $('qiblaLegacyPulse').checked = cfg.qiblaLegacyPulse;
-  $('qiblaHapticHelp').textContent = isIOS ?
-    (safariRequiresTap ? 'This Safari version uses a direct switch tap for haptics.' :
-      'Tap the iPhone switch to check haptics. The alignment pulse is experimental on older Safari.') :
-    (supportsVibration() ? 'The test asks your phone for two pulses.' : 'This browser has no web vibration control.');
-  function labelVibrationTest() {
-    $('qiblaTestFeedback').textContent = supportsVibration() || (canTryLegacyPulse && cfg.qiblaLegacyPulse) ?
-      'Test vibration' : 'Test chime';
-  }
-  labelVibrationTest();
-  $('qiblaLegacyPulse').addEventListener('change', () => {
-    cfg.qiblaLegacyPulse = $('qiblaLegacyPulse').checked;
-    store();
-    labelVibrationTest();
-  });
   $('qiblaHaptic').addEventListener('change', () => {
     cfg.qiblaHaptic = $('qiblaHaptic').checked;
     store();
@@ -1633,43 +1598,17 @@
     if (cfg.qiblaSound) compassAudioReady = audio.unlock();
   });
 
-  function recordPhoneTest(method, canFeel) {
-    phoneTest.last = method;
-    $('qiblaFeltField').hidden = !canFeel;
+  $('testVibration').hidden = !supportsVibration();
+  $('testVibration').addEventListener('click', () => {
+    phoneTest.web = vibrate([180, 100, 220]);
+    const accepted = phoneTest.web === 'Accepted';
+    $('qiblaFeltField').hidden = !accepted;
     $('qiblaFelt').value = '';
     $('phoneReport').hidden = true;
     $('phoneReportStatus').textContent = '';
-  }
-
-  $('qiblaTapTest').addEventListener('change', () => {
-    phoneTest.tap = 'Switch toggled';
-    recordPhoneTest('iPhone switch tap', true);
-    $('qiblaTestStatus').textContent = 'Switch toggled. Did you feel a pulse?';
+    $('testFeedback').textContent = accepted ? 'The browser accepted the request for two pulses.' :
+      'The phone did not accept the vibration request.';
   });
-
-  async function testCompassFeedback(feedback) {
-    phoneTest.web = vibrate([180, 100, 220]);
-    if (phoneTest.web === 'Accepted') {
-      recordPhoneTest('Web vibration', true);
-      feedback.textContent = 'The browser accepted the request for two pulses.';
-      return;
-    }
-    phoneTest.legacy = tryLegacyPulse();
-    if (phoneTest.legacy === 'Switch toggled') {
-      recordPhoneTest('Older Safari pulse', true);
-      feedback.textContent = 'The browser toggled the older Safari switch. Did you feel a pulse?';
-      return;
-    }
-    recordPhoneTest('Chime only', false);
-    if (cfg.soundVolume === 0) {
-      feedback.textContent = 'Vibration unavailable. Raise the sound level to hear the chime.';
-      return;
-    }
-    const played = await audio.unlock() && audio.chime(alignmentNotes);
-    feedback.textContent = played ? 'Vibration unavailable. Played the alignment chime.' :
-      'Vibration and sound are unavailable.';
-  }
-  $('qiblaTestFeedback').addEventListener('click', () => void testCompassFeedback($('qiblaTestStatus')));
 
   $('copyPhoneReport').addEventListener('click', async () => {
     const knownBrowsers = [
@@ -1694,10 +1633,7 @@
       'Secure page: ' + (isSecureContext ? 'Yes' : 'No'),
       'Web vibration available: ' + (supportsVibration() ? 'Yes' : 'No'),
       'Web vibration test: ' + phoneTest.web,
-      'iPhone switch tap: ' + phoneTest.tap,
-      'Older Safari test: ' + phoneTest.legacy,
       'Last alignment request: ' + phoneTest.alignment,
-      'Last test: ' + phoneTest.last,
       'Pulse felt in last test: ' + ($('qiblaFelt').value || 'Not answered')
     ].join('\n');
     field.hidden = false;
@@ -1710,20 +1646,6 @@
       $('phoneReportStatus').textContent = 'Select and copy the report above.';
     }
   });
-  function setCompassView(view) {
-    $('qiblaView').dataset.view = view;
-    for (const button of $('qiblaLayouts').children) button.setAttribute('aria-pressed', button.dataset.qiblaView === view);
-  }
-  setCompassView(cfg.qiblaView);
-  $('qiblaLayouts').addEventListener('click', event => {
-    const button = event.target.closest('[data-qibla-view]');
-    if (!button) return;
-    cfg.qiblaView = button.dataset.qiblaView;
-    store();
-    setCompassView(cfg.qiblaView);
-    renderQibla();
-  });
-
   const fastingLabels = { fasted:'Fasted', due:'Missed', 'made-up':'Made up' };
   const fastingSymbols = { fasted:'✓', due:'•', 'made-up':'↺' };
   const fastingStore = 'salah-fasting-log';
@@ -1992,18 +1914,6 @@
     if(!navigator.geolocation){$('testFeedback').textContent='GPS unavailable in this browser.';return}
     $('testFeedback').textContent='Requesting GPS…';
     navigator.geolocation.getCurrentPosition(p=>{$('testFeedback').textContent=`GPS acquired: ±${Math.round(p.coords.accuracy)} metres. Qibla can use this position.`},e=>{$('testFeedback').textContent=`GPS permission or positioning issue: ${e.message}`},{enableHighAccuracy:true,timeout:12000,maximumAge:10000});
-  });
-  if (isIOS && !supportsVibration()) $('testVibration').textContent = 'Open vibration test';
-  $('testVibration').addEventListener('click', () => {
-    if (isIOS && !supportsVibration()) {
-      showScreen('qibla');
-      $('qiblaSettings').open = true;
-      const title = $('qiblaPhoneTitle');
-      title.focus({ preventScroll:true });
-      title.scrollIntoView({ block:'start' });
-      return;
-    }
-    void testCompassFeedback($('testFeedback'));
   });
 
   const screenIds = {today:'today', compare:'comparisonPanel', qibla:'qiblaPanel', fasting:'fastingPanel', sounds:'soundPanel', settings:'settingsDialog'};

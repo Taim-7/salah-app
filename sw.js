@@ -1,16 +1,19 @@
 const BASE = new URL(self.registration.scope);
 const PREFIX = 'salah-static:' + BASE.pathname + ':';
-const CACHE_NAME = PREFIX + 'v25';
-const iconVariants = ['ocean', 'midnight', 'sand', 'slate', 'mihrab', 'minaret', 'compass', 'mat'];
-const iconFiles = iconVariants.flatMap(name => [
-  './manifest-' + name + '.webmanifest',
-  ...[180, 192, 512].map(size => './icons/' + name + '/icon-' + size + '.png')
-]);
+const CACHE_NAME = PREFIX + 'v26';
+const legacyIcons = ['ocean', 'midnight', 'sand', 'slate', 'mihrab', 'minaret', 'compass', 'mat'];
+const palettes = ['forest', 'ocean', 'midnight', 'sand', 'slate'];
+const iconDesigns = ['mihrab', 'minaret', 'compass', 'mat'];
+const iconFiles = palettes.flatMap(palette => iconDesigns.flatMap(icon => [
+  './install/' + palette + '-' + icon + '.html',
+  './manifest-' + palette + '-' + icon + '.webmanifest',
+  ...[180, 192, 512].map(size => './icons/themed/' + palette + '/' + icon + '-' + size + '.png')
+]));
 const FILES = [
   './', './index.html', './styles.css', './region.js', './solar.js', './providers.js', './audio.js', './app.js',
-  './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-180.png',
-  './vendor/magvar/magvar.mjs', './vendor/magvar/utils.mjs', './vendor/magvar/WMMCOF2025.mjs', ...iconFiles,
-  './install/icon.js', ...['forest', ...iconVariants].map(name => './install/' + name + '.html')
+  './manifest.webmanifest', './vendor/magvar/magvar.mjs', './vendor/magvar/utils.mjs', './vendor/magvar/WMMCOF2025.mjs',
+  './install/icon.js', ...['forest', ...legacyIcons].map(name => './install/' + name + '.html'),
+  ...legacyIcons.map(name => './manifest-' + name + '.webmanifest'), ...iconFiles
 ].map(path => new URL(path, BASE).href);
 const index = new URL('./index.html', BASE).href;
 
