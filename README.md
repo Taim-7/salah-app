@@ -10,12 +10,16 @@ The default calculation is 15° for Fajr and 13° for Isha, with one-shadow Asr.
 
 ## Using it
 
-The app is hosted on GitHub Pages. Open the published site in Safari and use **Share → Add to Home Screen**. The main timetable and Qibla bearing work offline after the first online visit and successful caching. iOS may clear stored site data, so reopen Salah online after an update. Live online comparisons and city search need internet access.
+The app is hosted on GitHub Pages. Open the published site in Safari and use **Share → Add to Home Screen**. The main timetable, UK/Ireland country check and Qibla bearing work offline after the first successful visit and cache. iOS may clear stored site data, so reopen Salah online after an update. Live online comparisons and city search need internet access.
 
 The Sounds tab includes three recordings by [alsuleiman-lab](https://github.com/alsuleiman-lab/athkar-audio), used with permission from the owner. The app attempts to save the three recordings automatically when opened online. Audio plays when the app is open; it is not a reliable locked-screen alarm. iPhone Calendar alerts depend on iOS settings.
 
 ## Accuracy
 
-The prayer times are calculations. Fajr and Isha can differ from locally observed true dawn and red twilight, particularly during northern summers. When a selected angle cannot be reached, Salah shows an estimated time. The Qibla compass also depends on iPhone sensor accuracy and magnetic correction.
+The prayer times are calculations. Fajr and Isha can differ from locally observed true dawn and red twilight, particularly during northern summers. For local angle calculations, the selected night-fraction fallback applies when the angle cannot be reached. Other timetables may apply a night-fraction limit earlier. Salah marks estimates. The Qibla compass also depends on iPhone sensor accuracy and magnetic correction. The offline country check uses simplified Natural Earth boundaries, not survey-grade coastlines.
 
 Calculation references: [SunCalc](https://github.com/mourner/suncalc), [Tayba Trust](https://taybatrust.org/index.php/projects/establishing-dawn/34-dp-all-loc), [Moonsighting](https://www.moonsighting.com/how-we.html), [AlAdhan API](https://aladhan.com/prayer-times-api).
+
+## Online timetable
+
+When Moonsighting is selected, the main timetable identifies online or saved data. The method has a published high-latitude change at 55° N; Salah keeps nearby GPS readings stable without changing the provider’s calculation. If the source is unavailable, Salah shows the local angle calculation as a clearly marked fallback, but does not automatically play prayer sounds against it. Switch to Your angles to use local prayer-time alerts.

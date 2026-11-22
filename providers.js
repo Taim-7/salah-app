@@ -45,20 +45,19 @@
     const b = solar.calculateDay(...parts(key), lat, lon, 14.5, 14.5, 'seventh');
     if (!b.valid) return b;
     const fajr = taybaBase(key, lat, lon, 'fajr');
-    const ishaBase = taybaBase(key, lat, lon, 'isha');
-    if (!fajr.time || !ishaBase.time) return { valid: false, reason: 'Tayba approximation unavailable for this date and latitude.' };
-    let isha = ishaBase.time;
-    let redMinimum = null;
+    if (!fajr.time) return { valid: false, reason: 'Tayba Fajr estimate unavailable for this date and latitude.' };
+    // Option 2 uses the 14.5° Isha crossing when its interval is short.
+    // Otherwise the 90-minute interval cannot be earlier than the 8° crossing.
+    const raw14 = dayAngles(key, lat, lon, 14.5, 14.5).ishaRaw;
     const raw8 = dayAngles(key, lat, lon, 8, 8).ishaRaw;
-    if (isha.getTime() - b.trueSunset.getTime() > 90 * MS) {
-      redMinimum = raw8;
-      if (raw8) isha = new Date(Math.max(b.trueSunset.getTime() + 90 * MS, raw8.getTime()));
-      else return { valid: false, reason: 'Even 8° is absent: Tayba red-twilight option cannot be applied safely.' };
-    }
+    const needsCap = !raw14 || raw14.getTime() - b.trueSunset.getTime() > 90 * MS;
+    if (needsCap && !raw8)
+      return { valid: false, reason: 'The 8° Isha boundary is absent; Tayba option 2 is unavailable.' };
+    const isha = needsCap ? new Date(Math.max(b.trueSunset.getTime() + 90 * MS, raw8.getTime())) : raw14;
     const t = {
       ...b, fajr: ceilMinute(fajr.time), isha: ceilMinute(isha),
-      fajrFallback: fajr.estimated, ishaFallback: ishaBase.estimated || isha.getTime() !== ishaBase.time.getTime(),
-      taybaNotes: { fajr: fajr.note, isha: ishaBase.note, redMinimumApplied: !!redMinimum },
+      fajrFallback: fajr.estimated, ishaFallback: needsCap,
+      taybaNotes: { fajr: fajr.note, isha: needsCap ? '90-minute cap with 8° floor' : '14.5° crossing', redMinimumApplied: needsCap },
       methodName: 'Tayba guidance — locally derived', valid: true
     };
     if (t.fajr >= t.sunrise || t.isha <= t.maghrib)

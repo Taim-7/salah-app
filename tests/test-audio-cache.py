@@ -24,7 +24,7 @@ with sync_playwright() as p:
    };
    window.Audio=class {constructor(src){this.src=src}play(){window.playedSources.push(this.src);return Promise.resolve()}pause(){}};
  }''')
- for f in ['solar.js','providers.js','app.js']:page.add_script_tag(path=str(root/f))
+ for f in ['region.js','solar.js','providers.js','app.js']:page.add_script_tag(path=str(root/f))
  page.locator('[data-screen-target="sounds"]').click()
  # Audio downloads are initiated by the app without pressing a button.
  page.wait_for_function('window.remoteDownloads===3',timeout=5000)

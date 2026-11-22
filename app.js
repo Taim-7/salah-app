@@ -32,7 +32,7 @@
   const validZone = z => {
     try { new Intl.DateTimeFormat('en-GB', { timeZone: z }); return true; } catch { return false; }
   };
-  function supportedPlace(lat, lng) { return Number.isFinite(lat)&&Number.isFinite(lng)&&lat>=49.5&&lat<=59.5&&lng>=-11.5&&lng<=2.2; }
+  function supportedPlace(lat, lng) { return SalahRegion.allowed(lat, lng); }
   function loadConfig() {
     try {
       const raw = JSON.parse(localStorage.getItem('salah-config') || '{}');
@@ -65,6 +65,7 @@
       if (!['seventh', 'angle', 'middle'].includes(c.highLatRule)) c.highLatRule = defaults.highLatRule;
       if (!['Europe/London','Europe/Dublin'].includes(c.timeZone)) c.timeZone = defaults.timeZone;
       if (!supportedPlace(+c.lat,+c.lng)) { c.lat=defaults.lat; c.lng=defaults.lng; c.location=defaults.location; c.timeZone=defaults.timeZone; c.zoneVerified=true; c.autoLocation=false; }
+      else { c.timeZone = SalahRegion.zone(+c.lat,+c.lng); c.zoneVerified = true; }
       if (!Number.isFinite(+c.lat) || Math.abs(+c.lat) >= 89 || !Number.isFinite(+c.lng) || Math.abs(+c.lng) > 180) return { ...defaults };
       if (![c.fajrAngle, c.ishaAngle].every(a => Number.isFinite(+a) && +a >= 6 && +a <= 22)) {
         c.fajrAngle = defaults.fajrAngle; c.ishaAngle = defaults.ishaAngle;
@@ -101,23 +102,28 @@
 
   const methods = [
     { id: 'angles', title: 'Your angles', sub: 'Offline · your selected pair', online: false },
-    { id: 'tayba', title: 'Tayba-derived', sub: 'Seasonal · mixed twilight criteria', online: false },
+    { id: 'tayba', title: 'Tayba option 2', sub: 'Derived twilight estimate', online: false },
     { id: 'moonsighting', title: 'Moonsighting · red', sub: 'Seasonal / high-latitude model · AlAdhan', online: true }
   ];
   const onlineKinds = ['moonsighting'];
   const moonsightingSupported = () => Math.abs(+cfg.lat) <= 60;
-  const moonsightingNightFraction = () => Math.abs(+cfg.lat) > 55;
+  const moonsightingNightFraction = () => Math.abs(+cfg.lat) >= 55;
   const pendingOnline = new Set(), failedOnline = new Map(), onlineMem = new Map();
   const cacheId = (kind, key) => ['salah-v3-provider', kind, key, Number(cfg.lat).toFixed(4), Number(cfg.lng).toFixed(4), cfg.timeZone].join(':');
   function readCached(kind, key) {
     const id = cacheId(kind, key);
-    if (onlineMem.has(id)) return onlineMem.get(id);
+    if (onlineMem.has(id)) {
+      const cached = onlineMem.get(id);
+      if (cached?.retrievedAt && Date.now() - cached.retrievedAt < 7 * 86400000) return cached;
+      onlineMem.delete(id);
+    }
     let saved;
     try { saved = JSON.parse(localStorage.getItem(id)); } catch { return null; }
     if (!saved || !saved.raw || !Number.isFinite(saved.at)) return null;
     if (Date.now() - saved.at > 7 * 86400000) return null;
     try {
       const day = SalahProviders.decode(kind, key, cfg.timeZone, saved.raw);
+      day.retrievedAt = saved.at; day.savedProviderData = true;
       onlineMem.set(id, day); return day;
     } catch { return null; }
   }
@@ -132,6 +138,7 @@
       const url = SalahProviders.buildUrl(kind, key, +cfg.lat, +cfg.lng, cfg.timeZone);
       const raw = await fetchJson(url);
       const day = SalahProviders.decode(kind, key, cfg.timeZone, raw);
+      day.retrievedAt = Date.now(); day.savedProviderData = false;
       onlineMem.set(id, day);
       try { localStorage.setItem(id, JSON.stringify({ at: Date.now(), raw })); } catch {}
     } catch (e) { failedOnline.set(id, { at: Date.now(), message: String(e.message || e) }); }
@@ -164,6 +171,7 @@
       midnight: new Date(today.maghrib.getTime() + night/2),
       solarNoon: base.solarNoon, trueSunset: base.trueSunset,
       fajrFallback: false, ishaFallback: false, online: true,
+      retrievedAt: today.retrievedAt, savedProviderData: today.savedProviderData || next.savedProviderData || !navigator.onLine || Date.now() - today.retrievedAt > 60 * 60000,
       providerHighLatEstimate: kind === 'moonsighting' && moonsightingNightFraction(),
       ishaBeyondFirstThird: today.isha >= new Date(today.maghrib.getTime() + night/3),
       ishaBeyondHalf: today.isha >= new Date(today.maghrib.getTime() + night/2)
@@ -182,15 +190,15 @@
     const tayba = SalahProviders.taybaDay(selectedKey, +cfg.lat, +cfg.lng);
     const cols = [
       { id:'angles', title:`Your ${anglePair().join('° / ')}°`, desc:'Your solar model', day:base },
-      { id:'tayba', title:'Tayba', desc:'Derived · seasonal / mixed twilight', day:tayba },
+      { id:'tayba', title:'Tayba option 2', desc:'Derived · mixed twilight', day:tayba },
       ...onlineKinds.map(id=>({id, title:moonsightingNightFraction()?'Moonsighting · estimated':'Moonsighting · red',
-        desc:moonsightingNightFraction()?'Night-fraction estimate · API':'Seasonal · API model', day:moonsightingSupported()?readCached(id,selectedKey):null}))
+        desc:moonsightingNightFraction()?'1/7-night limit may apply · API':'Seasonal · API model', day:moonsightingSupported()?readCached(id,selectedKey):null}))
     ];
     $('sourcePicker').innerHTML = methods.map(m=>`<button type="button" data-source="${m.id}" ${m.id==='moonsighting'&&!moonsightingSupported()?'disabled title="Method unavailable above 60 degrees"':''} class="source-choice ${cfg.activeSource === m.id ? 'chosen':''}" aria-pressed="${cfg.activeSource === m.id}"><span class="source-radio">${cfg.activeSource === m.id?'✓':''}</span><span class="source-detail"><strong>${m.id==='moonsighting'&&moonsightingNightFraction()?'Moonsighting · estimated':m.title}</strong><small>${m.sub}</small></span></button>`).join('');
     $('comparisonHead').innerHTML = '<tr><th scope="col">Prayer</th>' + cols.map(c=>`<th scope="col" class="${c.id === cfg.activeSource?'selected-col':''}">${c.title}<small>${c.desc}</small></th>`).join('') + '</tr>';
     const shown = ['fajr','sunrise','dhuhr','asr','maghrib','isha'];
     const names = {fajr:'Fajr',sunrise:'Sunrise',dhuhr:'Dhuhr',asr:'Asr',maghrib:'Maghrib',isha:'Isha'};
-    const active = getActiveDay(selectedKey); // Same reference as the main timetable, including explicit online fallback.
+    const active = getActiveDay(selectedKey);
     $('comparisonBody').innerHTML = shown.map(k=>`<tr><td>${names[k]}</td>` + cols.map(c=>{
       const a = c.day?.valid ? c.day[k] : null;
       const reference = active?.valid ? active[k] : null;
@@ -206,10 +214,16 @@
     const loading = onlineKinds.filter(k=>pendingOnline.has(cacheId(k,selectedKey)));
     const compareMessages=[];
     if (!moonsightingSupported()) compareMessages.push('Moonsighting method is unavailable above 60° latitude.');
-    else if (moonsightingNightFraction()) compareMessages.push('Moonsighting uses a one-seventh-night estimate above 55° N.');
+    else if (moonsightingNightFraction()) compareMessages.push('Moonsighting applies one-seventh-night limits from 55° N, where relevant. The calculation comes from the provider.');
+    if (Math.abs(+cfg.lat-55) < 0.06) compareMessages.push('Near the 55° method boundary: small GPS changes are ignored to keep your location stable. The online provider sets its own twilight times.');
     if (!cfg.onlineCompare) compareMessages.push(onlineKinds.includes(cfg.activeSource) ?
       'Other online comparisons paused; your selected source still updates' : 'Online comparison paused');
     else if (loading.length) compareMessages.push('Loading online times…');
+    if (cfg.activeSource === 'moonsighting') {
+      const selected = getActiveDay(selectedKey);
+      if (selected.sourceFallback) compareMessages.push('Main timetable is currently using LOCAL FALLBACK, not Moonsighting');
+      else if (selected.savedProviderData) compareMessages.push('Main timetable uses saved Moonsighting data');
+    }
     else if (unavailable.length) compareMessages.push('Some online times are unavailable');
     $('comparisonStatus').textContent=compareMessages.join(' · ');
   }
@@ -226,7 +240,7 @@
   function renderNotice(t) {
     const msgs = [];
     if (t.sourceFallback) msgs.push('Selected online method is not available for both this date and the following Fajr. Showing your local angle calculations temporarily — not the chosen online method.');
-    if (t.providerHighLatEstimate) msgs.push('Moonsighting uses a one-seventh-night estimate here; these are not directly observed twilight times.');
+    if (t.providerHighLatEstimate) msgs.push('Moonsighting can limit the Fajr and Isha calculations to a seventh of the night at this latitude. These are modelled, not daily observed, times.');
     if (t.fajrFallback || t.ishaFallback) {
       const [fa, ia] = anglePair();
       const affected = cfg.activeSource === 'tayba' ? 'Tayba seasonal/option-2' : [t.fajrFallback ? `Fajr ${fa}°` : '', t.ishaFallback ? `Isha ${ia}°` : ''].filter(Boolean).join(' and ');
@@ -320,7 +334,10 @@
   }
   function renderHero(t) {
     const [a, b] = anglePair();
-    $('heroMethod').textContent = cfg.activeSource === 'angles' || t.sourceFallback ? `${a}° / ${b}°${t.sourceFallback?' · fallback':''}` : (cfg.activeSource==='moonsighting'&&moonsightingNightFraction()?'Moonsighting · estimated':methods.find(m=>m.id===cfg.activeSource)?.title) || 'Prayer times';
+    $('heroMethod').textContent = t.sourceFallback ? `${a}° / ${b}° · LOCAL FALLBACK` :
+      cfg.activeSource === 'angles' ? `${a}° / ${b}° · local` :
+      cfg.activeSource === 'moonsighting' ? `Moonsighting · ${t.savedProviderData ? 'saved' : 'online'}${moonsightingNightFraction() ? ' · est.' : ''}` :
+      methods.find(m=>m.id===cfg.activeSource)?.title || 'Prayer times';
 
     const now = new Date();
     const events = prayers.map(p => ({ ...p, at: t[p.key] }));
@@ -328,7 +345,8 @@
       const upcoming = events.find(e => e.at > now);
       if (upcoming) setHero(upcoming, now);
       else {
-        const next = onlineKinds.includes(cfg.activeSource) ? readCached(cfg.activeSource, dayShift(selectedKey,1)) : getDay(dayShift(selectedKey, 1));
+        const tomorrow = dayShift(selectedKey, 1);
+        const next = t.sourceFallback ? getLocalDay(tomorrow) : onlineKinds.includes(cfg.activeSource) ? readCached(cfg.activeSource, tomorrow) : getDay(tomorrow);
         if (next?.valid) setHero({ ...prayers[0], at: next.fajr }, now, true);
         else { $('nextPrayerName').textContent = 'Unavailable'; $('countdown').textContent = 'Please check your settings'; }
       }
@@ -392,7 +410,7 @@
     if (!$('latInput').value.trim() || !$('lngInput').value.trim()) { status('Enter latitude and longitude.'); return; }
     const lat = +$('latInput').value, lng = +$('lngInput').value;
     const fa = +$('fajrAngleInput').value, ia = +$('ishaAngleInput').value;
-    const zone = $('tzInput').value.trim();
+    const zone = SalahRegion.allowed(lat,lng) ? SalahRegion.zone(lat,lng) : $('tzInput').value.trim();
     if (!Number.isFinite(lat) || Math.abs(lat) >= 89 || !Number.isFinite(lng) || Math.abs(lng) > 180 ||
         ![fa, ia].every(a => Number.isFinite(a) && a >= 6 && a <= 22) || !['Europe/London','Europe/Dublin'].includes(zone) || !supportedPlace(lat,lng)) {
       status('Choose a location in the UK or Ireland and valid angles (6–22°).'); return;
@@ -401,7 +419,7 @@
     const ishaPreference = document.querySelector('input[name="ishaPreference"]:checked')?.value || 'around-third';
     const newCfg = {
       activeSource: cfg.activeSource, soundChoice: cfg.soundChoice, soundVolume:cfg.soundVolume, calendarLead: cfg.calendarLead, onlineCompare: $('onlineCompare').checked,
-      theme: 'dark', layout: cfg.layout, accent: cfg.accent, timeFormat: cfg.timeFormat, version4: true, version5:true,version6:true,version7:true,
+      theme: 'dark', layout: cfg.layout, accent: cfg.accent, timeFormat: cfg.timeFormat, audioDefaultV13:true, version4: true, version5:true,version6:true,version7:true,
       lat, lng, location: $('placeInput').value.trim() || `Lat ${lat.toFixed(3)}°, Lon ${lng.toFixed(3)}°`,
       timeZone: zone, zoneVerified: pendingPlace ? pendingPlace.zoneVerified :
         kmApart({lat:+cfg.lat,lng:+cfg.lng},{lat,lng}) < 1 && cfg.timeZone === zone && cfg.zoneVerified,
@@ -458,22 +476,24 @@
     if (!live) {
       $('latInput').value = lat; $('lngInput').value = lng;
       $('placeInput').value = `Lat ${lat.toFixed(3)}°, Lon ${lng.toFixed(3)}°`;
-      $('tzInput').value = ['Europe/London','Europe/Dublin'].includes(deviceZone()) ? deviceZone() : cfg.timeZone;
+      $('tzInput').value = SalahRegion.zone(lat,lng);
       status('GPS acquired. Looking up city and time zone…');
       const r = await enrichLocation(lat, lng);
       $('placeInput').value = r.name || $('placeInput').value;
-      $('tzInput').value = ['Europe/London','Europe/Dublin'].includes(r.zone) ? r.zone : cfg.timeZone;
+      $('tzInput').value = SalahRegion.zone(lat,lng);
       pendingPlace = { zoneVerified: r.confirmed };
       status(r.confirmed ? 'Location and time zone found. Save to apply.' : 'Could not verify the local time zone online. Check the time zone before saving.');
       return;
     }
     if (!cfg.autoLocation) return;
     const moved = kmApart({ lat: +cfg.lat, lng: +cfg.lng }, { lat, lng });
-    if (moved < 1) return;
+    // Ignore nearby GPS noise; the published Moonsighting method has a 55° boundary.
+    if (moved < 3 || (Math.abs(+cfg.lat-55) < 0.08 && moved < 5)) return;
+    if (Number.isFinite(pos.coords.accuracy) && pos.coords.accuracy > 1500) return;
     cfg.lat = lat; cfg.lng = lng;
     variationPromise=null;magneticVariation=null; $('declinationOverride').value='';
     if (moved >= 5) cfg.location = `Near ${lat.toFixed(3)}°, ${lng.toFixed(3)}°`;
-    if (['Europe/London','Europe/Dublin'].includes(deviceZone())) cfg.timeZone = deviceZone(); cfg.zoneVerified = false;
+    cfg.timeZone = SalahRegion.zone(lat,lng); cfg.zoneVerified = true;
     if (!browsing) selectedKey = todayKey();
     store(); render();
     const time = Date.now();
@@ -483,11 +503,11 @@
       const r = await enrichLocation(lat, lng);
       if (!cfg.autoLocation || kmApart({ lat: cfg.lat, lng: cfg.lng }, { lat, lng }) > 1) return;
       if (r.name) cfg.location = r.name;
-      if (['Europe/London','Europe/Dublin'].includes(r.zone)) cfg.timeZone = r.zone;
-      cfg.zoneVerified = r.confirmed;
+      cfg.timeZone = SalahRegion.zone(lat,lng);
+      cfg.zoneVerified = true;
       if (!browsing) selectedKey = todayKey();
       store(); render();
-      status(r.confirmed ? `Following your current area: ${cfg.location}` : 'Using device time zone; online zone lookup unavailable. Check the time zone.');
+      status(`Following your current area: ${cfg.location}`);
     }
   }
   function stopTracking() {
@@ -584,8 +604,8 @@
   let lastToday = todayKey(), lastPhoneZone = deviceZone();
   setInterval(() => {
     const phoneZone = deviceZone();
-    if (cfg.autoLocation && ['Europe/London','Europe/Dublin'].includes(phoneZone) && phoneZone !== lastPhoneZone) {
-      cfg.timeZone = phoneZone; cfg.zoneVerified = false; store();
+    if (cfg.autoLocation && phoneZone !== lastPhoneZone) {
+      cfg.timeZone = SalahRegion.zone(+cfg.lat,+cfg.lng); cfg.zoneVerified = true; store();
       if (!browsing) selectedKey = todayKey();
       render();
     }
@@ -690,7 +710,7 @@
       try {
         const blob = await audioData('read', null, choice);
         if (blob && blob.size >= 10000) cachedAdhanUrls.set(choice, URL.createObjectURL(blob));
-      } catch { /* A storage failure should not stop online audio playback. */ }
+      } catch {}
     }
   }
   async function cacheAdhansAutomatically() {
@@ -709,7 +729,7 @@
           if (blob.size < 10000 || blob.size > 8 * 1048576) continue;
           await audioData('write', blob, choice);
           cachedAdhanUrls.set(choice, URL.createObjectURL(blob));
-        } catch { /* Network and local storage can be unavailable on iPhone. */ }
+        } catch {}
       }
     })();
     try { await cachingAdhans; } finally { cachingAdhans = null; }
@@ -720,6 +740,7 @@
     if (!src) { $('soundStatus').textContent='No adhan selected.'; return false; }
     if (adhanPlayer) { adhanPlayer.pause(); adhanPlayer.currentTime=0; }
     if (activeCustomPlayer) { activeCustomPlayer.pause(); activeCustomPlayer.currentTime=0; }
+    if (!cachedAdhanUrls.has(choice)) await loadSavedAdhans();
     const localSource=cachedAdhanUrls.get(choice);
     if (!localSource && !navigator.onLine) {
       $('soundStatus').textContent='This adhan is unavailable offline. It will be saved automatically on the next online visit.';
@@ -805,7 +826,7 @@
     $('soundStatus').textContent='Sound stopped.';
   });
   function checkPrayerSounds() {
-    if (document.hidden || selectedKey !== todayKey() || !dayInfo?.valid) return;
+    if (document.hidden || selectedKey !== todayKey() || !dayInfo?.valid || dayInfo.sourceFallback) return;
     for (const p of prayers) {
       const when = dayInfo[p.key]?.getTime(); if (!when) continue;
       const choice=cfg.soundChoice;
@@ -880,12 +901,13 @@
     $('qiblaPosition').textContent=`${cfg.location} · true north bearing`;
     const override=$('declinationOverride').value.trim();
     const delta=override!==''?Number(override):magneticVariation;
-    const valid=Number.isFinite(qiblaHeading)&&Number.isFinite(delta) && Math.abs(delta)<=180 && qiblaCompassOn;
+    const reliableHeading = Number.isFinite(compassSensorAccuracy) && compassSensorAccuracy >= 0 && compassSensorAccuracy <= 20;
+    const valid=Number.isFinite(qiblaHeading)&&Number.isFinite(delta) && Math.abs(delta)<=180 && qiblaCompassOn && reliableHeading;
     const arrow=$('qiblaArrow');
     const difference=valid?((bearing-qiblaHeading-delta+540)%360-180):0;
     arrow.style.transform=`translate(-50%, -50%) rotate(${(valid?difference:bearing).toFixed(2)}deg)`;
     $('qiblaDial').classList.toggle('live',valid);
-    const accurate=valid && Number.isFinite(compassSensorAccuracy)&&compassSensorAccuracy>=0&&compassSensorAccuracy<=20;
+    const accurate=valid;
     const aligned=accurate && Math.abs(difference)<=4;
     $('qiblaDial').classList.toggle('aligned',aligned);
     $('qiblaAligned').textContent=aligned?'Facing the Qibla':valid?`${Math.round(Math.abs(difference))}° ${difference>0?'right':'left'} · turn the phone`: 'True-north reference · start compass';
@@ -895,8 +917,9 @@
     lastAlignment=aligned;
     if(valid){$('qiblaState').textContent=`Compass reading ${Math.round(qiblaHeading)}° magnetic · correction ${delta.toFixed(1)}° ${override!==''?'(manual)':variationSource}`;
       $('qiblaAccuracy').textContent=Number.isFinite(compassSensorAccuracy)?`Sensor uncertainty approximately ±${Math.round(compassSensorAccuracy)}°. Hold flat, away from metal.`:'Heading accuracy not reported: verify with another compass.';
-    } else if (qiblaCompassOn && compassSensorAccuracy < 0) {
-      $('qiblaAccuracy').textContent='Compass calibration is invalid. No live alignment shown.';
+    } else if (qiblaCompassOn && Number.isFinite(compassSensorAccuracy) && (compassSensorAccuracy < 0 || compassSensorAccuracy > 20)) {
+      $('qiblaAccuracy').textContent='Compass reading is not accurate enough for a live pointer. Calibrate away from metal and try again.';
+      $('qiblaAligned').textContent='Use true-north reference until compass improves';
     }
   }
   let compassSensorAccuracy=NaN,variationPromise=null;

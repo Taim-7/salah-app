@@ -47,10 +47,10 @@ const tick=async(type,request)=>{
 (async()=>{
  await caches.open('salah-static-v15');
  await tick('install');
- assert.equal(stores.has('salah-static-v17'),true);
+ assert.equal(stores.has('salah-static-v19'),true);
  await tick('activate');
  assert.equal(stores.has('salah-static-v15'),false);
- const urls=['','index.html','styles.css','solar.js','providers.js','app.js','manifest.webmanifest','icons/icon-192.png','icons/icon-512.png','icons/icon-180.png'];
+ const urls=['','index.html','styles.css','region.js','solar.js','providers.js','app.js','manifest.webmanifest','icons/icon-192.png','icons/icon-512.png','icons/icon-180.png'];
  for(const u of urls){
   const resp=await tick('fetch',{url:base+u,method:'GET',mode:u?'same-origin':'navigate'});
   assert(resp?.ok,`Not cached offline: ${u}`);
@@ -63,5 +63,5 @@ const tick=async(type,request)=>{
  const cross=await tick('fetch',{url:'https://api.aladhan.com/test',method:'GET',mode:'cors'});
  assert.equal(cross,undefined);
  assert.equal(requests,2);
- console.log('PASS: 10 precached URLs; offline shell and scripts; navigation fallback; missing script 503; cross-origin bypass');
+ console.log('PASS: 11 precached URLs; offline shell and scripts; navigation fallback; missing script 503; cross-origin bypass');
 })().catch(e=>{console.error(e);process.exitCode=1});

@@ -1,6 +1,6 @@
-const CACHE_NAME = 'salah-static-v17';
+const CACHE_NAME = 'salah-static-v19';
 const FILES = [
-  './', './index.html', './styles.css', './solar.js', './providers.js', './app.js',
+  './', './index.html', './styles.css', './region.js', './solar.js', './providers.js', './app.js',
   './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-180.png'
 ];
 self.addEventListener('install', event => {
