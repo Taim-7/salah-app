@@ -770,7 +770,7 @@
   function applyLocation(place, fromTracking = false) {
     if (cfg.lat !== place.lat || cfg.lng !== place.lng) resetMagneticCorrection();
     cfg = { ...cfg, ...place };
-    if (qiblaCompassOn) void loadVariation().then(renderQibla);
+    if (!$('qiblaPanel').hidden) void loadVariation().then(renderQibla);
     store();
     if (!browsing) selectedKey = todayKey();
     render();
@@ -1333,11 +1333,16 @@
   const compassLetters = ['compassNorth', 'compassEast', 'compassSouth', 'compassWest'];
   const compassFailureNotes = [[520, 0, .18, .13], [370, .21, .25, .13]];
   const alignmentLimit = 3;
+  const headingWindow = 420;
+  const levelLimit = Math.cos(25 * Math.PI / 180);
+  const signedTurn = (from, to) => (to - from + 540) % 360 - 180;
+  const headingSamples = [];
   let compassReading = null, magneticVariation = null, alignmentChimed = false;
   let qiblaCompassOn = false, compassStarting = false, compassRun = 0;
   let compassAudioReady = null, compassFailure = '', compassProblem = '';
   let variationPromise = null, variationKey = '', variationFailed = false;
   let headingTimer = null, compassProblemTimer = null;
+  let compassSource, headingExpired = false, lastQiblaReference;
   let compassIssuesPlayed = new Set();
   function playCompassChime(notes) {
     if (!cfg.qiblaSound) return;
@@ -1384,27 +1389,40 @@
     alignmentChimed = false;
   }
 
+  function renderQiblaReference(bearing) {
+    const reference = [cfg.lat, cfg.lng, cfg.location, magneticVariation].join(':');
+    if (reference === lastQiblaReference) return;
+    lastQiblaReference = reference;
+    $('qiblaBearing').textContent = bearing.toFixed(1) + '°';
+    $('qiblaCardinal').textContent = compassPoints[Math.round(bearing / 22.5) % 16];
+    $('qiblaMagneticBearing').textContent = Number.isFinite(magneticVariation)
+      ? norm360(bearing - magneticVariation).toFixed(1) + '°' : '—';
+    $('qiblaDistance').textContent = Math.round(kmApart(cfg, KAABA)).toLocaleString('en-GB') + ' km';
+    $('qiblaPosition').textContent = cfg.location;
+  }
+
   function renderQibla() {
     const bearing = qiblaBearing(cfg.lat, cfg.lng);
+    renderQiblaReference(bearing);
     const heading = compassReading?.heading;
     const accuracy = compassReading?.accuracy;
     const knownAccuracy = Number.isFinite(accuracy) && accuracy >= 0;
-    const approximate = compassReading?.kind === 'absolute';
+    const canConfirm = knownAccuracy && accuracy <= 10 && compassReading.levelKnown;
     const correction = Number.isFinite(magneticVariation);
     const validHeading = Number.isFinite(heading);
-    const usable = validHeading && (approximate || (knownAccuracy && accuracy <= 20));
-    const live = qiblaCompassOn && !!compassReading && !compassReading.tilted &&
-      correction && usable;
+    const live = qiblaCompassOn && validHeading && correction;
+    const waitingForHeading = (qiblaCompassOn || compassStarting) && !live;
     const rotation = live ? norm360(heading + magneticVariation) : 0;
-    const direction = (bearing - rotation + 540) % 360 - 180;
+    const direction = signedTurn(rotation, bearing);
     const difference = Math.abs(direction);
     const near = difference <= 15;
-    // Round close readings up to a tenth so yellow never displays as 3° or less.
+    // Round close readings up so a turn beyond the threshold cannot display as 3°.
     const angle = near ? Math.ceil((difference - 1e-9) * 10) / 10 : Math.round(difference);
-    const aligned = live && difference <= alignmentLimit + 1e-9;
+    const inRange = difference <= alignmentLimit + 1e-9;
+    const aligned = live && inRange && canConfirm && compassReading.steady;
     const turn = direction < 0 ? 'left' : 'right';
     const problem = qiblaCompassOn && compassReading && !compassReading.tilted
-      ? (!usable ? 'accuracy' : !correction && variationFailed ? 'correction' : '')
+      ? (!validHeading ? 'accuracy' : !correction && variationFailed ? 'correction' : '')
       : '';
     checkCompassProblem(problem);
 
@@ -1414,21 +1432,22 @@
       help = compassFailure;
     } else if (compassStarting || (qiblaCompassOn && !compassReading)) {
       state = 'waiting'; cue = compassStarting ? 'Waiting for permission' : 'Finding your heading'; mark = '…';
-      help = 'Hold the phone flat, away from metal.';
+      help = headingExpired ? 'Move the phone slightly to refresh the reading.' : 'Hold the phone flat, away from metal.';
     } else if (compassReading?.tilted) {
       state = 'weak'; cue = 'Hold your phone flat'; mark = '!';
       help = compassReading.portrait ? 'Keep the screen facing upwards.' : 'Use portrait orientation.';
     } else if (problem) {
       state = 'weak'; mark = '!';
       cue = problem === 'accuracy' ? 'Compass reading is weak' : 'Magnetic correction unavailable';
-      help = problem === 'accuracy' ? 'The reading is not accurate enough. Move away from metal.' :
+      help = problem === 'accuracy' ? 'Move away from metal and magnetic cases, then try again.' :
         'Use the true bearing below.';
     } else if (live) {
       state = aligned ? 'aligned' : near ? 'near' : 'turn';
-      cue = aligned ? 'Heading aligned · ' + angle + '° off' :
+      cue = aligned ? 'Heading aligned · ' + angle + '° off' : inRange ?
+        (canConfirm ? 'Hold still to check alignment' : 'Approximate match · ' + angle + '° off') :
         near ? 'A little to the ' + turn : 'Turn ' + turn + ' ' + angle + '°';
-      mark = aligned ? '✓' : direction < 0 ? '↶' : '↷';
-      help = approximate ? 'Approximate heading. Check with a calibrated compass.' : 'Hold your phone flat.';
+      mark = aligned ? '✓' : inRange ? '≈' : direction < 0 ? '↶' : '↷';
+      help = canConfirm ? 'Hold your phone flat.' : 'Approximate guide. Check against the fixed bearings.';
     } else if (qiblaCompassOn && !correction) {
       state = 'waiting'; cue = 'Finding magnetic correction'; mark = '…';
       help = 'Keep the phone flat.';
@@ -1437,21 +1456,19 @@
     const dial = $('qiblaDial'), status = $('qiblaAligned');
     dial.classList.toggle('live', live);
     dial.classList.toggle('aligned', aligned);
+    dial.classList.toggle('waiting-for-heading', waitingForHeading);
     dial.dataset.state = status.dataset.state = state;
     status.hidden = !cue;
     $('qiblaCueMark').textContent = mark;
     if ($('qiblaCue').textContent !== cue) $('qiblaCue').textContent = cue;
     if ($('qiblaAccuracy').textContent !== help) $('qiblaAccuracy').textContent = help;
     $('qiblaAccuracy').hidden = !help;
-    $('qiblaBearing').textContent = bearing.toFixed(1) + '°';
-    $('qiblaCardinal').textContent = compassPoints[Math.round(bearing / 22.5) % 16];
-    $('qiblaTurnAngle').textContent = (live ? angle : bearing.toFixed(1)) + '°';
-    $('qiblaTurnLabel').textContent = aligned ? 'From Qibla' : live ? 'Turn ' + turn : 'From true north';
-    $('qiblaDistance').textContent = Math.round(kmApart(cfg, KAABA)).toLocaleString('en-GB') + ' km';
-    $('qiblaPosition').textContent = cfg.location;
-    $('qiblaPrecisionRow').hidden = !compassReading;
-    $('qiblaPrecision').textContent = accuracy < 0 ? 'Uncalibrated' : !validHeading ? 'Unavailable' :
-      knownAccuracy ? '±' + Math.round(accuracy) + '°' : 'Unknown';
+    $('qiblaTurnAngle').textContent = waitingForHeading ? '—' : (live ? angle : bearing.toFixed(1)) + '°';
+    $('qiblaTurnLabel').textContent = live ? (inRange ? 'From Qibla' : 'Turn ' + turn) :
+      waitingForHeading ? 'Compass paused' : 'From true north';
+    $('qiblaPrecisionRow').hidden = !compassReading || compassReading.tilted;
+    $('qiblaPrecision').textContent = accuracy < 0 ? 'Uncalibrated' : knownAccuracy ?
+      '±' + Math.ceil(accuracy) + '°' : validHeading ? 'Unknown' : 'Unavailable';
     $('compassTicks').setAttribute('transform', 'rotate(' + -rotation + ' 160 160)');
     for (const [i, id] of compassLetters.entries()) {
       const [x, y] = compassPoint(i * 90 - rotation, 120);
@@ -1464,7 +1481,7 @@
     $('qiblaArc').setAttribute('d', difference > alignmentLimit + 1e-9
       ? 'M160 ' + (160 - radius) + ' A' + radius + ' ' + radius + ' 0 0 ' + (direction < 0 ? 0 : 1) + ' ' + target : '');
 
-    if (!live || difference > alignmentLimit + 1) alignmentChimed = false;
+    if (!live || !canConfirm || difference > alignmentLimit + 1) alignmentChimed = false;
     if (aligned && !alignmentChimed && !$('qiblaPanel').hidden && !document.hidden) {
       playCompassChime(alignmentNotes);
       alignmentChimed = true;
@@ -1496,21 +1513,50 @@
     return variationPromise;
   }
 
+  function filterHeading(heading) {
+    const now = performance.now();
+    while (headingSamples.length && headingSamples[0].time < now - headingWindow) headingSamples.shift();
+    const last = headingSamples.at(-1);
+    // Keep a short time window, independent of the phone's event rate.
+    if (last && now - last.time < 55) last.heading = heading;
+    else headingSamples.push({ time:now, heading });
+    const previous = compassReading?.heading ?? heading;
+    const offsets = headingSamples.map(sample => signedTurn(previous, sample.heading)).sort((a, b) => a - b);
+    const middle = Math.floor(offsets.length / 2);
+    const median = offsets.length % 2 ? offsets[middle] : (offsets[middle - 1] + offsets[middle]) / 2;
+    return {
+      heading:norm360(previous + median),
+      steady:offsets.length >= 3 && offsets.at(-1) - offsets[0] <= 5
+    };
+  }
+
   function orientationHandler(event) {
     if (!qiblaCompassOn || document.hidden || $('qiblaPanel').hidden) return;
     const webkit = 'webkitCompassHeading' in event;
     const absolute = event.absolute === true || event.type === 'deviceorientationabsolute';
-    if (!webkit && (!absolute || compassReading?.kind === 'webkit')) return;
+    if (!webkit && (!absolute || compassSource === 'webkit')) return;
+    const source = webkit ? 'webkit' : 'absolute';
+    if (compassSource !== source) headingSamples.length = 0;
+    compassSource = source;
     const degrees = webkit ? event.webkitCompassHeading : event.alpha;
     const validHeading = Number.isFinite(degrees) && degrees >= 0 && degrees <= 360;
+    const accuracy = webkit && Number.isFinite(event.webkitCompassAccuracy) ? event.webkitCompassAccuracy : null;
+    const portrait = norm360(screen.orientation?.angle ?? window.orientation ?? 0) === 0;
+    const levelKnown = Number.isFinite(event.beta) && Number.isFinite(event.gamma);
+    const tilted = !portrait || (levelKnown && Math.cos(event.beta * Math.PI / 180) *
+      Math.cos(event.gamma * Math.PI / 180) < levelLimit);
+    const usable = !tilted && validHeading && (!webkit || (accuracy !== null && accuracy >= 0 && accuracy <= 20));
+    if (!usable) headingSamples.length = 0;
+    const filtered = usable ? filterHeading(norm360(webkit ? degrees : -degrees)) : { heading:null, steady:false };
+    compassReading = { ...filtered, accuracy, portrait, levelKnown, tilted };
+    headingExpired = false;
     clearTimeout(headingTimer);
-    const portrait = !(screen.orientation?.angle ?? window.orientation ?? 0);
-    const tilted = Math.abs(event.beta || 0) > 35 || Math.abs(event.gamma || 0) > 35;
-    compassReading = {
-      kind:webkit ? 'webkit' : 'absolute', portrait, tilted:tilted || !portrait,
-      heading:validHeading ? norm360(webkit ? degrees : -degrees) : null,
-      accuracy:webkit && Number.isFinite(event.webkitCompassAccuracy) ? event.webkitCompassAccuracy : null
-    };
+    headingTimer = setTimeout(() => {
+      headingExpired = true;
+      compassReading = null;
+      headingSamples.length = 0;
+      renderQibla();
+    }, 8000);
     renderQibla();
   }
 
@@ -1522,6 +1568,9 @@
     qiblaCompassOn = false;
     compassStarting = false;
     compassReading = null;
+    compassSource = undefined;
+    headingSamples.length = 0;
+    headingExpired = false;
     alignmentChimed = false;
   }
   function stopCompass() {
@@ -1671,13 +1720,16 @@
   });
 
   const upcomingFormat = new Intl.DateTimeFormat('en-GB', { timeZone:'UTC', day:'numeric', month:'short', year:'numeric' });
-  let lastOccasionDate;
+  const occasionDialog = $('occasionDialog');
+  let lastOccasionDate, openedOccasion;
+  let listedOccasions = {};
   function renderIslamicDates(today) {
     const key = hijriDayKey(today, getDay(today), Date.now());
-    if (key === lastOccasionDate) return;
+    if (key === lastOccasionDate || occasionDialog.open) return;
     lastOccasionDate = key;
     const { dates, fasts } = SalahHijri.upcoming(key);
     const { ramadan, ...eids } = dates;
+    listedOccasions = { ...fasts, ...dates };
     const available = Object.keys(dates).length > 0;
     $('datesUnavailable').hidden = available;
     $('occasionGroups').hidden = !available;
@@ -1685,27 +1737,62 @@
     renderOccasions('upcomingEids', eids);
   }
 
+  function occasionLabels(id, event) {
+    const from = dateAtNoonUTC(event.from), to = event.to && dateAtNoonUTC(event.to);
+    const date = !to ? upcomingFormat.format(from) : typeof upcomingFormat.formatRange === 'function' ?
+      upcomingFormat.formatRange(from, to) : upcomingFormat.format(from) + ' – ' + upcomingFormat.format(to);
+    const { name, kind, ruling } = SalahHijri.occasions[id];
+    const title = id === 'ashura' && to ? 'Ashura and the day before' : name;
+    const start = SalahHijri.label(event.from);
+    const hijri = to ? start.split(' ')[0] + '–' + SalahHijri.label(event.to) : start;
+    return { title, kind, ruling, date, hijri };
+  }
+
   function renderOccasions(elementId, occasions) {
-    const list = $(elementId);
-    const opened = new Set([...list.querySelectorAll('details[open]')].map(detail => detail.parentElement.dataset.occasion));
     const ordered = Object.entries(occasions).sort((a, b) => a[1].from.localeCompare(b[1].from));
-    list.innerHTML = ordered.map(([id, event]) => {
-      const from = dateAtNoonUTC(event.from), to = event.to && dateAtNoonUTC(event.to);
-      const date = !to ? upcomingFormat.format(from) : typeof upcomingFormat.formatRange === 'function' ?
-        upcomingFormat.formatRange(from, to) : upcomingFormat.format(from) + ' – ' + upcomingFormat.format(to);
-      const { name, kind, ruling, notes, sources } = SalahHijri.occasions[id];
-      const title = id === 'ashura' && to ? 'Ashura and the day before' : name;
-      const start = SalahHijri.label(event.from);
-      const hijri = to ? start.split(' ')[0] + '–' + SalahHijri.label(event.to) : start;
-      const links = sources.map(([label, url]) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`).join('');
-      return `<li data-occasion="${id}"><details class="occasion"${opened.has(id) ? ' open' : ''}>
-        <summary><time datetime="${event.from}">${date}</time><span><strong>${title}</strong>
+    $(elementId).innerHTML = ordered.map(([id, event]) => {
+      const { title, kind, ruling, date, hijri } = occasionLabels(id, event);
+      return `<li data-occasion="${id}"><button class="occasion" type="button" aria-haspopup="dialog" aria-controls="occasionDialog">
+        <time datetime="${event.from}">${date}</time><span><strong>${title}</strong>
           <span class="occasion-hijri">${hijri}</span><span class="occasion-ruling" data-kind="${kind}">${ruling}</span>
-        </span><span class="occasion-chevron" aria-hidden="true"></span></summary>
-        <div class="occasion-info">${notes.map(note => `<p>${note}</p>`).join('')}<div class="occasion-sources">${links}</div></div>
-      </details></li>`;
+        </span><span class="occasion-chevron" aria-hidden="true"></span>
+      </button></li>`;
     }).join('');
   }
+
+  $('occasionGroups').addEventListener('click', event => {
+    const button = event.target.closest('.occasion');
+    if (!button || occasionDialog.open) return;
+    const id = button.parentElement.dataset.occasion;
+    const { title, kind, ruling, date, hijri } = occasionLabels(id, listedOccasions[id]);
+    const { notes, sources } = SalahHijri.occasions[id];
+    openedOccasion = id;
+    $('occasionDialogTitle').textContent = title;
+    $('occasionDialogDate').textContent = date + ' · ' + hijri;
+    $('occasionDialogRuling').textContent = ruling;
+    $('occasionDialogRuling').dataset.kind = kind;
+    $('occasionNotes').innerHTML = notes.map(note => `<p>${note}</p>`).join('');
+    $('occasionEvidence').innerHTML = sources.map(({ name, url, arabic, meaning }) => `
+      <div class="occasion-source">
+        <a href="${url}" target="_blank" rel="noopener noreferrer">${name}</a>
+        ${arabic ? `<blockquote lang="ar" dir="rtl">${arabic}</blockquote>` : ''}
+        <p>${meaning}</p>
+      </div>`).join('');
+    occasionDialog.showModal();
+    occasionDialog.querySelector('.occasion-dialog-body').scrollTop = 0;
+    $('occasionDialogTitle').focus({ preventScroll:true });
+  });
+  occasionDialog.addEventListener('click', event => {
+    if (event.target !== occasionDialog) return;
+    const bounds = occasionDialog.getBoundingClientRect();
+    if (event.clientX < bounds.left || event.clientX > bounds.right ||
+        event.clientY < bounds.top || event.clientY > bounds.bottom) occasionDialog.close();
+  });
+  occasionDialog.addEventListener('close', () => {
+    if ($('datesPanel').hidden) return;
+    renderIslamicDates(todayKey());
+    $('occasionGroups').querySelector(`[data-occasion="${openedOccasion}"] button`)?.focus({ preventScroll:true });
+  });
 
   function fastingBalance(entries, totals) {
     const missed = [], fasted = [];
@@ -1946,6 +2033,7 @@
     for (const [name,id] of Object.entries(screenIds)) {
       $(id).hidden = name !== target;
     }
+    if (target !== 'dates' && occasionDialog.open) occasionDialog.close();
     document.querySelectorAll('[data-screen-target]').forEach(button => {
       const active = button.dataset.screenTarget === target;
       button.classList.toggle('is-active', active);
@@ -1961,7 +2049,7 @@
     if (target === 'dates') renderIslamicDates(todayKey());
     if (target === 'qibla') {
       renderQibla();
-      if (qiblaCompassOn) void loadVariation().then(renderQibla);
+      void loadVariation().then(renderQibla);
     } else if (qiblaCompassOn || compassStarting) stopCompass();
     const hash = target === 'today' ? '' : '#' + target;
     if (location.hash !== hash) {

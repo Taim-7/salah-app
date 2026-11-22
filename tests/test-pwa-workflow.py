@@ -207,13 +207,23 @@ try:
         assert page.locator('#upcomingFasts').get_by_text('Sunnah fast outside Hajj', exact=True).count() == 1
         assert page.locator('#upcomingEids').get_by_text('Do not fast', exact=True).count() == 2
         assert page.locator('[data-occasion="monday"], [data-occasion="thursday"]').count() == 0
+        modal = page.locator('#occasionDialog')
         for occasion in page.locator('#datesPanel [data-occasion]').all():
-            assert occasion.locator('.occasion-info').is_hidden()
-            occasion.locator('summary').click()
-            assert occasion.locator('.occasion-info').is_visible()
-            assert occasion.locator('.occasion-sources a').count() >= 2
-            assert occasion.locator('a[href^="https://sunnah.com/"]').first.is_visible()
-            occasion.locator('summary').click()
+            row = occasion.locator('button')
+            row.click()
+            assert page.locator('#occasionDialog:modal').is_visible()
+            assert page.locator('#occasionDialogTitle').inner_text() == occasion.locator('strong').inner_text()
+            assert page.locator('#occasionNotes p').first.is_visible()
+            assert modal.locator('.occasion-source a').count() >= 3
+            assert modal.locator('blockquote[lang="ar"][dir="rtl"]').first.is_visible()
+            assert modal.locator('a[href^="https://sunnah.com/"]').first.is_visible()
+            page.locator('#closeOccasion').click()
+            assert modal.is_hidden()
+            assert row.evaluate('button => document.activeElement === button')
+        page.locator('[data-occasion="fitr"] button').click()
+        assert modal.locator('a[href="https://sunnah.com/muslim:1164a"]').is_visible()
+        page.mouse.click(2, 2)
+        assert modal.is_hidden()
         page.reload()
         assert page.locator('#datesPanel').is_visible()
         page.locator('[data-screen-target="fasting"]').click()
@@ -254,29 +264,50 @@ try:
             Math.sin(longitudeGap), Math.cos(fromLat) * Math.tan(toLat) - Math.sin(fromLat) * Math.cos(longitudeGap)
           ) / radians;
           const correction = model.magvar(config.lat, config.lng, 0, new Date());
-          window.pointPhone = (offset, accuracy) => {
+          window.pointPhone = (offset, accuracy = 10, beta = 0, gamma = 0) => {
             const heading = (bearing + offset - correction + 360) % 360;
             const event = new Event('deviceorientation');
-            Object.defineProperties(event, { webkitCompassHeading: { value: heading }, webkitCompassAccuracy: { value: accuracy } });
+            Object.defineProperties(event, {
+              webkitCompassHeading: { value: heading }, webkitCompassAccuracy: { value: accuracy },
+              beta: { value: beta }, gamma: { value: gamma }
+            });
             window.dispatchEvent(event);
           };
-          window.addEventListener('deviceorientation', event => {
-            if (event.isTrusted) event.stopImmediatePropagation();
-          }, true);
+          window.holdPhone = async (offset, accuracy = 10) => {
+            for (let i = 0; i < 9; i++) {
+              pointPhone(offset, accuracy);
+              await new Promise(done => setTimeout(done, 62));
+            }
+          };
+          window.pointAbsolute = (offset, type = 'deviceorientationabsolute') => {
+            const event = new Event(type);
+            const alpha = (correction - bearing - offset + 720) % 360;
+            Object.defineProperties(event, { alpha:{ value:alpha }, beta:{ value:0 }, gamma:{ value:0 } });
+            window.dispatchEvent(event);
+          };
+          for (const eventName of ['deviceorientation', 'deviceorientationabsolute']) {
+            window.addEventListener(eventName, event => {
+              if (event.isTrusted) event.stopImmediatePropagation();
+            }, true);
+          }
           window.DeviceOrientationEvent = class {
             static requestPermission() { return Promise.resolve('granted'); }
           };
+          window.expectedMagneticBearing = ((bearing - correction) % 360).toFixed(1) + '°';
         }""")
+        assert page.locator('#qiblaMagneticBearing').inner_text() == page.evaluate('expectedMagneticBearing')
+        fixed_bearing = page.locator('#qiblaBearing').inner_text()
         page.locator('#startCompass').click()
         page.wait_for_function("document.querySelector('#startCompass').textContent === 'Stop compass'")
+        assert page.locator('#qiblaTurnAngle').inner_text() == '—'
         page.evaluate('pointPhone(55, 10)')
         page.locator('#qiblaDial.live').wait_for()
         assert 'left' in page.locator('#qiblaCue').inner_text()
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'turn'
         assert page.locator('#qiblaArc').evaluate('arc => getComputedStyle(arc).stroke') == 'rgb(255, 133, 137)'
-        page.evaluate('pointPhone(12, 10)')
+        page.evaluate('holdPhone(12)')
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'near'
-        page.evaluate('pointPhone(2, 10)')
+        page.evaluate('holdPhone(2)')
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'aligned'
         assert page.locator('#qiblaTurnAngle').inner_text() == '2°'
         assert page.locator('#qiblaCue').inner_text() == 'Heading aligned · 2° off'
@@ -284,24 +315,32 @@ try:
         assert page.locator('#qiblaPrecision').inner_text() == '±10°'
         assert page.locator('#qiblaMarker rect').evaluate('marker => getComputedStyle(marker).stroke') == 'rgb(114, 220, 163)'
         assert page.evaluate('compassTones.slice(-2)') == [740, 990]
-        page.evaluate('pointPhone(-3, 10)')
+        page.evaluate('pointPhone(-178)')
+        assert page.locator('#qiblaTurnAngle').inner_text() == '2°'
+        assert page.locator('#qiblaAligned').get_attribute('data-state') == 'near'
+        page.evaluate('holdPhone(-3)')
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'aligned'
         assert page.locator('#qiblaTurnAngle').inner_text() == '3°'
-        page.evaluate('pointPhone(3.01, 10)')
+        page.evaluate('holdPhone(3.01)')
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'near'
         assert page.locator('#qiblaTurnAngle').inner_text() == '3.1°'
-        page.evaluate('pointPhone(3, 10)')
+        page.evaluate('holdPhone(3)')
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'aligned'
         assert page.evaluate('compassTones.length') == 2
-        page.evaluate('pointPhone(7, 10)')
+        page.evaluate('holdPhone(7)')
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'near'
+        page.evaluate('holdPhone(1, 13)')
+        assert page.locator('#qiblaCue').inner_text() == 'Approximate match · 1° off'
+        page.evaluate('pointPhone(0, 10, 20, 20)')
+        assert page.locator('#qiblaCue').inner_text() == 'Hold your phone flat'
+        assert page.locator('#qiblaTurnAngle').inner_text() == '—'
         page.evaluate('pointPhone(0, 35)')
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'weak'
         assert page.locator('#qiblaDial').evaluate('dial => !dial.classList.contains("live")')
         page.evaluate('pointPhone(0, -1)')
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'weak'
         assert page.locator('#qiblaPrecision').inner_text() == 'Uncalibrated'
-        page.evaluate('pointPhone(0, 10)')
+        page.evaluate('holdPhone(0)')
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'aligned'
         page.evaluate("""() => {
           const invalid = new Event('deviceorientation');
@@ -309,6 +348,15 @@ try:
           window.dispatchEvent(invalid);
         }""")
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'weak'
+        assert page.locator('#qiblaTurnAngle').inner_text() == '—'
+        assert page.locator('#qiblaBearing').inner_text() == fixed_bearing
+        page.locator('#startCompass').click()
+        page.locator('#startCompass').click()
+        page.evaluate("pointAbsolute(1, 'deviceorientation')")
+        assert page.locator('#qiblaTurnAngle').inner_text() == '—'
+        page.evaluate('pointAbsolute(1)')
+        assert page.locator('#qiblaCue').inner_text() == 'Approximate match · 1° off'
+        assert page.locator('#qiblaPrecision').inner_text() == 'Unknown'
         page.locator('#startCompass').click()
         page.evaluate("""() => {
           compassTones.length = 0;

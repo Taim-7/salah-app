@@ -25,9 +25,15 @@ with sync_playwright() as p:
    assert page.locator(f'[data-screen-target="{tab}"]').bounding_box()['width'] >= 44, (width,tab)
    assert page.evaluate('document.documentElement.scrollWidth-document.documentElement.clientWidth')<3,(width,tab)
    if tab=='dates':
-    page.locator('[data-occasion="white"] summary').press('Enter')
-    assert page.locator('[data-occasion="white"] .occasion-info').is_visible()
+    row = page.locator('[data-occasion="white"] button')
+    row.press('Enter')
+    assert page.locator('#occasionDialog:modal').is_visible()
+    assert page.locator('#occasionDialog blockquote[dir="rtl"]').is_visible()
+    assert page.locator('#occasionDialogTitle').inner_text() == 'White Days'
     assert page.evaluate('document.documentElement.scrollWidth-document.documentElement.clientWidth')<3,(width,'date details')
+    page.keyboard.press('Escape')
+    assert page.locator('#occasionDialog').is_hidden()
+    assert row.evaluate('button => document.activeElement === button')
   page.locator('[data-screen-target="settings"]').click()
   page.locator('#comparisonPanel > summary').click()
   page.locator('#comparisonBody tr').last.wait_for()

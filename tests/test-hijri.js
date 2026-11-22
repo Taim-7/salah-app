@@ -29,7 +29,7 @@ assert.deepEqual(Object.fromEntries(Object.entries(occasions).map(([name, occasi
 });
 for (const { notes, sources } of Object.values(occasions)) {
   assert(notes.every(note => note.length > 30));
-  assert(sources.some(([title, url]) => /sahih/i.test(title) && url.startsWith('https://sunnah.com/')));
-  assert(sources.every(([, url]) => ['quran.com', 'sunnah.com'].includes(new URL(url).hostname)));
+  assert(sources.some(({ name, url, arabic }) => /sahih/i.test(name) && url.startsWith('https://sunnah.com/') && /\p{Script=Arabic}/u.test(arabic)));
+  assert(sources.every(({ url, meaning }) => ['quran.com', 'sunnah.com'].includes(new URL(url).hostname) && meaning.length > 30));
 }
 console.log('PASS: Hijri labels, Ramadan and Eid dates, Sunnah fasts, exclusions and sources.');

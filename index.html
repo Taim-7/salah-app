@@ -110,13 +110,14 @@
       </div>
     </div>
     <p class="qibla-help" id="qiblaAccuracy" role="status" hidden></p>
+    <p class="compass-precision" id="qiblaPrecisionRow" hidden>Compass accuracy <strong id="qiblaPrecision">—</strong></p>
     <button class="primary-button" id="startCompass" type="button">Start compass</button>
   </div>
   <div class="qibla-readout">
     <dl class="compass-stats">
       <div><dt>To Makkah</dt><dd id="qiblaDistance">—</dd></div>
       <div><dt>True bearing</dt><dd><span id="qiblaBearing">—</span> <small id="qiblaCardinal"></small></dd></div>
-      <div id="qiblaPrecisionRow" hidden><dt>Compass accuracy</dt><dd id="qiblaPrecision">—</dd></div>
+      <div><dt>Magnetic bearing</dt><dd id="qiblaMagneticBearing">—</dd></div>
     </dl>
 
   </div>
@@ -231,6 +232,21 @@
       <ul class="upcoming-list" id="upcomingEids"></ul>
     </section>
   </div>
+  <dialog class="occasion-dialog" id="occasionDialog" aria-labelledby="occasionDialogTitle" aria-describedby="occasionDialogDate">
+    <header class="occasion-dialog-header">
+      <div>
+        <h2 id="occasionDialogTitle" tabindex="-1"></h2>
+        <p id="occasionDialogDate"></p>
+        <span class="occasion-ruling" id="occasionDialogRuling"></span>
+      </div>
+      <form method="dialog"><button class="secondary-button" id="closeOccasion" type="submit" aria-label="Close date details">×</button></form>
+    </header>
+    <div class="occasion-dialog-body">
+      <div id="occasionNotes"></div>
+      <h3>References</h3>
+      <div id="occasionEvidence"></div>
+    </div>
+  </dialog>
 </section>
 
 <section aria-labelledby="soundTitle" class="sound-panel app-screen" data-screen="sounds" hidden id="soundPanel">

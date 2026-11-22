@@ -50,7 +50,7 @@ const tick=async(type,request,fields={})=>{
  await caches.open('salah-static:/salah-app/:v15');
  await caches.open('salah-static:/other-app/:v15');
  await tick('install');
- assert.equal(stores.has('salah-static:/salah-app/:v30'),true);
+ assert.equal(stores.has('salah-static:/salah-app/:v31'),true);
  await tick('activate');
  assert.equal(stores.has('salah-static:/salah-app/:v15'),false);
  assert.equal(stores.has('salah-static:/other-app/:v15'),true);

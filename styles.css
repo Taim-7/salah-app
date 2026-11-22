@@ -245,6 +245,8 @@ input[type="file"]::file-selector-button { background: var(--raised); color: var
   display: table; margin: 3px auto 9px; padding: 5px 9px; max-width: 100%; border: 1px solid var(--qibla-line);
   border-radius: 14px; background: var(--qibla-edge); color: var(--muted); font-size: 12px; line-height: 1.3;
 }
+.compass-precision { color: var(--muted); font-size: 12px; margin: -4px 0 9px; }
+.compass-precision strong { color: var(--ink); font-variant-numeric: tabular-nums; }
 .compass-outer {
   position: relative; width: min(100%, 360px, max(226px, 47vh)); margin: 12px auto 8px;
 }
@@ -267,6 +269,8 @@ input[type="file"]::file-selector-button { background: var(--raised); color: var
 .qibla-marker { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--guide-signal) 38%, transparent)); }
 .qibla-marker rect { fill: var(--qibla-edge); stroke: var(--guide-signal); stroke-width: 1.7; }
 .qibla-marker path { fill: none; stroke: var(--guide-signal); stroke-width: 1.4; stroke-linecap: round; }
+.compass-outer.waiting-for-heading :is(.qibla-arc, .qibla-marker, .phone-pointer) { visibility: hidden; }
+.compass-outer.waiting-for-heading :is(.compass-labels, #compassTicks) { opacity: .4; }
 .qibla-angle {
   position: absolute; inset: 32%; display: flex; flex-direction: column; justify-content: center; align-items: center;
   border: 1px solid var(--qibla-line); border-radius: 50%; background: var(--qibla-edge); line-height: 1;
@@ -307,22 +311,37 @@ input[type="file"]::file-selector-button { background: var(--raised); color: var
 .occasion-groups { display: grid; gap: 12px; }
 .occasion-groups h3 { margin-bottom: 9px; }
 .upcoming-list { display: grid; gap: 7px; list-style: none; padding: 0; margin: 0; }
-.occasion { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
-.occasion summary { display: grid; grid-template-columns: minmax(76px, 26%) minmax(0, 1fr) 13px; gap: 9px; align-items: center; min-height: 62px; padding: 7px; cursor: pointer; list-style: none; }
-.occasion summary::-webkit-details-marker { display: none; }
-.occasion summary:focus-visible { outline-offset: 1px; border-radius: 8px; }
-.occasion[open] { border-color: var(--accent); }
+.occasion { display: grid; grid-template-columns: minmax(76px, 26%) minmax(0, 1fr) 13px; gap: 9px; align-items: center; min-height: 62px; width: 100%; padding: 7px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink); text-align: start; }
+.occasion:is(:hover, :focus-visible) { border-color: var(--accent); }
+.occasion:focus-visible { outline-offset: 1px; }
 .occasion time { display: grid; align-content: center; min-height: 43px; padding: 5px; border-radius: 7px; background: var(--accent-deep); color: var(--accent); font-size: 12px; font-weight: 700; line-height: 1.24; text-align: center; font-variant-numeric: tabular-nums; }
 .occasion strong { display: block; font-size: 14px; line-height: 1.2; }
 .occasion-hijri { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; line-height: 1.25; }
 .occasion-ruling { display: inline-block; margin-top: 4px; padding: 2px 6px; border-radius: 5px; background: var(--raised); color: var(--ok); font-size: 11px; font-weight: 700; line-height: 1.25; }
 .occasion-ruling[data-kind="required"] { color: var(--warm); }
 .occasion-ruling[data-kind="forbidden"] { color: var(--danger); }
-.occasion-chevron { width: 8px; height: 8px; border: solid var(--muted); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg) translateY(-2px); }
-.occasion[open] .occasion-chevron { transform: rotate(225deg) translate(-2px, -1px); }
-.occasion-info { display: grid; gap: 8px; margin: 1px 9px 0; padding: 9px 1px 11px; border-top: 1px solid var(--line); color: var(--ink); font-size: 13px; }
-.occasion-sources { display: flex; flex-wrap: wrap; gap: 3px 11px; }
-.occasion-sources a { display: inline-flex; align-items: center; min-height: 30px; font-size: 12px; }
+.occasion-chevron { width: 8px; height: 8px; border: solid var(--muted); border-width: 1.5px 1.5px 0 0; transform: rotate(45deg); }
+.occasion-dialog {
+  width: min(calc(100% - 28px), 610px); max-width: none; max-height: min(690px, calc(100vh - 32px));
+  max-height: min(690px, calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
+  padding: 0; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
+  color: var(--ink); background: var(--shade); box-shadow: 0 20px 75px #000b;
+}
+.occasion-dialog[open] { display: flex; flex-direction: column; }
+.occasion-dialog::backdrop { background: #03080bc7; }
+body:has(.occasion-dialog[open]) { overflow: hidden; }
+.occasion-dialog-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 15px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.occasion-dialog-header p { color: var(--muted); margin-top: 5px; font-size: 12px; }
+.occasion-dialog-header .occasion-ruling { margin-top: 7px; }
+#closeOccasion { display: grid; place-items: center; min-width: 44px; min-height: 44px; padding: 0; font-size: 23px; line-height: 1; }
+.occasion-dialog-body { min-height: 0; padding: 15px; overflow-y: auto; overscroll-behavior: contain; font-size: 14px; line-height: 1.55; }
+#occasionNotes { display: grid; gap: 10px; }
+.occasion-dialog-body h3 { margin: 19px 0 8px; }
+#occasionEvidence { display: grid; gap: 8px; }
+.occasion-source { padding: 9px 10px; border-radius: var(--inset-radius); border: 1px solid var(--line); background: var(--panel); }
+.occasion-source a { font-size: 13px; font-weight: 680; }
+.occasion-source p { margin-top: 4px; color: var(--muted); font-size: 13px; }
+.occasion-source blockquote { margin: 5px 0 0; font-size: 19px; line-height: 1.8; }
 #datesUnavailable { color: var(--muted); font-size: 13px; }
 .fasting-calendar-controls { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 9px; }
 #calendarFasted { color: var(--muted); font-size: 12px; line-height: 1.25; }
