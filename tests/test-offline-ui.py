@@ -1,8 +1,9 @@
+from os import environ
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 root=Path(__file__).resolve().parents[1]
 with sync_playwright() as p:
- b=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+ b=p.chromium.launch(executable_path=environ.get('SALAH_CHROMIUM', '/usr/bin/chromium'),headless=True,args=['--no-sandbox'])
  cases=0
  for width in [320,375,390,430,768,1024]:
   context=b.new_context(viewport={'width':width,'height':844},timezone_id='Europe/London',is_mobile=width<768,has_touch=width<768)
@@ -13,6 +14,7 @@ with sync_playwright() as p:
   for f in ['region.js','solar.js','providers.js','app.js']:page.add_script_tag(path=str(root/f))
   assert page.locator('#heroMethod').inner_text().startswith('15° / 13°')
   assert page.locator('#prayerList .prayer-entry').count()==6,(width,page.locator('#prayerList .prayer-entry').count())
+  assert page.locator('#prayerList .avoid-entry').count()==3
   assert page.locator('#offlineIndicator').is_visible()
   assert page.locator('#settingsTheme').count()==0
   assert page.locator('body').get_attribute('data-theme')=='dark'
@@ -24,12 +26,14 @@ with sync_playwright() as p:
   assert page.locator('#saveOfflineAdhans').count()==0
   assert page.locator('#armSound').count()==0
   assert page.locator('#offlineAdhanStatus').count()==0
-  assert page.locator('#hijriDate').inner_text() == 'Prayer times'
+  assert page.locator('h1').inner_text() == 'Prayer times'
   if width==390:
-   page.locator('[data-screen-target="today"]').click()
-   page.screenshot(path=str(root/'preview-dark-v17.png'),full_page=True)
-   page.locator('[data-screen-target="sounds"]').click()
-   page.screenshot(path=str(root/'preview-sounds-v17.png'),full_page=True)
+   for layout in ['classic', 'compact', 'timeline']:
+    page.locator('[data-screen-target="settings"]').click()
+    page.locator('#settingsLayout').select_option(layout)
+    page.locator('[data-screen-target="today"]').click()
+    assert len(page.locator('#prayerList .avoid-entry .range-label:visible').all())==3, layout
+    assert page.evaluate('document.documentElement.scrollWidth-document.documentElement.clientWidth')<3, layout
   assert not errors,(width,errors)
   cases+=1;context.close()
  print('PASS',cases,'offline simulated UI widths: local prayer list, 5 tabs, no light mode, sound controls, no overflow, no JS exceptions')

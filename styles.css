@@ -83,3 +83,23 @@ body .time-row.avoid-entry.within-range{opacity:1;border-left:3px solid var(--go
 body .time-row.is-current-marker:not(.current-prayer){background:var(--surface-subtle)!important;box-shadow:none!important;border-color:var(--border)!important}
 body .hero-live-message[data-level="danger"]{background:var(--surface-subtle)!important;color:var(--ink)!important;border:1px solid var(--border)}
 body .time-row.prayer-entry.current-prayer.is-past{opacity:1!important}
+
+.compare-date-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 12px 0;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+.compare-date-nav .day-arrow { flex: 0 0 40px; }
+.compare-table th[scope="row"] { text-align: left; }
+.compare-table.summer-table { min-width: 310px; }
+.compare-table.summer-table th { white-space: normal; }
+.study-links .compare-scroll { margin-top: 8px; }
+#settingsStatus { margin: 0 auto 0 0; }
+@media (max-width: 550px) {
+  .source-picker { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}

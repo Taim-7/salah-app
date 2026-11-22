@@ -1,8 +1,9 @@
+from os import environ
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 root=Path(__file__).resolve().parents[1]
 with sync_playwright() as p:
- b=p.chromium.launch(headless=True,executable_path='/usr/bin/chromium',args=['--no-sandbox'])
+ b=p.chromium.launch(headless=True,executable_path=environ.get('SALAH_CHROMIUM', '/usr/bin/chromium'),args=['--no-sandbox'])
  c=b.new_context(viewport={'width':390,'height':844},timezone_id='Europe/London')
  page=c.new_page();errors=[];page.on('pageerror',lambda e: errors.append(str(e)))
  page.set_content((root/'index.html').read_text())

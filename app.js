@@ -1,11 +1,10 @@
 (() => {
   'use strict';
   const $ = id => document.getElementById(id);
-  const deviceZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   const defaults = {
     lat: 54.9966, lng: -7.3086, location: 'Derry, Northern Ireland', timeZone: 'Europe/London',
-    zoneVerified: true, autoLocation: false, method: '15-13', fajrAngle: 15, ishaAngle: 13,
-    ishaPreference: 'around-third', highLatRule: 'seventh', activeSource: 'angles', soundChoice: 'adhan-abu-bakr', soundVolume: 40, onlineCompare: true, calendarLead: 15, timeFormat: '12', theme: 'dark', layout: 'classic', accent: 'forest'
+    autoLocation: false, method: '15-13', fajrAngle: 15, ishaAngle: 13,
+    ishaPreference: 'around-third', ishaLimit: 'half', magneticDeclination: '', highLatRule: 'seventh', activeSource: 'angles', soundChoice: 'adhan-abu-bakr', soundVolume: 40, onlineCompare: true, calendarLead: 15, timeFormat: '12', theme: 'dark', layout: 'classic', accent: 'forest'
   };
   const names = [
     { key: 'fajr', en: 'Fajr', ar: 'الفجر', icon: 'sun-horizon', desc: 'Dawn' },
@@ -16,75 +15,104 @@
     { key: 'isha', en: 'Isha', ar: 'العشاء', icon: 'moon', desc: 'Night' }
   ];
   const prayers = names.filter(p => p.key !== 'sunrise');
-  const dateParts = (date, zone) => {
-    const parts = new Intl.DateTimeFormat('en-GB', {
-      timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit'
-    }).formatToParts(date);
-    const get = name => parts.find(x => x.type === name).value;
-    return `${get('year')}-${get('month')}-${get('day')}`;
-  };
+
+  const dateFormats = new Map();
+  const clockFormats = new Map();
+  function dateParts(date, zone) {
+    if (!dateFormats.has(zone)) dateFormats.set(zone, new Intl.DateTimeFormat('en-GB', {
+      timeZone: zone, year:'numeric', month:'2-digit', day:'2-digit'
+    }));
+    const parts = Object.fromEntries(dateFormats.get(zone).formatToParts(date).map(p => [p.type, p.value]));
+    return parts.year + '-' + parts.month + '-' + parts.day;
+  }
+
   const dayShift = (key, amount) => {
     const [y, m, d] = key.split('-').map(Number);
     const z = new Date(Date.UTC(y, m - 1, d + amount, 12));
     return `${z.getUTCFullYear()}-${String(z.getUTCMonth() + 1).padStart(2, '0')}-${String(z.getUTCDate()).padStart(2, '0')}`;
   };
   const dateAtNoonUTC = key => new Date(`${key}T12:00:00Z`);
-  const validZone = z => {
-    try { new Intl.DateTimeFormat('en-GB', { timeZone: z }); return true; } catch { return false; }
+
+
+
+  const summerRules = {
+    seventh: 'One seventh when missing',
+    relative: 'Local relative estimate',
+    nearest: 'Last valid day',
+    angle: 'Angle fraction when missing',
+    tayba: 'Seasonal Tayba reference',
+    crossings: 'Crossings only'
   };
-  function supportedPlace(lat, lng) { return SalahRegion.allowed(lat, lng); }
   function loadConfig() {
     try {
       const raw = JSON.parse(localStorage.getItem('salah-config') || '{}');
       const c = { ...defaults, ...raw };
       if (!raw.version4) {
         if (raw.method === '12-12') c.method = '15-13';
-        c.calendarLead = 15;
         c.timeFormat = '12';
         if (raw.soundChoice === 'soft') c.soundChoice = 'adhan';
       }
-      if (!raw.version5 && !('theme' in raw)) c.theme='dark';
       if (!raw.version6 && c.soundChoice === 'adhan') c.soundChoice = 'soft';
       if (!raw.audioDefaultV13 && c.soundChoice === 'soft') c.soundChoice = 'adhan-abu-bakr';
       c.audioDefaultV13 = true;
       c.version7 = true; c.version6 = true; c.version5 = true; c.version4 = true;
-      if (raw && !('timeZone' in raw)) { c.timeZone = deviceZone(); c.zoneVerified = false;  }
       if (!['12-12', '15-13', '18-17', 'custom'].includes(c.method)) c.method = defaults.method;
       if (!['around-third', 'after-third'].includes(c.ishaPreference)) c.ishaPreference = defaults.ishaPreference;
+      if (!['half', 'third', 'half-necessity'].includes(c.ishaLimit)) c.ishaLimit = defaults.ishaLimit;
+      delete c.asrShadow;
+      delete c.showBuffers;
+      if (!(Number.isFinite(+c.magneticDeclination) && Math.abs(+c.magneticDeclination) <= 180))
+        c.magneticDeclination = '';
+      if (c.activeSource === 'tayba-white') c.activeSource = 'tayba';
       if (!['angles', 'tayba', 'moonsighting'].includes(c.activeSource)) c.activeSource = 'angles';
       if (raw.fajrSoundChoice === 'adhan-fajr-abu-bakr' && c.soundChoice === 'soft') c.soundChoice = 'adhan-fajr-abu-bakr';
       if (!['soft','bell','custom','off','adhan-abu-bakr','adhan-fajr-abu-bakr','adhan-thabet'].includes(c.soundChoice)) c.soundChoice = 'soft';
       delete c.fajrSoundChoice;
-      c.soundVolume = Number.isFinite(+c.soundVolume) ? Math.max(15,Math.min(100,+c.soundVolume)) : 40;
+      c.soundVolume = Number.isFinite(+c.soundVolume) ? Math.max(15, Math.min(100, +c.soundVolume)) : 40;
       c.calendarLead = 15;
       c.timeFormat = ['12','24'].includes(String(c.timeFormat)) ? String(c.timeFormat) : '12';
       c.theme = 'dark';
       c.layout = ['classic','compact','timeline'].includes(c.layout) ? c.layout : 'classic';
       c.accent = ['forest','ocean','dusk'].includes(c.accent) ? c.accent : 'forest';
       c.onlineCompare = c.onlineCompare !== false;
-      if (!['seventh', 'angle', 'middle'].includes(c.highLatRule)) c.highLatRule = defaults.highLatRule;
-      if (!['Europe/London','Europe/Dublin'].includes(c.timeZone)) c.timeZone = defaults.timeZone;
-      if (!supportedPlace(+c.lat,+c.lng)) { c.lat=defaults.lat; c.lng=defaults.lng; c.location=defaults.location; c.timeZone=defaults.timeZone; c.zoneVerified=true; c.autoLocation=false; }
-      else { c.timeZone = SalahRegion.zone(+c.lat,+c.lng); c.zoneVerified = true; }
-      if (!Number.isFinite(+c.lat) || Math.abs(+c.lat) >= 89 || !Number.isFinite(+c.lng) || Math.abs(+c.lng) > 180) return { ...defaults };
+      if (!Object.hasOwn(summerRules, c.highLatRule)) c.highLatRule = defaults.highLatRule;
       if (![c.fajrAngle, c.ishaAngle].every(a => Number.isFinite(+a) && +a >= 6 && +a <= 22)) {
         c.fajrAngle = defaults.fajrAngle; c.ishaAngle = defaults.ishaAngle;
       }
-      c.autoLocation = c.autoLocation === true;
+      c.lat = Number(c.lat);
+      c.lng = Number(c.lng);
+      const zone = SalahRegion.zone(c.lat, c.lng);
+      if (!zone) {
+        c.lat = defaults.lat;
+        c.lng = defaults.lng;
+        c.location = defaults.location;
+        c.magneticDeclination = '';
+      }
+      c.timeZone = zone || defaults.timeZone;
+      c.autoLocation = !!zone && c.autoLocation === true;
       return c;
-    } catch { return { ...defaults }; }
+    } catch {
+      return { ...defaults };
+    }
   }
+
   let cfg = loadConfig();
   storeInitialAppearance();
   function storeInitialAppearance() { try { const saved=JSON.parse(localStorage.getItem('salah-config') || '{}'); if(saved.theme !== 'dark')localStorage.setItem('salah-config',JSON.stringify({...saved,theme:'dark'})); } catch {} }
   const store = () => { try { localStorage.setItem('salah-config', JSON.stringify(cfg)); } catch {} };
   const anglePair = () => cfg.method === 'custom' ? [+cfg.fajrAngle, +cfg.ishaAngle] : cfg.method.split('-').map(Number);
   const todayKey = () => dateParts(new Date(), cfg.timeZone);
-  const fmt = date => date instanceof Date && !isNaN(date) ? new Intl.DateTimeFormat('en-GB', {
-    timeZone: cfg.timeZone, hour: cfg.timeFormat === '12' ? 'numeric' : '2-digit',
-    minute: '2-digit', hour12: cfg.timeFormat === '12'
-  }).format(date).replace('AM','am').replace('PM','pm') : '--:--';
-  const fmtNight = date => `${fmt(date)}${dateParts(date, cfg.timeZone) !== selectedKey ? ' (+1 day)' : ''}`;
+
+  function fmt(date) {
+    if (!(date instanceof Date) || !Number.isFinite(+date)) return '—';
+    const key = cfg.timeZone + ':' + cfg.timeFormat;
+    if (!clockFormats.has(key)) clockFormats.set(key, new Intl.DateTimeFormat('en-GB', {
+      timeZone: cfg.timeZone, hour: cfg.timeFormat === '12' ? 'numeric' : '2-digit',
+      minute:'2-digit', hour12: cfg.timeFormat === '12'
+    }));
+    return clockFormats.get(key).format(date).replace(/am|pm/ig, value => value.toLowerCase());
+  }
+
   const prettyKey = key => dateAtNoonUTC(key).toLocaleDateString('en-GB', {
     timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   });
@@ -92,141 +120,199 @@
     dateAtNoonUTC(key).toLocaleDateString('en-GB', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' });
   const isBetween = (t, a, b) => a && b && t >= a.getTime() && t < b.getTime();
   let selectedKey = todayKey();
-  let browsing = false, dayInfo = null, gpsLoading = false;
-  let geoWatch = null, geoLastLookup = null, pendingPlace = null, citySearchResults = [];
+  let browsing = false, dayInfo = null, gpsLoading = false, lastListRefresh = 0;
+  let geoWatch = null, placeRequest = 0, searchRequest = 0, lastTrackingLookup = 0;
 
   function note(message) {
     $('notice').textContent = message;
     $('notice').classList.toggle('hidden', !message);
   }
 
+
   const methods = [
-    { id: 'angles', title: 'Your angles', sub: 'Offline · your selected pair', online: false },
-    { id: 'tayba', title: 'Tayba option 2', sub: 'Derived twilight estimate', online: false },
-    { id: 'moonsighting', title: 'Moonsighting · red', sub: 'Seasonal / high-latitude model · AlAdhan', online: true }
+    { id:'angles', title:'Your angles', sub:'Local calculation' },
+    { id:'tayba', title:'Tayba option 2', sub:'Seasonal Fajr · red twilight model' },
+    { id:'moonsighting', title:'AlAdhan · Moonsighting', sub:'Fajr and Isha · online' }
   ];
   const onlineKinds = ['moonsighting'];
-  const moonsightingSupported = () => Math.abs(+cfg.lat) <= 60;
-  const moonsightingNightFraction = () => Math.abs(+cfg.lat) >= 55;
+  const providerPrefix = 'salah-v4-provider:';
+  const cacheId = (kind, key, place = cfg) => [
+    providerPrefix + kind, key, place.lat, place.lng, place.timeZone, '1'
+  ].join(':');
   const pendingOnline = new Set(), failedOnline = new Map(), onlineMem = new Map();
-  const cacheId = (kind, key) => ['salah-v3-provider', kind, key, Number(cfg.lat).toFixed(4), Number(cfg.lng).toFixed(4), cfg.timeZone].join(':');
+  const DAY_MS = 86400000;
+  const validFor = 7 * DAY_MS;
   function readCached(kind, key) {
     const id = cacheId(kind, key);
-    if (onlineMem.has(id)) {
-      const cached = onlineMem.get(id);
-      if (cached?.retrievedAt && Date.now() - cached.retrievedAt < 7 * 86400000) return cached;
-      onlineMem.delete(id);
-    }
-    let saved;
-    try { saved = JSON.parse(localStorage.getItem(id)); } catch { return null; }
-    if (!saved || !saved.raw || !Number.isFinite(saved.at)) return null;
-    if (Date.now() - saved.at > 7 * 86400000) return null;
+    if (onlineMem.has(id)) return onlineMem.get(id);
     try {
-      const day = SalahProviders.decode(kind, key, cfg.timeZone, saved.raw);
-      day.retrievedAt = saved.at; day.savedProviderData = true;
-      onlineMem.set(id, day); return day;
-    } catch { return null; }
+      const saved = JSON.parse(localStorage.getItem(id));
+      if (!saved?.raw || !Number.isFinite(saved.at)) return null;
+      const day = SalahProviders.decode(kind, key, cfg.timeZone, saved.raw, {
+        lat: cfg.lat, lng: cfg.lng
+      });
+      day.retrievedAt = saved.at;
+      day.savedProviderData = true;
+      onlineMem.set(id, day);
+      return day;
+    } catch {
+      return null;
+    }
+  }
+  function pruneProviderCache() {
+    const applicable = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const id = localStorage.key(i);
+      if (id?.startsWith(providerPrefix)) {
+        let at = 0;
+        try { at = Number(JSON.parse(localStorage.getItem(id))?.at) || 0; } catch {}
+        applicable.push([id, at]);
+      } else if (id?.startsWith('salah-v3-provider:')) applicable.push([id, 0]);
+    }
+    applicable.sort((a, b) => b[1] - a[1]);
+    applicable.forEach(([id, at], index) => {
+      if (index < 120 && at) return;
+      localStorage.removeItem(id);
+      onlineMem.delete(id);
+    });
   }
   async function fetchOnline(kind, key, force = false) {
-    if (kind === 'moonsighting' && !moonsightingSupported()) return;
+    const { lat, lng, timeZone } = cfg;
     const id = cacheId(kind, key);
     if (pendingOnline.has(id)) return;
-    if (!force && (readCached(kind, key) || (failedOnline.has(id) && Date.now() - failedOnline.get(id).at < 2 * 60000))) return;
-    pendingOnline.add(id); failedOnline.delete(id);
-    if (key === selectedKey) renderComparison();
+    const saved = readCached(kind, key);
+    if (!force && (Date.now() - saved?.retrievedAt < validFor ||
+        Date.now() - failedOnline.get(id) < 120000)) return;
+    pendingOnline.add(id);
+    failedOnline.delete(id);
+    if (key === selectedKey && !$('comparisonPanel').hidden) renderComparison();
     try {
-      const url = SalahProviders.buildUrl(kind, key, +cfg.lat, +cfg.lng, cfg.timeZone);
+      const url = SalahProviders.buildUrl(kind, key, lat, lng, timeZone);
       const raw = await fetchJson(url);
-      const day = SalahProviders.decode(kind, key, cfg.timeZone, raw);
-      day.retrievedAt = Date.now(); day.savedProviderData = false;
+      const day = SalahProviders.decode(kind, key, timeZone, raw, { lat, lng });
+      day.retrievedAt = Date.now();
+      day.savedProviderData = false;
+      if (onlineMem.size >= 150) onlineMem.delete(onlineMem.keys().next().value);
       onlineMem.set(id, day);
-      try { localStorage.setItem(id, JSON.stringify({ at: Date.now(), raw })); } catch {}
-    } catch (e) { failedOnline.set(id, { at: Date.now(), message: String(e.message || e) }); }
-    finally {
+      try {
+        localStorage.setItem(id, JSON.stringify({ at: day.retrievedAt, raw }));
+        pruneProviderCache();
+      } catch {}
+    } catch {
+      if (failedOnline.size >= 120) failedOnline.delete(failedOnline.keys().next().value);
+      failedOnline.set(id, Date.now());
+    } finally {
       pendingOnline.delete(id);
-      if ([dayShift(selectedKey, -1), selectedKey, dayShift(selectedKey, 1)].includes(key)) render();
+      if (id === cacheId(kind, key) && [dayShift(selectedKey, -1), selectedKey, dayShift(selectedKey, 1),
+          todayKey(), dayShift(todayKey(), -1), dayShift(todayKey(), 1)].includes(key)) render();
     }
   }
   function loadComparison(force = false) {
-    if (!navigator.onLine && !force) return;
-    const activeOnline = onlineKinds.includes(cfg.activeSource);
-    const requested = (cfg.onlineCompare || force) ? onlineKinds : (activeOnline ? [cfg.activeSource] : []);
-    for (const kind of requested) void fetchOnline(kind, selectedKey, force);
-    if (activeOnline) {
-      void fetchOnline(cfg.activeSource, dayShift(selectedKey, 1), force);
-      if (selectedKey === todayKey()) void fetchOnline(cfg.activeSource, dayShift(selectedKey, -1), force);
-    }
+    if (!navigator.onLine) return;
+    if (cfg.onlineCompare || force) void fetchOnline('moonsighting', selectedKey, force);
+    if (cfg.activeSource !== 'moonsighting') return;
+    const today = todayKey();
+    const requested = new Set([selectedKey, dayShift(selectedKey, 1), today, dayShift(today, -1), dayShift(today, 1)]);
+    requested.forEach(key => { void fetchOnline(cfg.activeSource, key, force && (key === selectedKey || key === dayShift(selectedKey, 1))); });
   }
-  function localDayForPair(key, pair) {
-    return SalahSolar.calculateFullDay(dateAtNoonUTC(key), +cfg.lat, +cfg.lng, pair[0], pair[1], cfg.highLatRule);
+
+  const localDays = new Map();
+  function localDay(key, source = 'angles', rule = cfg.highLatRule) {
+    const [fa, ia] = anglePair();
+    const id = [source, key, cfg.lat, cfg.lng, fa, ia, rule].join(':');
+    if (localDays.has(id)) return localDays.get(id);
+    let day;
+    if (source === 'tayba') day = SalahProviders.taybaDay(key, cfg.lat, cfg.lng);
+    else if (rule === 'tayba') day = SalahProviders.hybridTwilightDay(key, cfg.lat, cfg.lng, fa, ia);
+    else day = SalahSolar.calculateFullDay(dateAtNoonUTC(key), cfg.lat, cfg.lng, fa, ia, rule);
+    if (localDays.size >= 540) localDays.delete(localDays.keys().next().value);
+    localDays.set(id, day);
+    return day;
   }
-  function remoteFullDay(kind, key) {
-    const today = readCached(kind, key), next = readCached(kind, SalahProviders.keyShift(key,1));
-    if (!today || !next) return null;
-    const night = next.fajr.getTime() - today.maghrib.getTime();
-    if (night <= 0 || night >= 86400000) return null;
-    const base = getLocalDay(key);
-    return {
-      ...today, nextFajr: next.fajr, firstThird: new Date(today.maghrib.getTime() + night/3),
-      midnight: new Date(today.maghrib.getTime() + night/2),
-      solarNoon: base.solarNoon, trueSunset: base.trueSunset,
-      fajrFallback: false, ishaFallback: false, online: true,
-      retrievedAt: today.retrievedAt, savedProviderData: today.savedProviderData || next.savedProviderData || !navigator.onLine || Date.now() - today.retrievedAt > 60 * 60000,
-      providerHighLatEstimate: kind === 'moonsighting' && moonsightingNightFraction(),
-      ishaBeyondFirstThird: today.isha >= new Date(today.maghrib.getTime() + night/3),
-      ishaBeyondHalf: today.isha >= new Date(today.maghrib.getTime() + night/2)
-    };
-  }
-  function getLocalDay(key) { return localDayForPair(key, anglePair()); }
+
   function getActiveDay(key) {
-    if (cfg.activeSource === 'angles') return getLocalDay(key);
-    if (cfg.activeSource === 'tayba') return SalahProviders.taybaDay(key, +cfg.lat, +cfg.lng);
-    if (cfg.activeSource === 'moonsighting' && !moonsightingSupported()) return { ...getLocalDay(key), sourceFallback: true };
-    const remote = remoteFullDay(cfg.activeSource, key);
-    return remote || { ...getLocalDay(key), sourceFallback: true };
+    if (cfg.activeSource !== 'moonsighting') return localDay(key, cfg.activeSource);
+    const today = readCached(cfg.activeSource, key);
+    const local = localDay(key);
+    if (!today || !local.valid) return { ...local, sourceFallback:true };
+    const next = readCached(cfg.activeSource, dayShift(key, 1));
+    const fajr = today.fajr < local.sunrise ? today.fajr : null;
+    const isha = today.isha > local.maghrib ? today.isha : null;
+    return SalahSolar.withNight({
+      ...today, fajr, isha, sunrise:local.sunrise, dhuhr:local.dhuhr, asr:local.asr, maghrib:local.maghrib,
+      trueSunset:local.trueSunset, solarNoon:local.solarNoon,
+      fajrReason:fajr ? '' : 'AlAdhan Fajr is at or after the local sunrise time.',
+      ishaReason:isha ? '' : 'AlAdhan Isha does not follow the local sunset time.',
+      savedProviderData:today.savedProviderData || !navigator.onLine || Date.now() - today.retrievedAt > 3600000
+    }, next);
   }
+  function isEstimated(day, name) {
+    return !!day[name] && ((name === 'fajr' && (day.fajrFallback || day.providerEstimate)) ||
+      (name === 'isha' && (day.ishaFallback || day.providerEstimate)));
+  }
+
   function renderComparison() {
-    const base = getLocalDay(selectedKey);
-    const tayba = SalahProviders.taybaDay(selectedKey, +cfg.lat, +cfg.lng);
+    const id = cacheId('moonsighting', selectedKey);
+    const provider = readCached('moonsighting', selectedKey);
     const cols = [
-      { id:'angles', title:`Your ${anglePair().join('° / ')}°`, desc:'Your solar model', day:base },
-      { id:'tayba', title:'Tayba option 2', desc:'Derived · mixed twilight', day:tayba },
-      ...onlineKinds.map(id=>({id, title:moonsightingNightFraction()?'Moonsighting · estimated':'Moonsighting · red',
-        desc:moonsightingNightFraction()?'1/7-night limit may apply · API':'Seasonal · API model', day:moonsightingSupported()?readCached(id,selectedKey):null}))
+      { id:'angles', title:'Your ' + anglePair().join('° / ') + '°', desc:summerRules[cfg.highLatRule], day:localDay(selectedKey) },
+      { id:'tayba', title:'Tayba option 2', desc:'Earlier Isha', day:localDay(selectedKey, 'tayba') },
+      { id:'moonsighting', title:'AlAdhan', desc:'Moonsighting red preset', day:provider }
     ];
-    $('sourcePicker').innerHTML = methods.map(m=>`<button type="button" data-source="${m.id}" ${m.id==='moonsighting'&&!moonsightingSupported()?'disabled title="Method unavailable above 60 degrees"':''} class="source-choice ${cfg.activeSource === m.id ? 'chosen':''}" aria-pressed="${cfg.activeSource === m.id}"><span class="source-radio">${cfg.activeSource === m.id?'✓':''}</span><span class="source-detail"><strong>${m.id==='moonsighting'&&moonsightingNightFraction()?'Moonsighting · estimated':m.title}</strong><small>${m.sub}</small></span></button>`).join('');
-    $('comparisonHead').innerHTML = '<tr><th scope="col">Prayer</th>' + cols.map(c=>`<th scope="col" class="${c.id === cfg.activeSource?'selected-col':''}">${c.title}<small>${c.desc}</small></th>`).join('') + '</tr>';
-    const shown = ['fajr','sunrise','dhuhr','asr','maghrib','isha'];
-    const names = {fajr:'Fajr',sunrise:'Sunrise',dhuhr:'Dhuhr',asr:'Asr',maghrib:'Maghrib',isha:'Isha'};
-    const active = getActiveDay(selectedKey);
-    $('comparisonBody').innerHTML = shown.map(k=>`<tr><td>${names[k]}</td>` + cols.map(c=>{
-      const a = c.day?.valid ? c.day[k] : null;
-      const reference = active?.valid ? active[k] : null;
-      const diff = a && reference ? Math.round((a - reference)/60000) : null;
-      const diffText = diff === null ? '' : diff === 0 ? 'same time' : `${diff > 0?'+':''}${diff} min`;
-      const hint = ((k === 'fajr' && c.day?.fajrFallback) || (k === 'isha' && c.day?.ishaFallback) ||
-        (['fajr','isha'].includes(k) && c.id === 'moonsighting' && moonsightingNightFraction())) ? ' · est.' : '';
-      const status = c.id !== 'alternate' && onlineKinds.includes(c.id) && !a
-        ? pendingOnline.has(cacheId(c.id,selectedKey))?'Loading': failedOnline.has(cacheId(c.id,selectedKey))?'Offline':'Load online' : '—';
-      return `<td class="${c.id === cfg.activeSource?'selected-col':''}">${a ? `<span class="time-small">${fmt(a)}</span><span class="difference ${diff>0?'late':diff<0?'early':''}">${diffText}${hint}</span>` : `<span class="unknown" title="No time available">${status}</span>`}</td>`;
-    }).join('') + '</tr>').join('');
-    const unavailable = onlineKinds.filter(k=>failedOnline.has(cacheId(k,selectedKey)));
-    const loading = onlineKinds.filter(k=>pendingOnline.has(cacheId(k,selectedKey)));
-    const compareMessages=[];
-    if (!moonsightingSupported()) compareMessages.push('Moonsighting method is unavailable above 60° latitude.');
-    else if (moonsightingNightFraction()) compareMessages.push('Moonsighting applies one-seventh-night limits from 55° N, where relevant. The calculation comes from the provider.');
-    if (Math.abs(+cfg.lat-55) < 0.06) compareMessages.push('Near the 55° method boundary: small GPS changes are ignored to keep your location stable. The online provider sets its own twilight times.');
-    if (!cfg.onlineCompare) compareMessages.push(onlineKinds.includes(cfg.activeSource) ?
-      'Other online comparisons paused; your selected source still updates' : 'Online comparison paused');
-    else if (loading.length) compareMessages.push('Loading online times…');
-    if (cfg.activeSource === 'moonsighting') {
-      const selected = getActiveDay(selectedKey);
-      if (selected.sourceFallback) compareMessages.push('Main timetable is currently using LOCAL FALLBACK, not Moonsighting');
-      else if (selected.savedProviderData) compareMessages.push('Main timetable uses saved Moonsighting data');
+    const picker = $('sourcePicker');
+    if (!picker.children.length) {
+      picker.innerHTML = methods.map(m => `<button type="button" data-source="${m.id}" class="source-choice"><span class="source-radio" aria-hidden="true"></span><span class="source-detail"><strong>${m.title}</strong><small>${m.sub}</small></span></button>`).join('');
     }
-    else if (unavailable.length) compareMessages.push('Some online times are unavailable');
-    $('comparisonStatus').textContent=compareMessages.join(' · ');
+    for (const button of picker.children) {
+      const active = cfg.activeSource === button.dataset.source;
+      button.classList.toggle('chosen', active);
+      button.setAttribute('aria-pressed', active);
+      button.querySelector('.source-radio').textContent = active ? '✓' : '';
+    }
+    $('compareDate').textContent = prettyKey(selectedKey);
+    $('comparisonHead').innerHTML = '<tr><th scope="col">Prayer</th>' + cols.map(c =>
+      `<th scope="col" class="${c.id === cfg.activeSource ? 'selected-col' : ''}">${c.title}<small>${c.desc}</small></th>`).join('') + '</tr>';
+    const active = getActiveDay(selectedKey);
+    $('comparisonBody').innerHTML = names.map(n => `<tr><th scope="row">${n.en}</th>` + cols.map(c => {
+      const time = c.day?.valid ? c.day[n.key] : null;
+      const reference = active?.valid ? active[n.key] : null;
+      const delta = time && reference ? Math.round((time - reference) / 60000) : null;
+      const diff = delta === null ? '' : delta === 0 ? 'same time' : (delta > 0 ? '+' : '') + delta + ' min';
+      const hint = time && isEstimated(c.day, n.key) ? ' · est.' : '';
+      const nextDay = time && dateParts(time, cfg.timeZone) !== selectedKey ? ' (+1 day)' : '';
+      const status = c.id === 'moonsighting' ?
+        pendingOnline.has(id) ? 'Loading…' : failedOnline.has(id) || !navigator.onLine ? 'Unavailable' : 'Load online' : '—';
+      return `<td class="${c.id === cfg.activeSource ? 'selected-col' : ''}">${time ?
+        `<span class="time-small">${fmt(time)}</span><span class="difference ${delta > 0 ? 'late' : delta < 0 ? 'early' : ''}">${diff}${hint}${nextDay}</span>` :
+        `<span class="unknown">${status}</span>`}</td>`;
+    }).join('') + '</tr>').join('');
+    const messages = [];
+    if (cfg.activeSource === 'moonsighting') {
+      if (active.sourceFallback) messages.push('Main timetable uses LOCAL FALLBACK while AlAdhan is unavailable.');
+      else messages.push(active.savedProviderData ? 'Main timetable uses saved AlAdhan Fajr and Isha with local daylight times.' :
+        'Main timetable uses AlAdhan for Fajr and Isha and local calculations for daylight times.');
+    }
+    if (cols[1].day.ishaReason) messages.push(cols[1].day.ishaReason);
+    if (pendingOnline.has(id)) messages.push('Loading AlAdhan times…');
+    else if (!cfg.onlineCompare && cfg.activeSource !== 'moonsighting') messages.push('Automatic online comparison is off.');
+    else if (failedOnline.has(id)) messages.push('AlAdhan could not be reached.');
+    $('comparisonStatus').textContent = messages.join(' ');
+    if ($('summerCompare').open) renderSummerComparison();
   }
+  function renderSummerComparison() {
+    const mark = (t, kind) => {
+      const time = t[kind];
+      if (!time) return '—';
+      const nextDay = dateParts(time, cfg.timeZone) !== selectedKey ? ' (+1 day)' : '';
+      const estimated = kind === 'midnight' ? t.nightEstimated : isEstimated(t, kind);
+      return fmt(time) + nextDay + (estimated ? ' · est.' : '');
+    };
+    $('summerCompareBody').innerHTML = Object.entries(summerRules).map(([id, label]) => {
+      const t = localDay(selectedKey, 'angles', id);
+      return `<tr><th scope="row">${label}</th><td>${mark(t, 'fajr')}</td><td>${mark(t, 'isha')}</td><td>${mark(t, 'midnight')}</td></tr>`;
+    }).join('');
+  }
+
   function renderDate() {
     $('dateLabel').textContent = relativeKey(selectedKey);
     $('dateSubLabel').textContent = prettyKey(selectedKey).replace(/^[A-Za-z]+,?\s+/, '');
@@ -234,23 +320,40 @@
     $('locationLabel').textContent = cfg.location;
     $('timezoneLabel').textContent = cfg.timeZone === 'Europe/Dublin' ? 'Ireland time' : 'UK time';
     $('locationMode').textContent = cfg.autoLocation ? 'Location tracking on · while app is open' : 'Fixed location';
-    $('hijriDate').textContent = 'Prayer times';
   }
   function getDay(key) { return getActiveDay(key); }
+
+  function ishaDeadline(day) {
+    return cfg.ishaLimit === 'third' ? day.firstThird : day.midnight;
+  }
+  function ishaHasWindow(day) {
+    const deadline = ishaDeadline(day);
+    return !!day.isha && !day.ishaOverlapsFajr && (!deadline || day.isha < deadline);
+  }
   function renderNotice(t) {
     const msgs = [];
-    if (t.sourceFallback) msgs.push('Selected online method is not available for both this date and the following Fajr. Showing your local angle calculations temporarily — not the chosen online method.');
-    if (t.providerHighLatEstimate) msgs.push('Moonsighting can limit the Fajr and Isha calculations to a seventh of the night at this latitude. These are modelled, not daily observed, times.');
-    if (t.fajrFallback || t.ishaFallback) {
-      const [fa, ia] = anglePair();
-      const affected = cfg.activeSource === 'tayba' ? 'Tayba seasonal/option-2' : [t.fajrFallback ? `Fajr ${fa}°` : '', t.ishaFallback ? `Isha ${ia}°` : ''].filter(Boolean).join(' and ');
-      const rule = cfg.highLatRule === 'seventh' ? 'one seventh' : cfg.highLatRule === 'angle' ? 'angle portion' : 'half of the night';
-      msgs.push(cfg.activeSource === 'tayba' ? `${affected}: these are seasonal estimates, not direct observations.` : `${affected}: the Sun does not reach this angle. An estimated ${rule} sunset-to-sunrise rule is used. These are not observed dawn or red-twilight times.`);
+    if (t.sourceFallback) msgs.push('AlAdhan is unavailable for this date. The timetable shows your local angle calculation.');
+    if (t.providerEstimate) msgs.push('AlAdhan supplies Fajr and Isha. Daylight times use the local Sun calculation.');
+    if (t.fajrReason) msgs.push(t.fajrReason);
+    if (t.ishaReason) msgs.push(t.ishaReason);
+    if (isEstimated(t, 'fajr') || isEstimated(t, 'isha')) {
+      if (t.taybaNotes) {
+        const descriptions = ['fajr', 'isha'].filter(k => isEstimated(t, k))
+          .map(k => (k === 'fajr' ? 'Fajr' : 'Isha') + ' uses Tayba’s ' + t.taybaNotes[k].toLowerCase());
+        msgs.push(descriptions.join('. ') + '.');
+      } else if (!t.providerEstimate) {
+        const [fa, ia] = anglePair();
+        const missing = [isEstimated(t, 'fajr') ? fa + '° Fajr' : '', isEstimated(t, 'isha') ? ia + '° Isha' : ''].filter(Boolean);
+        msgs.push('The model finds no ' + missing.join(' or ') + ' crossing. Estimate from ' + summerRules[t.highLatRule] + '.');
+      }
     }
-    if (t.ishaBeyondHalf) msgs.push('Isha starts at or after the halfway marker according to this calculation. No ordinary Isha window can be inferred; seek local guidance.');
-    else if (t.ishaBeyondFirstThird) msgs.push('The first-third marker falls before this calculated Isha start. The preferred delay cannot be applied normally on this date.');
+    if (t.fajrFallback) msgs.push('This Fajr estimate also affects the calculated start of fasting. True dawn is the light spreading along the eastern horizon.');
+    if (t.isha && !ishaHasWindow(t)) msgs.push('Isha begins after the selected cutoff for ordinary prayer. This calculation gives no ordinary Isha window.');
+    if (!t.nextFajr) msgs.push('Night markers need the following day’s Fajr.');
+    else if (t.nightEstimated) msgs.push('The night markers use an estimated next Fajr.');
     note(msgs.join(' '));
   }
+
   const svgIcon = (kind) => {
     const paths = {
       'sun-horizon':'<path d="M3 18h18M6 21h12M12 4v3M5 10l2 2M19 10l-2 2M7 18a5 5 0 0 1 10 0"/>',
@@ -266,120 +369,169 @@
     };
     return `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[kind]||paths.clock}</svg>`;
   };
-  function restrictionStatus(t, instant=Date.now()) {
-    if (!t?.valid) return {level:'neutral',label:'Prayer times'};
-    const sunriseEnd = SalahSolar.plusMinutes(t.sunrise,15),
-      beforeDhuhr = SalahSolar.plusMinutes(t.solarNoon,-8),
-      beforeSunset = SalahSolar.plusMinutes(t.maghrib,-15);
-    if (isBetween(instant,t.sunrise,sunriseEnd)) return {level:'danger', label:'Avoid voluntary prayer',desc:'Sunrise precaution · approximately 15 minutes'};
-    if (isBetween(instant,beforeDhuhr,t.dhuhr)) return {level:'danger',label:'Avoid voluntary prayer',desc:'Near solar zenith · approximate buffer'};
-    if (isBetween(instant,beforeSunset,t.maghrib)) return {level:'danger',label:'Avoid voluntary prayer',desc:'Sunset precaution · approximate buffer'};
-    if (isBetween(instant,t.isha,t.firstThird) && !t.ishaBeyondFirstThird) return cfg.ishaPreference === 'around-third' ? {level:'calm',label:'Isha is open',desc:`Recommended delay towards ${fmt(t.firstThird)}`} : {level:'calm',label:'Isha is open',desc:`Preferred later · after ${fmt(t.firstThird)}`};
-    if (isBetween(instant,t.firstThird,t.midnight) && instant >= t.isha.getTime()) return cfg.ishaPreference === 'after-third' ? {level:'preferred',label:'Preferred Isha period',desc:`Before ${fmt(t.midnight)}`} : {level:'calm',label:'Isha time',desc:`Ends ${fmt(t.midnight)}`};
-    if (instant >= t.midnight.getTime() && instant < t.nextFajr.getTime() && instant >= t.isha.getTime()) return {level:'calm',label:'Night',desc:''};
-    if (isBetween(instant,t.fajr,t.sunrise)) return {level:'preferred',label:'Fajr time',desc:`Until ${fmt(t.sunrise)}`};
-    if (isBetween(instant,t.dhuhr,t.asr)) return {level:'preferred',label:'Dhuhr time',desc:`Until ${fmt(t.asr)}`};
-    if (isBetween(instant,t.asr,t.maghrib)) return {level:'preferred',label:'Asr time',desc:`Until ${fmt(t.maghrib)}`};
-    if (isBetween(instant,t.maghrib,t.isha)) return {level:'preferred',label:'Maghrib time',desc:`Until ${fmt(t.isha)}`};
-    return {level:'calm',label:'Today',desc:''};
+
+  const restrictionTitles = {
+    sunrise:'Forbidden · sunrise', noon:'Forbidden · around midday',
+    sunset:'Forbidden · approaching sunset', lowSun:'Forbidden · low Sun'
+  };
+  function restrictionStatus(t, instant) {
+    if (!t?.valid) return { level:'neutral', label:'Prayer times' };
+    if (isBetween(instant, t.fajr, t.sunrise)) return { level:'preferred', label:'Fajr time', desc:'Until ' + fmt(t.sunrise) };
+    if (isBetween(instant, t.dhuhr, t.asr)) return { level:'preferred', label:'Dhuhr time', desc:'Until ' + fmt(t.asr) };
+    if (isBetween(instant, t.asr, t.maghrib)) return { level:'preferred', label:'Asr time', desc:'Pray before the Sun yellows' };
+    if (isBetween(instant, t.maghrib, t.isha) || (!t.isha && instant >= t.maghrib && (!t.nextFajr || instant < t.nextFajr)))
+      return { level:'preferred', label:t.isha ? 'Maghrib time' : 'After sunset', desc:t.isha ? 'Until ' + fmt(t.isha) : 'Isha time unavailable' };
+    const deadline = ishaDeadline(t);
+    if (ishaHasWindow(t) && isBetween(instant, t.isha, deadline)) {
+      const preferred = cfg.ishaLimit !== 'third' && cfg.ishaPreference === 'after-third' && instant >= t.firstThird;
+      const target = cfg.ishaLimit !== 'third' && t.isha < t.firstThird && instant < t.firstThird &&
+        cfg.ishaPreference === 'around-third' ? 'Aim towards ' + fmt(t.firstThird) : 'Until ' + fmt(deadline);
+      return { level:preferred ? 'preferred' : 'calm', label:preferred ? 'Preferred Isha period' : 'Isha time', desc:target };
+    }
+    if (t.isha && !t.ishaOverlapsFajr && t.isha <= instant && isBetween(instant, t.midnight, t.nextFajr) && cfg.ishaLimit === 'half-necessity')
+      return { level:'caution', label:'Isha · necessity period', desc:'Until ' + fmt(t.nextFajr) };
+    if (instant >= t.maghrib || (t.nextFajr && instant < t.fajr))
+      return { level:'calm', label:'Night', desc:t.isha && !t.nextFajr && instant >= t.isha ? 'Isha cutoff unavailable' : '' };
+    if (t.fajr && instant < t.fajr) return { level:'calm', label:'Before Fajr' };
+    return { level:'calm', label:'Between prayers' };
   }
+
   function renderPrayerList(t) {
     const now = Date.now(), current = selectedKey === todayKey();
-    const intervals = [
-      {at:t.sunrise,end:SalahSolar.plusMinutes(t.sunrise,15),title:'Just after sunrise',desc:'Avoid optional prayers for about 15 minutes',kind:'avoid'},
-      {at:SalahSolar.plusMinutes(t.solarNoon,-8),end:t.dhuhr,title:'Near midday',desc:'Avoid optional prayers close to the Sun’s highest point',kind:'avoid'},
-      {at:SalahSolar.plusMinutes(t.maghrib,-15),end:t.maghrib,title:'Just before sunset',desc:'Avoid optional prayers for about 15 minutes',kind:'avoid'}
-    ];
-    const events = names.map(n => ({at:t[n.key],title:n.en,desc:n.desc,kind:'prayer',name:n,estimated:(n.key==='fajr'&&(t.fajrFallback||t.providerHighLatEstimate))||(n.key==='isha'&&(t.ishaFallback||t.providerHighLatEstimate))}));
-    const milestones = [
-      {at:t.firstThird,
-       title:t.ishaBeyondFirstThird?'First third passed before Isha':(cfg.ishaPreference==='after-third'?'Preferred Isha from here':'Preferred Isha target'),
-       desc:t.ishaBeyondFirstThird?'Calculated Isha begins later tonight':'First third of the night',kind:'night',icon:'third'},
-      {at:t.midnight,title:'Isha ends',desc:'Half of the night',kind:'night',icon:'half'}
-    ];
-    const sorted=[...events,...intervals.map(e=>({...e,icon:'alert'})),...milestones]
-      .filter(e=>e.at instanceof Date && !isNaN(e.at))
-      .sort((a,b)=>a.at-b.at || (a.kind==='prayer'?-1:1));
-    const currentPrayer = !current ? null :
-      isBetween(now,t.fajr,t.sunrise) ? 'fajr' :
-      isBetween(now,t.dhuhr,t.asr) ? 'dhuhr' :
-      isBetween(now,t.asr,t.maghrib) ? 'asr' :
-      isBetween(now,t.maghrib,t.isha) ? 'maghrib' :
-      isBetween(now,t.isha,t.midnight) ? 'isha' : null;
-    const currentIndex = current ? sorted.reduce((index,e,i)=>e.at.getTime()<=now ? i : index, -1) : -1;
-    const nextIndex = current ? sorted.findIndex(e=>e.at.getTime()>now) : -1;
-    $('prayerList').style.setProperty('--timeline-fill', `${Math.round(100*(currentIndex+0.5)/sorted.length)}%`);
-    $('prayerList').innerHTML=sorted.map((e,i)=>{
-      const phase=current ? (i===currentIndex?(e.kind==='prayer'?'is-now':'is-current-marker'):i===nextIndex?'is-next':i<currentIndex?'is-past':'is-future') : '';
-      const isCurrentPrayer = e.kind==='prayer' && e.name.key===currentPrayer;
-      const activeRange=!!e.end && current && isBetween(now,e.at,e.end);
-      const extra=(e.kind==='avoid'||e.kind==='caution')?`<span class="range-label">to ${fmt(e.end)}</span>`:'';
-      const following=dateParts(e.at,cfg.timeZone)!==selectedKey?'<span class="next-day">+1 day</span>':'';
-      const label = isCurrentPrayer ? '<span class="phase-pill current-pill">CURRENT</span>' : i===currentIndex && e.kind==='avoid' ? '<span class="phase-pill next-pill">NOW</span>' : i===nextIndex ? '<span class="phase-pill next-pill">NEXT</span>' : '';
-      return `<div class="time-row ${e.kind==='prayer'?'prayer-entry':''} ${e.kind==='night'?'night-summary':''} ${e.kind==='avoid'?'avoid-entry':''} ${e.kind==='caution'?'caution-entry':''} ${phase} ${isCurrentPrayer?'current-prayer':''} ${activeRange?'within-range':''}" data-event-time="${e.at.getTime()}">
-        <span class="time-icon">${svgIcon(e.kind==='prayer'?e.name.icon:e.icon)}</span>
-        <div class="time-text"><div class="time-name">${e.title}${e.estimated?'<span class="estimate-dot">EST.</span>':''}${label}</div><div class="time-desc">${e.desc}</div></div>
+    lastListRefresh = now;
+    let currentPrayer = null;
+    if (current) {
+      const ranges = [['fajr', t.sunrise], ['dhuhr', t.asr], ['asr', t.maghrib], ['maghrib', t.isha], ['isha', ishaDeadline(t)]];
+      currentPrayer = ranges.find(([key, end]) => isBetween(now, t[key], end) && (key !== 'isha' || ishaHasWindow(t)))?.[0];
+    }
+    const events = names.map(n => ({
+      at:t[n.key], title:n.en, desc:n.key === 'asr' ? 'One length added to the noon shadow' :
+        n.key === 'isha' && t.isha && !ishaHasWindow(t) ? 'Outside the selected ordinary window' : n.desc,
+      kind:'prayer', name:n, estimated:isEstimated(t, n.key)
+    }));
+    const selectedThird = cfg.ishaLimit === 'third';
+    const lateIsha = t.ishaBeyondFirstThird;
+    const thirdTitle = selectedThird ? 'Isha cutoff · first third' : !t.isha ? 'First third of the night' :
+      lateIsha ? 'First third passed before Isha' :
+      cfg.ishaPreference === 'after-third' ? 'Preferred Isha from here' : 'Preferred Isha target';
+    const halfTitle = selectedThird ? 'Halfway through the night' : 'Ordinary Isha cutoff';
+    const thirds = { at:t.firstThird, title:thirdTitle,
+      desc:lateIsha ? 'Calculated Isha begins after this point' : 'First third of the night',
+      kind:'night', icon:'third', estimated:t.nightEstimated };
+    const half = { at:t.midnight, title:halfTitle, desc:'Half of the night', kind:'night', icon:'half', estimated:t.nightEstimated };
+
+    const limits = SalahSolar.daylightRestrictions(dateAtNoonUTC(selectedKey), cfg.lat, cfg.lng).map(range => ({
+      at:range.start, end:range.end, title:restrictionTitles[range.key],
+      kind:'avoid', icon:'alert', desc:range.key === 'noon' ? 'Estimated midday precaution' : 'Estimated low-Sun period'
+    }));
+    const sorted = [...events, ...limits, thirds, half].filter(e => e.at instanceof Date && Number.isFinite(+e.at))
+      .sort((a,b) => a.at - b.at);
+
+    const currentIndex = current ? sorted.reduce((index,e,i) => e.at <= now ? i : index, -1) : -1;
+    const nextIndex = current ? sorted.findIndex(e => e.at > now && (e.name?.key !== 'isha' || ishaHasWindow(t))) : -1;
+    const list = $('prayerList');
+    list.style.setProperty('--timeline-fill', Math.max(0, Math.round(100 * (currentIndex + 0.5) / sorted.length)) + '%');
+    list.innerHTML = sorted.map((e,i) => {
+      const phase = current ? (i === currentIndex ? (e.kind === 'prayer' ? 'is-now' : 'is-current-marker') :
+        i === nextIndex ? 'is-next' : i < currentIndex ? 'is-past' : 'is-future') : '';
+      const isCurrent = e.kind === 'prayer' && e.name.key === currentPrayer;
+      const activeRange = current && isBetween(now, e.at, e.end);
+      const extra = e.end ? `<span class="range-label">to ${fmt(e.end)}</span>` : '';
+      const following = dateParts(e.at, cfg.timeZone) !== selectedKey ? '<span class="next-day">+1 day</span>' : '';
+      const label = isCurrent ? '<span class="phase-pill current-pill">CURRENT</span>' :
+        i === nextIndex ? '<span class="phase-pill next-pill">NEXT</span>' : '';
+      return `<div class="time-row ${e.kind === 'prayer' ? 'prayer-entry' : e.kind === 'night' ? 'night-summary' : 'avoid-entry'} ${phase} ${isCurrent ? 'current-prayer' : ''} ${activeRange ? 'within-range' : ''}" data-event-time="${e.at.getTime()}">
+        <span class="time-icon">${svgIcon(e.name?.icon || e.icon)}</span>
+        <div class="time-text"><div class="time-name">${e.title}${e.estimated ? '<span class="estimate-dot">EST.</span>' : ''}${label}</div><div class="time-desc">${e.desc}</div></div>
         <div class="time-data"><time class="time-value" datetime="${e.at.toISOString()}">${fmt(e.at)}</time>${extra}${following}</div>
       </div>`;
     }).join('');
+    for (const [name, position] of [[names[0], 'afterbegin'], [names.at(-1), 'beforeend']]) {
+      if (t[name.key]) continue;
+      list.insertAdjacentHTML(position, `<div class="time-row prayer-entry"><span class="time-icon">${svgIcon(name.icon)}</span>
+        <div class="time-text"><div class="time-name">${name.en}</div><div class="time-desc">Time unavailable</div></div>
+        <div class="time-data">—</div></div>`);
+    }
   }
-  function setHero(event, now, nextDay = false, otherDate = false) {
-    $('nextPrayerName').textContent = event.en;
-    $('nextPrayerArabic').textContent = event.ar;
-    $('nextPrayerTime').textContent = fmt(event.at);
-    if (otherDate) { $('countdown').textContent = 'First prayer on the selected date'; return; }
+  function setHero(event, now, otherDate = false) {
+    $('nextPrayerName').textContent = event?.en || 'Unavailable';
+    $('nextPrayerArabic').textContent = event?.ar || '';
+    $('nextPrayerTime').textContent = fmt(event?.at);
+    if (!event) { $('countdown').textContent = 'No upcoming time available'; return; }
+    const estimated = event.estimated ? ' · Estimate' : '';
+    if (otherDate) { $('countdown').textContent = 'Earliest listed prayer on this date' + estimated; return; }
     const seconds = Math.max(0, Math.floor((event.at - now) / 1000));
     const h = Math.floor(seconds / 3600), m = Math.floor(seconds % 3600 / 60);
-    $('countdown').textContent = `In ${h}h ${String(m).padStart(2, '0')}m${nextDay ? ' · Tomorrow' : ''}`;
+    const tomorrow = dateParts(event.at, cfg.timeZone) === dayShift(selectedKey, 1) ? ' · Tomorrow' : '';
+    $('countdown').textContent = 'In ' + h + 'h ' + String(m).padStart(2, '0') + 'm' + tomorrow + estimated;
+  }
+  function prayerEvent(day, prayer) {
+    if (!day?.valid || !day[prayer.key] || (prayer.key === 'isha' && !ishaHasWindow(day))) return null;
+    return { ...prayer, at:day[prayer.key], estimated:isEstimated(day, prayer.key) };
+  }
+  function activeNightForNow(t, instant) {
+    if (!t?.valid || instant >= (t.fajr || t.sunrise)) return t;
+    const previous = getDay(dayShift(selectedKey, -1));
+    return previous?.valid && !!previous.sourceFallback === !!t.sourceFallback && previous.maghrib <= instant && previous.nextFajr > instant
+      ? previous : null;
   }
   function renderHero(t) {
     const [a, b] = anglePair();
-    $('heroMethod').textContent = t.sourceFallback ? `${a}° / ${b}° · LOCAL FALLBACK` :
-      cfg.activeSource === 'angles' ? `${a}° / ${b}° · local` :
-      cfg.activeSource === 'moonsighting' ? `Moonsighting · ${t.savedProviderData ? 'saved' : 'online'}${moonsightingNightFraction() ? ' · est.' : ''}` :
-      methods.find(m=>m.id===cfg.activeSource)?.title || 'Prayer times';
+    $('heroHeading').textContent = t.fajr && ishaHasWindow(t) ? 'NEXT PRAYER' : 'NEXT TIMETABLED PRAYER';
+    $('heroMethod').textContent = t.sourceFallback ? a + '° / ' + b + '° · LOCAL FALLBACK' :
+      cfg.activeSource === 'angles' ? a + '° / ' + b + '° · local' :
+      cfg.activeSource === 'moonsighting' ? 'AlAdhan · ' + (t.savedProviderData ? 'saved' : 'online') :
+      methods.find(m => m.id === cfg.activeSource)?.title || 'Prayer times';
 
     const now = new Date();
-    const events = prayers.map(p => ({ ...p, at: t[p.key] }));
-    if (selectedKey === todayKey()) {
-      const upcoming = events.find(e => e.at > now);
-      if (upcoming) setHero(upcoming, now);
-      else {
-        const tomorrow = dayShift(selectedKey, 1);
-        const next = t.sourceFallback ? getLocalDay(tomorrow) : onlineKinds.includes(cfg.activeSource) ? readCached(cfg.activeSource, tomorrow) : getDay(tomorrow);
-        if (next?.valid) setHero({ ...prayers[0], at: next.fajr }, now, true);
-        else { $('nextPrayerName').textContent = 'Unavailable'; $('countdown').textContent = 'Please check your settings'; }
+    if (selectedKey !== todayKey()) {
+      setHero(prayers.map(p => prayerEvent(t, p)).find(Boolean), now, true);
+      updateHeroStatus(null, now);
+      return;
+    }
+    const previous = activeNightForNow(t, now);
+    const upcoming = prayers.map(p => prayerEvent(t, p)).filter(e => e && e.at > now);
+    if (previous && previous !== t) {
+      const late = prayerEvent(previous, prayers.at(-1));
+      if (late?.at > now) upcoming.unshift(late);
+    }
+    if (!upcoming.length) {
+      const next = t.sourceFallback ? localDay(dayShift(selectedKey, 1)) : getDay(dayShift(selectedKey, 1));
+      if (!next.sourceFallback) {
+        const fajr = prayerEvent(next, prayers[0]);
+        if (fajr?.at > now) upcoming.push(fajr);
       }
-    } else setHero(events[0], now, false, true);
-    updateHeroStatus(t);
+    }
+    setHero(upcoming[0], now);
+    updateHeroStatus(previous, now);
   }
-  function activeNightForNow(t, instant) {
-    if (!t?.valid || !t.fajr || instant >= t.fajr.getTime()) return t;
-    const yesterday = dayShift(selectedKey, -1);
-    const previous = getDay(yesterday);
-    return previous?.valid && !previous.sourceFallback && previous.maghrib <= instant && previous.nextFajr > instant
-      ? previous : null;
-  }
-  function updateHeroStatus(t) {
+  function updateHeroStatus(activeNight, instant) {
     const live = selectedKey === todayKey();
-    const instant=Date.now();
-    const statusDay=live?activeNightForNow(t,instant):null;
-    const state = live ? (statusDay?restrictionStatus(statusDay,instant):
-      {level:'calm',label:'Before Fajr',desc:'The previous night’s online data is unavailable'})
-      : {level:'calm',label:'Selected date',desc:relativeKey(selectedKey)};
+    const state = live ? (activeNight ? restrictionStatus(activeNight, instant) :
+      { level:'calm', label:'Before sunrise', desc:'Previous night’s times unavailable' }) :
+      { level:'calm', label:'Selected date', desc:relativeKey(selectedKey) };
+    const limits = live && SalahSolar.daylightRestrictions(dateAtNoonUTC(selectedKey), cfg.lat, cfg.lng)
+      .find(window => isBetween(instant, window.start, window.end));
+    if (limits) {
+      if (state.label === 'Between prayers') state.label = 'Forbidden time';
+      state.level = 'caution';
+      state.desc = 'Avoid general voluntary prayer until ' + fmt(limits.end);
+    }
     const msg = $('heroLiveMessage');
-    msg.textContent=state.label;
-    msg.dataset.level=state.level;
-    $('heroLiveTime').textContent=state.desc||'';
+    msg.textContent = state.label;
+    msg.dataset.level = state.level;
+    $('heroLiveTime').textContent = state.desc || '';
   }
+
   function render() {
     $('offlineIndicator').hidden=navigator.onLine !== false;
     renderDate();
     dayInfo = getDay(selectedKey);
-    renderComparison();
+    if (!$('comparisonPanel').hidden) renderComparison();
     $('timesTag').textContent = cfg.timeZone === 'Europe/Dublin' ? 'Ireland time' : 'UK time';
     if (!dayInfo.valid) {
-      note(dayInfo.reason); $('prayerList').innerHTML = '<p class="loading">Times unavailable for this date and location.</p>';
+      note(dayInfo.reason); setHero(null, new Date()); $('heroHeading').textContent = 'PRAYER TIMES';
+      $('heroMethod').textContent = 'Calculation unavailable'; $('prayerList').innerHTML = '<p class="loading">Times unavailable for this date and location.</p>';
       $('heroLiveMessage').textContent='Timing unavailable'; $('heroLiveTime').textContent='Check date and location'; loadComparison(); return;
     }
     renderNotice(dayInfo); renderPrayerList(dayInfo); renderHero(dayInfo); renderQibla();
@@ -393,46 +545,54 @@
     $('trackLocation').checked = cfg.autoLocation;
     $('fajrAngleInput').value = cfg.fajrAngle; $('ishaAngleInput').value = cfg.ishaAngle;
     $('highLatSelect').value = cfg.highLatRule;
+    $('ishaLimit').value = cfg.ishaLimit;
+    $('settingsStatus').textContent = '';
+    searchRequest++;
+    placeRequest++;
+    gpsLoading = false;
     $('onlineCompare').checked = cfg.onlineCompare;
     const method = document.querySelector(`input[name="method"][value="${cfg.method}"]`);
     if (method) method.checked = true;
     const end = document.querySelector(`input[name="ishaPreference"][value="${cfg.ishaPreference}"]`);
     if (end) end.checked = true;
-    pendingPlace = null; $('gpsStatus').textContent = '';
+    $('gpsStatus').textContent = '';
     $('cityResults').replaceChildren(); updateCustomVisibility();
   }
   function updateCustomVisibility() {
     const method = document.querySelector('input[name="method"]:checked')?.value;
     $('customAngles').classList.toggle('hidden', method !== 'custom');
   }
+
   function save() {
-    if (gpsLoading) { status('Location request is still running.'); return; }
-    if (!$('latInput').value.trim() || !$('lngInput').value.trim()) { status('Enter latitude and longitude.'); return; }
-    const lat = +$('latInput').value, lng = +$('lngInput').value;
-    const fa = +$('fajrAngleInput').value, ia = +$('ishaAngleInput').value;
-    const zone = SalahRegion.allowed(lat,lng) ? SalahRegion.zone(lat,lng) : $('tzInput').value.trim();
-    if (!Number.isFinite(lat) || Math.abs(lat) >= 89 || !Number.isFinite(lng) || Math.abs(lng) > 180 ||
-        ![fa, ia].every(a => Number.isFinite(a) && a >= 6 && a <= 22) || !['Europe/London','Europe/Dublin'].includes(zone) || !supportedPlace(lat,lng)) {
-      status('Choose a location in the UK or Ireland and valid angles (6–22°).'); return;
-    }
-    const method = document.querySelector('input[name="method"]:checked')?.value || '15-13';
-    const ishaPreference = document.querySelector('input[name="ishaPreference"]:checked')?.value || 'around-third';
-    const newCfg = {
-      activeSource: cfg.activeSource, soundChoice: cfg.soundChoice, soundVolume:cfg.soundVolume, calendarLead: cfg.calendarLead, onlineCompare: $('onlineCompare').checked,
-      theme: 'dark', layout: cfg.layout, accent: cfg.accent, timeFormat: cfg.timeFormat, audioDefaultV13:true, version4: true, version5:true,version6:true,version7:true,
-      lat, lng, location: $('placeInput').value.trim() || `Lat ${lat.toFixed(3)}°, Lon ${lng.toFixed(3)}°`,
-      timeZone: zone, zoneVerified: pendingPlace ? pendingPlace.zoneVerified :
-        kmApart({lat:+cfg.lat,lng:+cfg.lng},{lat,lng}) < 1 && cfg.timeZone === zone && cfg.zoneVerified,
-      method, ishaPreference, fajrAngle: fa, ishaAngle: ia,
-      autoLocation: $('trackLocation').checked, highLatRule: $('highLatSelect').value
+    const report = message => { $('settingsStatus').textContent = message; };
+    if (gpsLoading) { report('Wait for the GPS result before saving.'); return; }
+    const latText = $('latInput').value.trim(), lngText = $('lngInput').value.trim();
+    if (!latText || !lngText) { report('Enter latitude and longitude.'); return; }
+    const lat = Number(latText), lng = Number(lngText);
+    const zone = SalahRegion.zone(lat, lng);
+    if (!zone) { report('Choose a location in the UK or Ireland.'); return; }
+    const method = document.querySelector('input[name="method"]:checked')?.value || defaults.method;
+    const ishaPreference = document.querySelector('input[name="ishaPreference"]:checked')?.value || defaults.ishaPreference;
+    const fa = Number($('fajrAngleInput').value), ia = Number($('ishaAngleInput').value);
+    const anglesValid = [fa, ia].every(a => Number.isFinite(a) && a >= 6 && a <= 22);
+    if (method === 'custom' && !anglesValid) { report('Enter Fajr and Isha angles from 6° to 22°.'); return; }
+    const changedPlace = cfg.lat !== lat || cfg.lng !== lng;
+    const enteredName = $('placeInput').value.trim();
+    const location = !enteredName || (changedPlace && enteredName === cfg.location) ? locationName(lat, lng) : enteredName;
+    if (changedPlace) resetMagneticCorrection();
+    cfg = {
+      ...cfg, lat, lng, location, timeZone:zone, method, ishaPreference,
+      fajrAngle:anglesValid ? fa : cfg.fajrAngle, ishaAngle:anglesValid ? ia : cfg.ishaAngle,
+      ishaLimit:$('ishaLimit').value, autoLocation:$('trackLocation').checked,
+      onlineCompare:$('onlineCompare').checked, highLatRule:$('highLatSelect').value
     };
-    const wasFollowing = cfg.autoLocation;
-    if (kmApart({lat:+cfg.lat,lng:+cfg.lng},{lat,lng}) > 0.1) { variationPromise=null; magneticVariation=null; $('declinationOverride').value=''; }
-    cfg = newCfg; store();
+    store();
+    $('tzInput').value = zone;
     if (!browsing) selectedKey = todayKey();
     render();
-    if (cfg.autoLocation) { if (!wasFollowing) stopTracking(); startTracking(); }
+    if (cfg.autoLocation) startTracking();
     else stopTracking();
+    report('Settings saved.');
   }
 
   function kmApart(a, b) {
@@ -450,65 +610,80 @@
       return await r.json();
     } finally { clearTimeout(timer); }
   }
-  async function enrichLocation(lat, lng) {
-    const coords = `latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lng)}`;
-    const [nearby, zoneData] = await Promise.allSettled([
-      fetchJson(`https://api.bigdatacloud.net/data/reverse-geocode-client?${coords}&localityLanguage=en`),
-      fetchJson(`https://api.open-meteo.com/v1/forecast?${coords}&daily=sunrise,sunset&timezone=auto&forecast_days=1`)
-    ]);
-    let name = '', zone = '', confirmed = false;
-    if (nearby.status === 'fulfilled') {
-      const o = nearby.value;
-      name = [o.city || o.locality, o.principalSubdivision && o.principalSubdivision !== (o.city || o.locality) ? o.principalSubdivision : '', o.countryName].filter(Boolean).join(', ');
+
+  function locationName(lat, lng) {
+    const spot = { lat, lng };
+    const zone = SalahRegion.zone(lat, lng);
+    let nearest = null, distance = 2.5;
+    for (const [name, area, pl, pn] of SalahRegion.places) {
+      const d = kmApart(spot, { lat:pl, lng:pn });
+      if (d < distance && SalahRegion.zone(pl, pn) === zone) {
+        distance = d;
+        nearest = name + ', ' + area;
+      }
     }
-    if (zoneData.status === 'fulfilled' && validZone(zoneData.value.timezone)) {
-      zone = zoneData.value.timezone; confirmed = true;
-    }
-    return { name, zone, confirmed };
+    return nearest || 'GPS area ' + lat.toFixed(3) + '°, ' + lng.toFixed(3) + '°';
   }
   function geoError(error) {
-    status(error.code === 1 ? 'Location permission was denied. You can still choose a city manually.' :
-      `Location unavailable: ${error.message}. The previous position remains saved.`);
+    status(error.code === 1 ? 'Location permission denied. You can choose a town manually.' :
+      'GPS unavailable. Keeping the saved location.');
   }
-  async function applyGPS(pos, live) {
-    const lat = +pos.coords.latitude.toFixed(5), lng = +pos.coords.longitude.toFixed(5);
-    if (!supportedPlace(lat,lng)) { status('This version supports locations in the UK and Ireland only.'); return; }
-    if (!live) {
-      $('latInput').value = lat; $('lngInput').value = lng;
-      $('placeInput').value = `Lat ${lat.toFixed(3)}°, Lon ${lng.toFixed(3)}°`;
-      $('tzInput').value = SalahRegion.zone(lat,lng);
-      status('GPS acquired. Looking up city and time zone…');
-      const r = await enrichLocation(lat, lng);
-      $('placeInput').value = r.name || $('placeInput').value;
-      $('tzInput').value = SalahRegion.zone(lat,lng);
-      pendingPlace = { zoneVerified: r.confirmed };
-      status(r.confirmed ? 'Location and time zone found. Save to apply.' : 'Could not verify the local time zone online. Check the time zone before saving.');
-      return;
+  function positionPlace(pos) {
+    const { latitude, longitude, accuracy } = pos.coords;
+    if (Number.isFinite(accuracy) && accuracy > 1500) return { error:'GPS accuracy is too low. Try again outdoors or choose a town.' };
+    const lat = +latitude.toFixed(5), lng = +longitude.toFixed(5);
+    const timeZone = SalahRegion.zone(lat, lng);
+    if (!timeZone) return { error:'The GPS position is outside the UK and Ireland.' };
+    return { lat, lng, timeZone, location:locationName(lat, lng) };
+  }
+  async function gpsTownName(place) {
+    if (!navigator.onLine || !place.location.startsWith('GPS area ')) return '';
+    const query = new URLSearchParams({
+      latitude:String(place.lat), longitude:String(place.lng), localityLanguage:'en'
+    });
+    try {
+      const data = await fetchJson('https://api.bigdatacloud.net/data/reverse-geocode-client?' + query);
+      const country = place.timeZone === 'Europe/Dublin' ? 'IE' : 'GB';
+      if (data.countryCode !== country) return '';
+      const name = data.city || data.locality;
+      return name ? [name, data.principalSubdivision].filter((part, i, list) => part && list.indexOf(part) === i).join(', ') : '';
+    } catch {
+      return '';
     }
-    if (!cfg.autoLocation) return;
-    const moved = kmApart({ lat: +cfg.lat, lng: +cfg.lng }, { lat, lng });
-    // Ignore nearby GPS noise; the published Moonsighting method has a 55° boundary.
-    if (moved < 3 || (Math.abs(+cfg.lat-55) < 0.08 && moved < 5)) return;
-    if (Number.isFinite(pos.coords.accuracy) && pos.coords.accuracy > 1500) return;
-    cfg.lat = lat; cfg.lng = lng;
-    variationPromise=null;magneticVariation=null; $('declinationOverride').value='';
-    if (moved >= 5) cfg.location = `Near ${lat.toFixed(3)}°, ${lng.toFixed(3)}°`;
-    cfg.timeZone = SalahRegion.zone(lat,lng); cfg.zoneVerified = true;
+  }
+  function fillLocation(place) {
+    $('latInput').value = place.lat;
+    $('lngInput').value = place.lng;
+    $('placeInput').value = place.location;
+    $('tzInput').value = place.timeZone;
+    $('trackLocation').checked = false;
+  }
+  function applyLocation(place, fromTracking = false) {
+    if (cfg.lat !== place.lat || cfg.lng !== place.lng) resetMagneticCorrection();
+    cfg = { ...cfg, ...place };
+    if (qiblaCompassOn) void loadVariation().then(renderQibla);
+    store();
     if (!browsing) selectedKey = todayKey();
-    store(); render();
-    const time = Date.now();
-    if (moved >= 5 || !geoLastLookup || time - geoLastLookup.time > 7200000) {
-      geoLastLookup = { lat, lng, time };
-      status('Updating city and local time zone…');
-      const r = await enrichLocation(lat, lng);
-      if (!cfg.autoLocation || kmApart({ lat: cfg.lat, lng: cfg.lng }, { lat, lng }) > 1) return;
-      if (r.name) cfg.location = r.name;
-      cfg.timeZone = SalahRegion.zone(lat,lng);
-      cfg.zoneVerified = true;
-      if (!browsing) selectedKey = todayKey();
-      store(); render();
-      status(`Following your current area: ${cfg.location}`);
-    }
+    render();
+    if (fromTracking && Date.now() - lastTrackingLookup < 60000) return;
+    if (fromTracking && navigator.onLine && place.location.startsWith('GPS area ')) lastTrackingLookup = Date.now();
+    void gpsTownName(place).then(name => {
+      if (!name || cfg.lat !== place.lat || cfg.lng !== place.lng || cfg.location !== place.location) return;
+      cfg.location = name;
+      store();
+      render();
+      if (fromTracking && cfg.autoLocation) status('Following ' + name);
+    });
+  }
+  function trackPosition(pos) {
+    if (!cfg.autoLocation || document.hidden) return;
+    const place = positionPlace(pos);
+    if (place.error) { status(place.error); return; }
+    const accuracyKm = (Number(pos.coords.accuracy) || 0) / 1000;
+    const threshold = Math.max(place.timeZone === cfg.timeZone ? 1 : 0.2, accuracyKm);
+    if (kmApart(cfg, place) < threshold) return;
+    applyLocation(place, true);
+    status('Following ' + place.location);
   }
   function stopTracking() {
     if (geoWatch !== null && navigator.geolocation) navigator.geolocation.clearWatch(geoWatch);
@@ -516,36 +691,60 @@
   }
   function startTracking() {
     if (!cfg.autoLocation || document.hidden || !navigator.geolocation || geoWatch !== null) return;
-    try {
-      geoWatch = navigator.geolocation.watchPosition(pos => { void applyGPS(pos, true); }, geoError, {
-        enableHighAccuracy: false, timeout: 15000, maximumAge: 5 * 60000
+    geoWatch = navigator.geolocation.watchPosition(trackPosition, geoError, {
+      enableHighAccuracy:false, timeout:15000, maximumAge:60000
+    });
+  }
+  function showCityResults(places) {
+    const root = $('cityResults');
+    root.replaceChildren();
+    for (const place of places) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'city-result';
+      button.textContent = place.location + ' · ' + (place.timeZone === 'Europe/Dublin' ? 'Ireland' : 'UK');
+      button.addEventListener('click', () => {
+        placeRequest++;
+        gpsLoading = false;
+        searchRequest++;
+        fillLocation(place);
+        root.replaceChildren();
+        status(place.location + ' selected. Save to apply.');
       });
-    } catch (e) { status(`GPS unavailable: ${e.message}`); }
+      root.append(button);
+    }
   }
   async function citySearch() {
     const query = $('cityQuery').value.trim();
-    if (query.length < 2) { status('Type at least two letters of a city.'); return; }
-    const root = $('cityResults'); root.replaceChildren();
-    status('Searching for cities…');
-    try {
-      const data = await fetchJson(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=8&language=en&format=json`);
-      citySearchResults = (data.results || []).filter(item => ['GB','IE'].includes(item.country_code) && ['Europe/London','Europe/Dublin'].includes(item.timezone));
-      if (!citySearchResults.length) { status('No matches. Try another name or use coordinates.'); return; }
-      citySearchResults.forEach((item, i) => {
-        const b = document.createElement('button');
-        b.type = 'button'; b.className = 'city-result';
-        const title = [item.name, item.admin1, item.country].filter(Boolean).join(', ');
-        b.textContent = `${title} · ${item.timezone}`;
-        b.addEventListener('click', () => {
-          $('latInput').value = item.latitude; $('lngInput').value = item.longitude;
-          $('placeInput').value = title; $('tzInput').value = item.timezone;
-          $('trackLocation').checked = false; pendingPlace = { zoneVerified: true };
-          root.replaceChildren(); status(`${title} selected. Save to apply.`);
-        });
-        root.append(b);
-      });
-      status('Choose the correct city from the results.');
-    } catch { status('City search needs an internet connection. GPS and coordinates still work offline.'); }
+    if (query.length < 2) { status('Enter at least two letters of a town.'); return; }
+    const request = ++searchRequest;
+    const queryText = query.toLowerCase();
+    const matches = SalahRegion.places.filter(([name, area, lat, lng, alias]) =>
+      Boolean(name.toLowerCase().includes(queryText) || alias?.toLowerCase().includes(queryText)))
+      .map(([name, area, lat, lng]) => ({ lat, lng, location:name + ', ' + area, timeZone:SalahRegion.zone(lat, lng) }));
+    showCityResults(matches);
+    if (!navigator.onLine) {
+      status(matches.length ? 'Choose a town and save to apply.' : 'No offline matches. Enter coordinates or use GPS.');
+      return;
+    }
+    status(matches.length ? 'Choose a town, or wait for more results.' : 'Searching for towns…');
+    const url = 'https://geocoding-api.open-meteo.com/v1/search?count=8&language=en&format=json&name=' + encodeURIComponent(query);
+    const replies = await Promise.allSettled(['GB', 'IE'].map(code => fetchJson(url + '&countryCode=' + code)));
+    if (request !== searchRequest) return;
+    for (const reply of replies) {
+      if (reply.status !== 'fulfilled') continue;
+      for (const item of reply.value.results || []) {
+        if (!['GB', 'IE'].includes(item.country_code)) continue;
+        const { latitude:lat, longitude:lng } = item;
+        const timeZone = SalahRegion.zone(lat, lng);
+        if (!timeZone || matches.some(place => kmApart(place, { lat, lng }) < 0.75)) continue;
+        const location = [item.name, item.admin1, item.country].filter(Boolean).join(', ');
+        matches.push({ lat, lng, location, timeZone });
+      }
+    }
+    showCityResults(matches);
+    status(matches.length ? 'Choose a town and save to apply.' :
+      replies.some(r => r.status === 'fulfilled') ? 'No matches. Try another name or enter coordinates.' : 'Town search is offline. Enter coordinates or use GPS.');
   }
 
   function applyAppearance() {
@@ -564,35 +763,72 @@
     $(id).addEventListener('change', () => changeAppearance(key,$(id).value)));
   applyAppearance();
 
-  $('openSettings')?.addEventListener('click', () => showScreen('settings')); 
   $('closeSettings').addEventListener('click', () => showScreen('today')); 
   $('saveSettings').addEventListener('click', save);
   $('settingsDialog').querySelector('form').addEventListener('submit', e => { e.preventDefault(); save(); });
   document.querySelectorAll('input[name="method"]').forEach(r => r.addEventListener('change', updateCustomVisibility));
+
   $('setDerry').addEventListener('click', () => {
-    $('latInput').value = defaults.lat; $('lngInput').value = defaults.lng;
-    $('placeInput').value = defaults.location; $('tzInput').value = defaults.timeZone;
-    $('trackLocation').checked = false; pendingPlace = { zoneVerified: true };
+    placeRequest++; searchRequest++; gpsLoading = false;
+    $('cityResults').replaceChildren();
+    fillLocation(defaults);
     status('Derry selected. Save to apply.');
   });
   $('setGPS').addEventListener('click', () => {
-    if (!navigator.geolocation) { status('Geolocation is not available.'); return; }
-    gpsLoading = true; status('Requesting location permission…');
-    navigator.geolocation.getCurrentPosition(async pos => {
-      try { await applyGPS(pos, false); } finally { gpsLoading = false; }
-    }, e => { gpsLoading = false; geoError(e); }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 });
+    if (!navigator.geolocation) { status('GPS unavailable.'); return; }
+    const request = ++placeRequest;
+    gpsLoading = true;
+    status('Requesting location permission…');
+    navigator.geolocation.getCurrentPosition(pos => {
+      if (request !== placeRequest) return;
+      gpsLoading = false;
+      const place = positionPlace(pos);
+      if (place.error) { status(place.error); return; }
+      fillLocation(place);
+      status('GPS position found. Save to apply.');
+      void gpsTownName(place).then(name => {
+        if (name && request === placeRequest && Number($('latInput').value) === place.lat &&
+            Number($('lngInput').value) === place.lng && $('placeInput').value === place.location) {
+          $('placeInput').value = name;
+        }
+        if (name && request === placeRequest && cfg.lat === place.lat && cfg.lng === place.lng && cfg.location === place.location) {
+          cfg.location = name;
+          store();
+          render();
+        }
+      });
+    }, error => {
+      if (request !== placeRequest) return;
+      gpsLoading = false;
+      geoError(error);
+    }, { enableHighAccuracy:false, timeout:15000, maximumAge:60000 });
+  });
+  for (const id of ['latInput', 'lngInput']) $(id).addEventListener('input', () => {
+    const lat = $('latInput').value, lng = $('lngInput').value;
+    $('tzInput').value = lat && lng ? SalahRegion.zone(+lat, +lng) || '' : '';
   });
   $('citySearch').addEventListener('click', () => { void citySearch(); });
-  $('cityQuery').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); void citySearch(); } });
-  $('previousDay').addEventListener('click', () => { selectedKey = dayShift(selectedKey, -1); browsing = selectedKey !== todayKey(); render(); });
-  $('nextDay').addEventListener('click', () => { selectedKey = dayShift(selectedKey, 1); browsing = selectedKey !== todayKey(); render(); });
+  $('cityQuery').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); void citySearch(); }
+  });
+  function showDate(key) {
+    selectedKey = key;
+    browsing = key !== todayKey();
+    render();
+  }
+  for (const [id, step] of [['previousDay', -1], ['nextDay', 1], ['comparePrevious', -1], ['compareNext', 1]]) {
+    $(id).addEventListener('click', () => showDate(dayShift(selectedKey, step)));
+  }
+  $('summerCompare').addEventListener('toggle', () => { if ($('summerCompare').open) renderSummerComparison(); });
   $('dateButton').addEventListener('click', () => {
     const input = $('nativeDate');
-    if (typeof input.showPicker === 'function') input.showPicker(); else input.click();
+    try { if (typeof input.showPicker === 'function') { input.showPicker(); return; } } catch {}
+    input.focus();
+    input.click();
   });
   $('nativeDate').addEventListener('change', () => {
-    const v = $('nativeDate').value;
-    if (/^\d{4}-\d\d-\d\d$/.test(v)) { selectedKey = v; browsing = selectedKey !== todayKey(); render(); }
+    const key = $('nativeDate').value;
+    if (/^\d{4}-\d\d-\d\d$/.test(key) && Number.isFinite(+dateAtNoonUTC(key))) showDate(key);
   });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) stopTracking();
@@ -601,23 +837,22 @@
       render(); startTracking(); void cacheAdhansAutomatically();
     }
   });
-  let lastToday = todayKey(), lastPhoneZone = deviceZone();
+  let lastToday = todayKey();
   setInterval(() => {
-    const phoneZone = deviceZone();
-    if (cfg.autoLocation && phoneZone !== lastPhoneZone) {
-      cfg.timeZone = SalahRegion.zone(+cfg.lat,+cfg.lng); cfg.zoneVerified = true; store();
-      if (!browsing) selectedKey = todayKey();
+    if (document.hidden) return;
+    const localDay = todayKey();
+    if (localDay !== lastToday) {
+      if (!browsing) selectedKey = localDay;
+      lastToday = localDay;
       render();
     }
-    lastPhoneZone = phoneZone;
-    const localDay = todayKey();
-    if (!browsing && localDay !== lastToday) { selectedKey = localDay; render(); }
-    lastToday = localDay;
-    if (dayInfo && dayInfo.valid && selectedKey === localDay) {
-      renderHero(dayInfo); renderPrayerList(dayInfo); checkPrayerSounds();
+    if (dayInfo?.valid && selectedKey === localDay) {
+      renderHero(dayInfo);
+      if (Date.now() - lastListRefresh >= 30000) renderPrayerList(dayInfo);
     }
-    if (navigator.onLine && [...failedOnline.values()].some(v => Date.now() - v.at >= 2 * 60000)) loadComparison();
-  }, 30000);
+    checkPrayerSounds();
+    if (navigator.onLine && [...failedOnline.values()].some(at => Date.now() - at >= 120000)) loadComparison();
+  }, 15000);
 
   $('sourcePicker').addEventListener('click', e => {
     const btn = e.target.closest('button[data-source]');
@@ -625,19 +860,14 @@
     cfg.activeSource = btn.dataset.source;
     store(); render();
   });
+
   $('refreshSources').addEventListener('click', () => {
-    for (const kind of onlineKinds) {
-      for (const key of [selectedKey,SalahProviders.keyShift(selectedKey,1)]) {
-        failedOnline.delete(cacheId(kind,key)); onlineMem.delete(cacheId(kind,key));
-        try { localStorage.removeItem(cacheId(kind,key)); } catch {}
-      }
-    }
-    loadComparison(true); renderComparison();
+    loadComparison(true);
+    renderComparison();
   });
 
-
   let audioCtx = null, soundSeen = new Set();
-  let savedAudioObjectUrl = null;
+  let savedAudioObjectUrl = null, mediaPlayer = null;
   function audioDb() {
     return new Promise((resolve, reject) => {
       if (!window.indexedDB) { reject(Error('Local media storage unsupported')); return; }
@@ -663,6 +893,8 @@
   async function updateAudioStatus() {
     try {
       const blob = await audioData('read');
+      if (savedAudioObjectUrl) URL.revokeObjectURL(savedAudioObjectUrl);
+      savedAudioObjectUrl = blob ? URL.createObjectURL(blob) : null;
       $('savedAudioStatus').textContent = blob ? `Audio saved locally · ${(blob.size/1048576).toFixed(1)} MB` : 'No custom sound saved on this device.';
     } catch { $('savedAudioStatus').textContent = 'Custom audio cannot be stored in this browser.'; }
   }
@@ -674,15 +906,28 @@
     }
     try {
       await audioData('write',file);
-      cfg.soundChoice='custom'; $('soundChoice').value='custom';store(); updateVolumeUI();
+      stopMedia(); cfg.soundChoice='custom'; $('soundChoice').value='custom';store(); updateVolumeUI();
       await updateAudioStatus(); $('soundStatus').textContent='Custom sound saved locally. Test it to check playback.';
     } catch(e) { $('soundStatus').textContent=`Could not save sound: ${e.message}.` }
   });
-  $('clearAudio').addEventListener('click',async()=>{
-    try { await audioData('delete'); if(savedAudioObjectUrl) URL.revokeObjectURL(savedAudioObjectUrl);
-      savedAudioObjectUrl=null;await updateAudioStatus();$('soundStatus').textContent='Saved custom sound removed from this device.';
-    } catch { $('soundStatus').textContent='Unable to remove the sound from browser storage.' }
+
+  $('clearAudio').addEventListener('click', async () => {
+    try {
+      await audioData('delete');
+      stopMedia();
+      if (cfg.soundChoice === 'custom') {
+        cfg.soundChoice = 'soft';
+        $('soundChoice').value = 'soft';
+        updateVolumeUI();
+        store();
+      }
+      await updateAudioStatus();
+      $('soundStatus').textContent = 'Saved custom sound removed.';
+    } catch {
+      $('soundStatus').textContent = 'Unable to remove the saved sound.';
+    }
   });
+
   void updateAudioStatus();
 
   function audioTone(ctx, freq, at, duration, volume) {
@@ -699,7 +944,6 @@
     'adhan-fajr-abu-bakr': 'https://raw.githubusercontent.com/alsuleiman-lab/athkar-audio/main/fajr-adhan/abu-bakr.mp3',
     'adhan-thabet': 'https://raw.githubusercontent.com/alsuleiman-lab/athkar-audio/main/fajr-adhan/thabet.mp3'
   });
-  let adhanPlayer = null, activeCustomPlayer = null;
   const cachedAdhanUrls = new Map();
   const adhanChoices = Object.keys(ADHAN_RECORDINGS);
   let cachingAdhans = null;
@@ -723,7 +967,10 @@
       for (const choice of choices) {
         if (cachedAdhanUrls.has(choice)) continue;
         try {
-          const result = await fetch(ADHAN_RECORDINGS[choice], {cache:'force-cache'});
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 12000);
+          const result = await fetch(ADHAN_RECORDINGS[choice], { cache:'force-cache', signal:controller.signal })
+            .finally(() => clearTimeout(timeout));
           if (!result.ok) continue;
           const blob = await result.blob();
           if (blob.size < 10000 || blob.size > 8 * 1048576) continue;
@@ -735,74 +982,85 @@
     try { await cachingAdhans; } finally { cachingAdhans = null; }
   }
   void loadSavedAdhans().then(() => cacheAdhansAutomatically());
-  async function playAdhan(choice=cfg.soundChoice) {
-    const src=ADHAN_RECORDINGS[choice];
-    if (!src) { $('soundStatus').textContent='No adhan selected.'; return false; }
-    if (adhanPlayer) { adhanPlayer.pause(); adhanPlayer.currentTime=0; }
-    if (activeCustomPlayer) { activeCustomPlayer.pause(); activeCustomPlayer.currentTime=0; }
-    if (!cachedAdhanUrls.has(choice)) await loadSavedAdhans();
-    const localSource=cachedAdhanUrls.get(choice);
-    if (!localSource && !navigator.onLine) {
-      $('soundStatus').textContent='This adhan is unavailable offline. It will be saved automatically on the next online visit.';
-      return false;
-    }
+
+  function stopMedia() {
+    if (!mediaPlayer) return;
+    mediaPlayer.pause();
+    mediaPlayer.currentTime = 0;
+  }
+  async function playMedia(source, label) {
     try {
-      const source=localSource || src;
-      const player = new Audio(source);
-      adhanPlayer=player;
-      player.preload='auto';
-      player.volume=cfg.soundVolume/100;
-      player.onended=() => { if (adhanPlayer===player) $('soundStatus').textContent='Adhan finished.'; };
-      player.onerror=() => { if (adhanPlayer===player) $('soundStatus').textContent='Audio could not load. Save it on the Sounds tab while online.'; };
-      await player.play();
-      $('soundStatus').textContent=localSource?'Playing adhan.':'Playing adhan from the internet.';
+      if (!mediaPlayer) mediaPlayer = new Audio(source);
+      else {
+        stopMedia();
+        if (mediaPlayer.src !== source) mediaPlayer.src = source;
+      }
+      mediaPlayer.preload = 'auto';
+      mediaPlayer.volume = cfg.soundVolume / 100;
+      mediaPlayer.onended = () => { $('soundStatus').textContent = 'Audio finished.'; };
+      mediaPlayer.onerror = () => { $('soundStatus').textContent = 'Audio could not load.'; };
+      await mediaPlayer.play();
+      $('soundStatus').textContent = label;
       return true;
     } catch {
-      $('soundStatus').textContent='Adhan could not play. Test it directly while the app is open.';
+      $('soundStatus').textContent = 'Audio could not play. Tap Play sound while Salah is open.';
       return false;
     }
   }
+  function playAdhan(choice = cfg.soundChoice) {
+    const local = cachedAdhanUrls.get(choice);
+    const source = local || ADHAN_RECORDINGS[choice];
+    if (!source || (!local && !navigator.onLine)) {
+      $('soundStatus').textContent = 'This adhan is unavailable offline. Open Salah online to save it.';
+      return false;
+    }
+    return playMedia(source, local ? 'Playing adhan.' : 'Playing adhan from the internet.');
+  }
+
   function playReminderChime() {
     try {
       audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended') void audioCtx.resume();
+      if (audioCtx.state === 'suspended') void audioCtx.resume().catch(() => {});
       const a=audioCtx.currentTime+.02;
       audioTone(audioCtx,550,a,.25,.06);audioTone(audioCtx,740,a+.28,.30,.06);
     } catch {}
   }
-  async function playSound(choice=cfg.soundChoice) {
-    if (choice === 'off') return;
+
+  async function playSound(choice = cfg.soundChoice) {
+    if (choice === 'off') { $('soundStatus').textContent = 'Sound is set to Silent.'; return false; }
     if (choice.startsWith('adhan-')) return playAdhan(choice);
+    if (choice === 'custom') {
+      if (savedAudioObjectUrl) return playMedia(savedAudioObjectUrl, 'Playing your saved sound.');
+      $('soundStatus').textContent = 'Import a custom audio file first.';
+      return false;
+    }
     try {
-      if (choice === 'custom') {
-        const blob = await audioData('read');
-        if (!blob) { $('soundStatus').textContent='Upload a custom sound first, or choose a built-in chime.'; return; }
-        if (savedAudioObjectUrl) URL.revokeObjectURL(savedAudioObjectUrl);
-        savedAudioObjectUrl = URL.createObjectURL(blob);
-        if(activeCustomPlayer) activeCustomPlayer.pause();
-        const audio = new Audio(savedAudioObjectUrl); audio.volume=cfg.soundVolume/100; activeCustomPlayer=audio;
-        try { await audio.play(); }
-        catch { $('soundStatus').textContent='Safari blocked custom audio playback. Tap Hear sound; background sound is not supported.'; }
-        return;
-      }
+      stopMedia();
       audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') await audioCtx.resume();
-      const t = audioCtx.currentTime + .04;
+      const t = audioCtx.currentTime + 0.04;
       if (choice === 'bell') {
-        audioTone(audioCtx, 880,t,.7,.095); audioTone(audioCtx,1320,t+.12,.65,.045);
+        audioTone(audioCtx, 880, t, 0.7, 0.095);
+        audioTone(audioCtx, 1320, t + 0.12, 0.65, 0.045);
       } else {
-        audioTone(audioCtx, 660,t,.48,.08); audioTone(audioCtx, 830,t+.48,.62,.07);
+        audioTone(audioCtx, 660, t, 0.48, 0.08);
+        audioTone(audioCtx, 830, t + 0.48, 0.62, 0.07);
       }
-    } catch(e) { $('soundStatus').textContent = 'Audio blocked by this browser. Tap Hear sound again.'; }
+      $('soundStatus').textContent = 'Playing chime.';
+      return true;
+    } catch {
+      $('soundStatus').textContent = 'Audio could not play. Tap Play sound while Salah is open.';
+      return false;
+    }
   }
+
   $('soundChoice').value = cfg.soundChoice;
   $('soundVolume').value=String(cfg.soundVolume);
   $('soundVolumeLabel').textContent=`${cfg.soundVolume}%`;
   $('soundVolume').addEventListener('input',()=>{
     cfg.soundVolume=+ $('soundVolume').value;
     $('soundVolumeLabel').textContent=`${cfg.soundVolume}%`;
-    if(adhanPlayer) adhanPlayer.volume=cfg.soundVolume/100;
-    if(activeCustomPlayer) activeCustomPlayer.volume=cfg.soundVolume/100;
+    if (mediaPlayer) mediaPlayer.volume = cfg.soundVolume / 100;
     store();
   });
   function updateVolumeUI() {
@@ -813,73 +1071,111 @@
   }
   updateVolumeUI();
   $('calendarLead').value = String(cfg.calendarLead);
-  $('calendarLead').value='15';
   $('soundChoice').addEventListener('change', () => {
-    if(adhanPlayer){adhanPlayer.pause();adhanPlayer.currentTime=0;}
+    stopMedia();
     cfg.soundChoice = $('soundChoice').value; store(); updateVolumeUI(); void cacheAdhansAutomatically();
     $('soundStatus').textContent = 'Sound saved. Test it using Play sound.';
   });
   $('testSound').addEventListener('click', () => { void playSound(); });
   $('stopSound').addEventListener('click', () => {
-    if(adhanPlayer) { adhanPlayer.pause(); adhanPlayer.currentTime=0; }
-    if(activeCustomPlayer) { activeCustomPlayer.pause(); activeCustomPlayer.currentTime=0; }
+    stopMedia();
     $('soundStatus').textContent='Sound stopped.';
   });
+
   function checkPrayerSounds() {
-    if (document.hidden || selectedKey !== todayKey() || !dayInfo?.valid || dayInfo.sourceFallback) return;
-    for (const p of prayers) {
-      const when = dayInfo[p.key]?.getTime(); if (!when) continue;
-      const choice=cfg.soundChoice;
-      if (choice === 'off') continue;
-      const now=Date.now(), reminder=when-15*60000;
-      const beforeId=`${selectedKey}:pre:${p.key}`, atId=`${selectedKey}:at:${p.key}`;
-      if(now >= reminder && now < reminder+45000 && !soundSeen.has(beforeId)) {
-        soundSeen.add(beforeId);playReminderChime();
-        $('soundStatus').textContent=`${p.en} begins in 15 minutes. Foreground chime requested.`;
-      }
-      if(now >= when && now < when+45000 && !soundSeen.has(atId)) {
-        soundSeen.add(atId);void playSound(choice);
-        $('soundStatus').textContent=`${p.en} prayer time reached. Sound requested.`;
+    if (document.hidden || cfg.soundChoice === 'off') return;
+    const now = Date.now(), today = todayKey();
+    const days = [dayShift(today, -1), today, dayShift(today, 1)];
+    soundSeen = new Set([...soundSeen].filter(id => days.includes(id.slice(0, 10))));
+    for (const key of days) {
+      const day = getDay(key);
+      if (!day.valid || day.sourceFallback) continue;
+      for (const p of prayers) {
+        if (p.key === 'isha' && !day.nextFajr) continue;
+        const event = prayerEvent(day, p);
+        if (!event) continue;
+        const at = event.at.getTime();
+        const id = key + ':' + p.key;
+        const pre = id + ':before';
+        const reminder = at - cfg.calendarLead * 60000;
+        if (now >= reminder && now < reminder + 45000 && !soundSeen.has(pre)) {
+          soundSeen.add(pre);
+          playReminderChime();
+          $('soundStatus').textContent = p.en + ' is about 15 minutes away' + (event.estimated ? ' (estimate).' : '.');
+        }
+        if (now >= at && now < at + 45000 && !soundSeen.has(id)) {
+          soundSeen.add(id);
+          const choice = cfg.soundChoice === 'adhan-abu-bakr' && p.key !== 'fajr' ? 'adhan-fajr-abu-bakr' : cfg.soundChoice;
+          void playSound(choice);
+        }
       }
     }
   }
 
-  function iCalStamp(d) { return d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,''); }
-  function escapeCal(s) { return s.replace(/[\\;,\n]/g, c => c==='\n'?'\\n':'\\'+c); }
+  function iCalStamp(date) {
+    return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  }
+  function escapeCal(text) {
+    return text.replace(/\r\n?/g, '\n').replace(/[\\;,\n]/g, char => char === '\n' ? '\\n' : '\\' + char);
+  }
+  const calEncoder = new TextEncoder();
+  function foldCal(line) {
+    if (calEncoder.encode(line).length <= 75) return line;
+    let out = '', width = 0;
+    for (const char of line) {
+      const bytes = calEncoder.encode(char).length;
+      if (width + bytes > 75) { out += '\r\n '; width = 1; }
+      out += char;
+      width += bytes;
+    }
+    return out;
+  }
   function makeCalendar() {
-    const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Salah Comparison//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH','X-WR-CALNAME:Salah prayer reminders'];
-    const online = onlineKinds.includes(cfg.activeSource);
+    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Salah//Prayer calendar//EN',
+      'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:Salah prayer reminders'];
+    const online = cfg.activeSource === 'moonsighting';
     const dayCount = online ? 1 : 60;
-    const keyBase = selectedKey;
-    let eventCount = 0;
+    const source = methods.find(m => m.id === cfg.activeSource).title;
+    let eventCount = 0, skipped = 0;
     for (let i = 0; i < dayCount; i++) {
-      const key = SalahProviders.keyShift(keyBase, i);
-      const item = getDay(key);
-      if (!item?.valid || item.sourceFallback) continue;
+      const key = dayShift(selectedKey, i);
+      const day = getDay(key);
       for (const prayer of prayers) {
-        const dt = item[prayer.key];
-        if (!dt) continue;
+        const event = day.sourceFallback || (prayer.key === 'isha' && !day.nextFajr) ? null : prayerEvent(day, prayer);
+        if (!event) { skipped++; continue; }
         eventCount++;
-        lines.push('BEGIN:VEVENT',`UID:salah-${cfg.activeSource}-${prayer.key}-${key}-${Number(cfg.lat).toFixed(3)}-${Number(cfg.lng).toFixed(3)}@salah.local`,
-          `DTSTAMP:${iCalStamp(new Date())}`,`DTSTART:${iCalStamp(dt)}`,`DTEND:${iCalStamp(new Date(dt.getTime()+5*60000))}`,
-          `SUMMARY:${escapeCal(prayer.en + ' prayer · Salah')}`,`DESCRIPTION:${escapeCal(cfg.location + ' · ' + cfg.activeSource + ' calculated time. Research estimates, not observed certainty.')}`,
-          'BEGIN:VALARM','ACTION:DISPLAY',`DESCRIPTION:${escapeCal(prayer.en + ' prayer time')}`, 'TRIGGER:-PT15M','END:VALARM','END:VEVENT');
+        const summary = prayer.en + ' · Salah' + (event.estimated ? ' (estimate)' : '');
+        const description = cfg.location + ' · ' + source +
+          (event.estimated ? ' · Modelled twilight estimate' : ' · Calculated time');
+        lines.push('BEGIN:VEVENT',
+          'UID:salah-' + cfg.activeSource + '-' + prayer.key + '-' + key + '-' + cfg.lat + '-' + cfg.lng + '@salah.local',
+          'DTSTAMP:' + iCalStamp(new Date()), 'DTSTART:' + iCalStamp(event.at),
+          'DTEND:' + iCalStamp(new Date(+event.at + 60000)),
+          'SUMMARY:' + escapeCal(summary), 'DESCRIPTION:' + escapeCal(description),
+          'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + escapeCal(summary),
+          'TRIGGER:-PT' + cfg.calendarLead + 'M', 'END:VALARM', 'END:VEVENT');
       }
     }
     lines.push('END:VCALENDAR');
-    return { ics: lines.join('\r\n')+'\r\n', online, dayCount, eventCount };
+    return { ics:lines.map(foldCal).join('\r\n') + '\r\n', online, eventCount, skipped };
   }
   $('exportCalendar').addEventListener('click', () => {
     const result = makeCalendar();
-    if (!result.eventCount) { $('calendarStatus').textContent = 'No times available to export for the selected source and date. Try a local calculation or load the online source.'; return; }
-    const a = document.createElement('a');
-    const url = URL.createObjectURL(new Blob([result.ics],{type:'text/calendar;charset=utf-8'}));
-    a.href = url; a.download = `salah-${selectedKey}-${cfg.activeSource}.ics`;
-    document.body.append(a); a.click(); a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),30000);
-    $('calendarStatus').textContent = result.online ?
-      `${result.eventCount} event(s) exported for this one day. Online sources need another download for future dates. iPhone may not import bulk .ics directly.` :
-      `${result.eventCount} event(s) exported for up to 60 days. This static file will not automatically follow GPS, time-zone or method changes.`;
+    if (!result.eventCount) {
+      $('calendarStatus').textContent = 'No times to export for this source and date.';
+      return;
+    }
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(new Blob([result.ics], { type:'text/calendar;charset=utf-8' }));
+    link.href = url;
+    link.download = 'salah-' + selectedKey + '-' + cfg.activeSource + '.ics';
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    const span = result.online ? ' for the selected date.' : ' for 60 days from the selected date.';
+    const skipped = result.skipped ? ' Skipped ' + result.skipped + ' unavailable prayer windows.' : '';
+    $('calendarStatus').textContent = 'Exported ' + result.eventCount + ' events' + span + skipped;
   });
 
   const KAABA={lat:21.422487,lng:39.826206};
@@ -892,110 +1188,135 @@
     return norm360(Math.atan2(y,x)/rad);
   }
   const compassPoints=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
-  let qiblaHeading=null,magneticVariation=null,variationSource='',qiblaCompassOn=false,lastAlignment=false;
-  const bearingNow=()=>qiblaBearing(+cfg.lat,+cfg.lng);
-  function renderQibla(){
-    const bearing=bearingNow(),good=Number.isFinite(bearing);
-    $('qiblaBearing').textContent=good?`${bearing.toFixed(1)}°`:'—°';
-    $('qiblaCardinal').textContent=good?compassPoints[Math.round(bearing/22.5)%16]:'—';
-    $('qiblaPosition').textContent=`${cfg.location} · true north bearing`;
-    const override=$('declinationOverride').value.trim();
-    const delta=override!==''?Number(override):magneticVariation;
-    const reliableHeading = Number.isFinite(compassSensorAccuracy) && compassSensorAccuracy >= 0 && compassSensorAccuracy <= 20;
-    const valid=Number.isFinite(qiblaHeading)&&Number.isFinite(delta) && Math.abs(delta)<=180 && qiblaCompassOn && reliableHeading;
-    const arrow=$('qiblaArrow');
-    const difference=valid?((bearing-qiblaHeading-delta+540)%360-180):0;
-    arrow.style.transform=`translate(-50%, -50%) rotate(${(valid?difference:bearing).toFixed(2)}deg)`;
-    $('qiblaDial').classList.toggle('live',valid);
-    const accurate=valid;
-    const aligned=accurate && Math.abs(difference)<=4;
-    $('qiblaDial').classList.toggle('aligned',aligned);
-    $('qiblaAligned').textContent=aligned?'Facing the Qibla':valid?`${Math.round(Math.abs(difference))}° ${difference>0?'right':'left'} · turn the phone`: 'True-north reference · start compass';
-    if (aligned && !lastAlignment && $('qiblaHaptic').checked && typeof navigator.vibrate==='function') {
-      try{navigator.vibrate([35,35,65])}catch{}
+
+  let qiblaHeading = null, magneticVariation = null, qiblaCompassOn = false, lastAlignment = false;
+  let compassSensorAccuracy = NaN, variationPromise = null, variationKey = '';
+  const bearingNow = () => qiblaBearing(cfg.lat, cfg.lng);
+
+  function resetMagneticCorrection() {
+    cfg.magneticDeclination = '';
+    $('declinationOverride').value = '';
+    variationKey = '';
+    magneticVariation = null;
+  }
+  function renderQibla() {
+    const bearing = bearingNow();
+    $('qiblaBearing').textContent = bearing.toFixed(1) + '°';
+    $('qiblaCardinal').textContent = compassPoints[Math.round(bearing / 22.5) % 16];
+    $('qiblaPosition').textContent = cfg.location + ' · true-north bearing';
+    const override = $('declinationOverride').value.trim();
+    const delta = override !== '' ? Number(override) : magneticVariation;
+    const reliable = Number.isFinite(compassSensorAccuracy) && compassSensorAccuracy >= 0 && compassSensorAccuracy <= 20;
+    const live = Number.isFinite(qiblaHeading) && Number.isFinite(delta) && Math.abs(delta) <= 180 && qiblaCompassOn && reliable;
+    const difference = live ? (bearing - qiblaHeading - delta + 540) % 360 - 180 : 0;
+    $('qiblaArrow').style.transform = 'translate(-50%, -50%) rotate(' + (live ? difference : bearing).toFixed(2) + 'deg)';
+    $('qiblaDial').classList.toggle('live', live);
+    const aligned = live && Math.abs(difference) <= 4 && compassSensorAccuracy <= 8;
+    $('qiblaDial').classList.toggle('aligned', aligned);
+    $('qiblaAligned').textContent = aligned ? 'Aligned within compass accuracy' :
+      live ? Math.round(Math.abs(difference)) + '° ' + (difference > 0 ? 'right' : 'left') + ' · turn the phone' :
+      'True-north reference';
+    if (aligned && !lastAlignment && $('qiblaHaptic').checked && typeof navigator.vibrate === 'function') {
+      try { navigator.vibrate([35, 35, 65]); } catch {}
     }
-    lastAlignment=aligned;
-    if(valid){$('qiblaState').textContent=`Compass reading ${Math.round(qiblaHeading)}° magnetic · correction ${delta.toFixed(1)}° ${override!==''?'(manual)':variationSource}`;
-      $('qiblaAccuracy').textContent=Number.isFinite(compassSensorAccuracy)?`Sensor uncertainty approximately ±${Math.round(compassSensorAccuracy)}°. Hold flat, away from metal.`:'Heading accuracy not reported: verify with another compass.';
-    } else if (qiblaCompassOn && Number.isFinite(compassSensorAccuracy) && (compassSensorAccuracy < 0 || compassSensorAccuracy > 20)) {
-      $('qiblaAccuracy').textContent='Compass reading is not accurate enough for a live pointer. Calibrate away from metal and try again.';
-      $('qiblaAligned').textContent='Use true-north reference until compass improves';
+    lastAlignment = aligned;
+    if (live) {
+      $('qiblaState').textContent = 'Magnetic heading ' + Math.round(qiblaHeading) + '° · correction ' + delta.toFixed(1) + '° ' +
+        (override === '' ? '(WMM 2025)' : '(manual)');
+      $('qiblaAccuracy').textContent = 'Sensor uncertainty about ±' + Math.round(compassSensorAccuracy) + '°. Hold flat, away from metal.';
+    } else if (qiblaCompassOn && Number.isFinite(compassSensorAccuracy) && !reliable) {
+      $('qiblaAccuracy').textContent = 'Compass reading is not accurate enough for a live pointer. Calibrate away from metal and try again.';
+    } else {
+      $('qiblaAccuracy').textContent = 'Hold the phone flat, away from magnets and metal. The bearing is measured clockwise from true north.';
     }
   }
-  let compassSensorAccuracy=NaN,variationPromise=null;
-  async function loadVariation(){
-    const date=new Date();
-    if(date.getUTCFullYear()>2029){magneticVariation=null;variationSource='model expired';return false}
-    if (variationPromise) return variationPromise;
-    variationPromise=(async()=>{
+  async function loadVariation() {
+    const now = new Date();
+    const lat = cfg.lat, lng = cfg.lng;
+    const key = [lat, lng, now.getUTCFullYear(), now.getUTCMonth()].join(':');
+    if (variationKey === key) return variationPromise;
+    variationKey = key;
+    variationPromise = (async () => {
       try {
-        const mod=await import('https://cdn.jsdelivr.net/npm/magvar@2.2.0/+esm');
-        const magvar=mod.magvar||mod.default?.magvar;
-        if(typeof magvar!=='function')throw Error('Magnetic module not compatible');
-        const dec=Number(magvar(+cfg.lat,+cfg.lng,0,new Date()));
-        if(!Number.isFinite(dec)||Math.abs(dec)>180)throw Error('Magnetic model invalid');
-        magneticVariation=dec;variationSource='· WMM2025';
+        const model = await import('./vendor/magvar/magvar.mjs');
+        if (now.getUTCFullYear() < model.MODEL_EPOCH || now.getUTCFullYear() >= model.MODEL_VALID_UNTIL) throw Error('Model date');
+        const value = model.magvar(lat, lng, 0, now);
+        if (!Number.isFinite(value) || Math.abs(value) > 180) throw Error('Model value');
+        if (variationKey === key) magneticVariation = value;
         return true;
-      } catch(err){magneticVariation=null;variationSource='';return false}
+      } catch {
+        if (variationKey === key) { magneticVariation = null; variationKey = ''; }
+        return false;
+      }
     })();
     return variationPromise;
   }
-  function orientationHandler(e) {
-    const h=Number(e.webkitCompassHeading);
-    if (!Number.isFinite(h)||e.webkitCompassHeading==null||h<0) {
-      qiblaHeading=null;
-      $('qiblaState').textContent='No north-referenced heading. Use the bearing with a calibrated compass.';
-      renderQibla(); return;
-    }
-    compassSensorAccuracy = e.webkitCompassAccuracy == null ? NaN : Number(e.webkitCompassAccuracy);
-    if (Number.isFinite(compassSensorAccuracy) && compassSensorAccuracy < 0) {
-      qiblaHeading=null;
-      $('qiblaState').textContent='Compass needs calibration. Move the phone in a figure eight, away from metal.';
-      renderQibla(); return;
-    }
-    qiblaHeading=norm360(h);
+  function orientationHandler(event) {
+    if (document.hidden || $('qiblaPanel').hidden) return;
+    const heading = event.webkitCompassHeading;
+    const accuracy = event.webkitCompassAccuracy;
+    qiblaHeading = Number.isFinite(heading) && heading >= 0 ? norm360(heading) : null;
+    compassSensorAccuracy = Number.isFinite(accuracy) ? accuracy : NaN;
+    if (qiblaHeading === null || !Number.isFinite(compassSensorAccuracy))
+      $('qiblaState').textContent = 'Heading or accuracy unavailable. Use the true-north bearing.';
+    else if (compassSensorAccuracy < 0)
+      $('qiblaState').textContent = 'Calibrate the compass away from metal and try again.';
+    else if (compassSensorAccuracy > 20)
+      $('qiblaState').textContent = 'Compass reading too uncertain. Use the true-north bearing.';
     renderQibla();
   }
-  $('startCompass').addEventListener('click',async()=>{
-    if(!window.isSecureContext){$('qiblaState').textContent='Compass access requires HTTPS.';return;}
-    if(typeof DeviceOrientationEvent==='undefined'){$('qiblaState').textContent='This device does not expose a compass heading.';return;}
+  $('startCompass').addEventListener('click', async () => {
+    if (!window.isSecureContext) { $('qiblaState').textContent = 'Compass access requires HTTPS.'; return; }
+    if (typeof DeviceOrientationEvent === 'undefined') {
+      $('qiblaState').textContent = 'This device provides no compass heading.';
+      return;
+    }
     try {
-      if(typeof DeviceOrientationEvent.requestPermission==='function'){
-        const permission=await DeviceOrientationEvent.requestPermission();
-        if(permission!=='granted'){$('qiblaState').textContent='Motion permission denied. Use the true-north bearing above.';return;}
+      if (typeof DeviceOrientationEvent.requestPermission === 'function' &&
+          await DeviceOrientationEvent.requestPermission() !== 'granted') {
+        $('qiblaState').textContent = 'Motion permission denied. Use the true-north bearing.';
+        return;
       }
-      window.removeEventListener('deviceorientation',orientationHandler);
-      window.addEventListener('deviceorientation',orientationHandler);
-      qiblaCompassOn=true;
-      $('startCompass').textContent='Compass active';
-      $('qiblaState').textContent='Finding compass heading and magnetic correction…';
-      const success=await loadVariation();
-      if(!success && !$('declinationOverride').value.trim()) $('qiblaState').textContent='Magnetic model unavailable. Enter the local magnetic declination for a corrected pointer, or use the bearing with a true-north compass.';
+      if ($('qiblaPanel').hidden) return;
+      qiblaCompassOn = true;
+      $('startCompass').textContent = 'Compass active';
+      $('qiblaState').textContent = 'Waiting for a usable compass reading…';
+      window.addEventListener('deviceorientation', orientationHandler);
+      if (!await loadVariation() && !$('declinationOverride').value.trim())
+        $('qiblaState').textContent = 'Magnetic correction unavailable. Enter a local correction or use the true-north bearing.';
       renderQibla();
-    } catch(err){$('qiblaState').textContent=`Compass access failed: ${err.message}`}
+    } catch {
+      $('qiblaState').textContent = 'Compass access failed. Use the true-north bearing.';
+    }
   });
-  $('qiblaGPS').addEventListener('click',()=>{
-    if(!navigator.geolocation){$('qiblaState').textContent='GPS is unavailable.';return}
-    $('qiblaState').textContent='Getting current GPS position…';
-    navigator.geolocation.getCurrentPosition(async p=>{
-      const newLat=+p.coords.latitude.toFixed(5), newLng=+p.coords.longitude.toFixed(5);
-      if(!supportedPlace(newLat,newLng)){$('qiblaState').textContent='This version supports UK and Ireland locations only.';return;}
-      cfg.lat=newLat;cfg.lng=newLng;
-      cfg.location=`GPS · ${cfg.lat.toFixed(3)}, ${cfg.lng.toFixed(3)}`;
-      cfg.zoneVerified=false;store();
-      variationPromise=null;magneticVariation=null; $('declinationOverride').value='';
-      render();
-      $('qiblaState').textContent=`GPS location acquired (±${Math.round(p.coords.accuracy)} m).`;
-      if(qiblaCompassOn){await loadVariation();renderQibla()}
-      void enrichLocation(cfg.lat,cfg.lng).then(data=>{
-        if(data.name)cfg.location=data.name;
-        if(['Europe/London','Europe/Dublin'].includes(data.zone))cfg.timeZone=data.zone;
-        cfg.zoneVerified=data.confirmed;store();if(!browsing)selectedKey=todayKey();render();
-      }).catch(()=>{});
-    },e=>{$('qiblaState').textContent=`GPS unavailable: ${e.message}`},{enableHighAccuracy:true,timeout:12000,maximumAge:15000});
+  $('qiblaGPS').addEventListener('click', () => {
+    if (!navigator.geolocation) { $('qiblaState').textContent = 'GPS unavailable.'; return; }
+    $('qiblaState').textContent = 'Getting current GPS position…';
+    const request = ++placeRequest;
+    navigator.geolocation.getCurrentPosition(pos => {
+      if (request !== placeRequest) return;
+      const place = positionPlace(pos);
+      if (place.error) { $('qiblaState').textContent = place.error; return; }
+      applyLocation(place);
+      $('qiblaState').textContent = 'Position updated for Qibla and prayer times.';
+    }, () => {
+      if (request === placeRequest) $('qiblaState').textContent = 'GPS unavailable. Keeping the saved position.';
+    }, { enableHighAccuracy:true, timeout:12000, maximumAge:15000 });
   });
-  $('declinationOverride').addEventListener('input',()=>{store();renderQibla()});
-  $('clearDeclination').addEventListener('click',()=>{$('declinationOverride').value='';renderQibla()});
+  $('declinationOverride').value = cfg.magneticDeclination;
+  $('declinationOverride').addEventListener('input', () => {
+    const value = $('declinationOverride').value;
+    if (Math.abs(+value) <= 180) { cfg.magneticDeclination = value; store(); }
+    renderQibla();
+  });
+  $('clearDeclination').addEventListener('click', () => {
+    $('declinationOverride').value = '';
+    cfg.magneticDeclination = '';
+    store();
+    if (qiblaCompassOn) void loadVariation().then(renderQibla);
+    renderQibla();
+  });
+
   $('qiblaHaptic').addEventListener('change',()=>{
     if($('qiblaHaptic').checked && typeof navigator.vibrate!=='function'){
       $('qiblaState').textContent='iPhone Safari does not offer vibration to web apps; the visual alignment cue still works.';
@@ -1072,7 +1393,15 @@
     });
     if (target === 'settings') showSettings();
     if (target === 'compare') renderComparison();
-    if (target === 'qibla') renderQibla();
+    if (target === 'qibla') {
+      renderQibla();
+      if (qiblaCompassOn) void loadVariation().then(renderQibla);
+    } else if (qiblaCompassOn) {
+      window.removeEventListener('deviceorientation', orientationHandler);
+      qiblaCompassOn = false;
+      qiblaHeading = null;
+      $('startCompass').textContent = 'Start compass';
+    }
     try { window.history.replaceState(null,'',location.pathname+location.search+'#'+target); } catch {}
     window.scrollTo({top:0,behavior:'instant'});
   }

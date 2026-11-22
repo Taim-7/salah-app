@@ -1,24 +1,39 @@
-const CACHE_NAME = 'salah-static-v19';
+const BASE = new URL(self.registration.scope);
+const PREFIX = 'salah-static:' + BASE.pathname + ':';
+const CACHE_NAME = PREFIX + 'v21';
 const FILES = [
   './', './index.html', './styles.css', './region.js', './solar.js', './providers.js', './app.js',
-  './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-180.png'
-];
+  './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-180.png',
+  './vendor/magvar/magvar.mjs', './vendor/magvar/utils.mjs', './vendor/magvar/WMMCOF2025.mjs'
+].map(path => new URL(path, BASE).href);
+const index = new URL('./index.html', BASE).href;
+
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));
+  event.waitUntil(caches.open(CACHE_NAME)
+    .then(cache => cache.addAll(FILES.map(url => new Request(url, { cache: 'reload' })))));
 });
 self.addEventListener('activate', event => {
-  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => (k.startsWith('salah-') && k !== CACHE_NAME)).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+  event.waitUntil(caches.keys()
+    .then(keys => Promise.all(keys.filter(key => key.startsWith(PREFIX) && key !== CACHE_NAME).map(key => caches.delete(key))))
+    .then(() => self.clients.claim()));
 });
 self.addEventListener('fetch', event => {
-  const req = event.request;
-  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
-  event.respondWith(caches.match(req).then(hit => hit || fetch(req).then(response => {
-    if (response.ok) {
-      const copy = response.clone();
-      event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put(req, copy)));
+  const { request } = event;
+  const url = new URL(request.url);
+  if (request.method !== 'GET' || url.origin !== BASE.origin || !url.pathname.startsWith(BASE.pathname)) return;
+  url.search = '';
+  const asset = url.href;
+  event.respondWith(caches.open(CACHE_NAME).then(async cache => {
+    const hit = await cache.match(asset);
+    if (hit) return hit;
+    try {
+      return await fetch(request);
+    } catch {
+      if (request.mode === 'navigate') {
+        const page = await cache.match(index);
+        if (page) return page;
+      }
+      return new Response('Unavailable offline', { status: 503, statusText: 'Offline' });
     }
-    return response;
-  }).catch(() => req.mode === 'navigate'
-    ? caches.match('./index.html')
-    : new Response('Unavailable offline', {status:503, statusText:'Offline'}))));
+  }));
 });

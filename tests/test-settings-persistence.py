@@ -1,8 +1,9 @@
+from os import environ
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 root=Path(__file__).resolve().parents[1]
 with sync_playwright() as pw:
- browser=pw.chromium.launch(headless=True,executable_path='/usr/bin/chromium',args=['--no-sandbox','--disable-dev-shm-usage'])
+ browser=pw.chromium.launch(headless=True,executable_path=environ.get('SALAH_CHROMIUM', '/usr/bin/chromium'),args=['--no-sandbox','--disable-dev-shm-usage'])
  page=browser.new_page(viewport={'width':390,'height':844},timezone_id='Europe/London')
  page.set_content((root/'index.html').read_text());page.add_style_tag(path=str(root/'styles.css'))
  page.evaluate("""window.saved={};Object.defineProperty(window,'localStorage',{configurable:true,value:{getItem(k){return window.saved[k]||null},setItem(k,v){window.saved[k]=v},removeItem(k){delete window.saved[k]}}});Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>false});""")

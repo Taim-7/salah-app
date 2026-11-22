@@ -14,8 +14,7 @@ const cache={
   async addAll(paths){
     const pending=new Map();
     for(const p of paths){
-      const full=path.join(root,p.replace(/^\.\//,'')) || path.join(root,'index.html');
-      let name=p==='./'?'index.html':p.replace(/^\.\//,'');
+      const name=key(p).slice(base.length)||'index.html';
       assert(fs.existsSync(path.join(root,name)),`Missing offline file ${name}`);
       pending.set(key(p),new Response(fs.readFileSync(path.join(root,name))));
     }
@@ -32,8 +31,8 @@ const caches={
   async match(req){for(const entries of stores.values()){let v=entries.get(key(req));if(v)return v.clone()}return undefined}
 };
 const scope={
-  self:{location:{origin},addEventListener:(name,fn)=>listeners[name]=fn,skipWaiting:async()=>{},clients:{claim:async()=>{}}},
-  caches,URL,Response,Promise,
+  self:{location:{origin},registration:{scope:base},addEventListener:(name,fn)=>listeners[name]=fn,skipWaiting:async()=>{},clients:{claim:async()=>{}}},
+  caches,URL,Request,Response,Promise,
   fetch:async()=>{requests++;if(!useNetwork)throw new Error('Offline');return new Response('Network response',{status:200})}
 };
 vm.runInNewContext(fs.readFileSync(path.join(root,'sw.js'),'utf8'),scope);
@@ -45,12 +44,14 @@ const tick=async(type,request)=>{
   await Promise.all(pending);
 };
 (async()=>{
- await caches.open('salah-static-v15');
+ await caches.open('salah-static:/salah-app/:v15');
+ await caches.open('salah-static:/other-app/:v15');
  await tick('install');
- assert.equal(stores.has('salah-static-v19'),true);
+ assert.equal(stores.has('salah-static:/salah-app/:v21'),true);
  await tick('activate');
- assert.equal(stores.has('salah-static-v15'),false);
- const urls=['','index.html','styles.css','region.js','solar.js','providers.js','app.js','manifest.webmanifest','icons/icon-192.png','icons/icon-512.png','icons/icon-180.png'];
+ assert.equal(stores.has('salah-static:/salah-app/:v15'),false);
+ assert.equal(stores.has('salah-static:/other-app/:v15'),true);
+ const urls=['','index.html','styles.css','region.js','solar.js','providers.js','app.js','manifest.webmanifest','icons/icon-192.png','icons/icon-512.png','icons/icon-180.png','vendor/magvar/magvar.mjs','vendor/magvar/utils.mjs','vendor/magvar/WMMCOF2025.mjs'];
  for(const u of urls){
   const resp=await tick('fetch',{url:base+u,method:'GET',mode:u?'same-origin':'navigate'});
   assert(resp?.ok,`Not cached offline: ${u}`);
@@ -63,5 +64,5 @@ const tick=async(type,request)=>{
  const cross=await tick('fetch',{url:'https://api.aladhan.com/test',method:'GET',mode:'cors'});
  assert.equal(cross,undefined);
  assert.equal(requests,2);
- console.log('PASS: 11 precached URLs; offline shell and scripts; navigation fallback; missing script 503; cross-origin bypass');
+ console.log('PASS: 14 precached URLs; offline shell and scripts; navigation fallback; missing script 503; cross-origin bypass');
 })().catch(e=>{console.error(e);process.exitCode=1});

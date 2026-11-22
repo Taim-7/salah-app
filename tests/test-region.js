@@ -5,6 +5,10 @@ const places={
  'Donegal':[54.65,-8.11,'IE'],'Dublin':[53.3498,-6.2603,'IE'],
  'Galway':[53.27,-9.05,'IE'],'London':[51.5072,-.1276,'GB'],
  'Glasgow':[55.8642,-4.2518,'GB'],'Inverness':[57.48,-4.225,'GB'],
+ 'Portrush':[55.2048,-6.6522,'GB'], 'Buncrana':[55.1333,-7.45,'IE'],
+ 'Malin Head':[55.3811,-7.3717,'IE'], 'Letterkenny':[54.9505,-7.734,'IE'],
+ 'Lerwick':[60.1545,-1.1494,'GB'], 'Stornoway':[58.209,-6.386,'GB'],
+ 'Kirkwall':[58.9847,-2.9587,'GB'], 'Jersey':[49.2,-2.13,null],
  'Isle of Man':[54.236,-4.548,null],'Irish Sea':[54,-5,null],
  'Atlantic':[54,-11,null],'France':[50.98,1.5,null],
  'Paris':[48.85,2.35,null],'Amsterdam':[52.37,4.9,null]

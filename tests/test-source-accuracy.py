@@ -1,8 +1,9 @@
+from os import environ
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 root=Path(__file__).resolve().parents[1]
 with sync_playwright() as p:
-  b=p.chromium.launch(headless=True,executable_path='/usr/bin/chromium',args=['--no-sandbox','--disable-dev-shm-usage'])
+  b=p.chromium.launch(headless=True,executable_path=environ.get('SALAH_CHROMIUM', '/usr/bin/chromium'),args=['--no-sandbox','--disable-dev-shm-usage'])
   page=b.new_page(viewport={'width':390,'height':844}, timezone_id='Europe/London')
   errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
   page.set_content((root/'index.html').read_text());page.add_style_tag(path=str(root/'styles.css'))
