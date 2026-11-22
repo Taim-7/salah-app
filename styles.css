@@ -283,9 +283,17 @@ input[type="file"]::file-selector-button { background: var(--raised); color: var
 .qibla-state { color: var(--muted); font-size: 12px; }
 .qibla-readout .block-label { margin-top: 12px; }
 .declination-fields { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 7px; }
-.iphone-haptics { min-width: 0; padding: 6px 9px; margin: 4px 0 7px; border: 1px solid var(--line); border-radius: 9px; }
-.iphone-haptics legend { padding-inline: 5px; color: var(--ink); font-size: 12px; }
-.iphone-haptics p { font-size: 12px; }
+.phone-test { margin: 5px 0 12px; padding: 11px; border: 1px solid var(--line); border-radius: var(--inset-radius); background: var(--shade); }
+.phone-test h3 { font-size: 15px; }
+.phone-test #qiblaTestStatus:empty, .phone-test #phoneReportStatus:empty { margin: 0; }
+.phone-test #qiblaFeltField { margin-top: 8px; }
+.phone-test #qiblaFelt { max-width: 240px; }
+.phone-test #copyPhoneReport { padding-inline: 0; }
+.phone-test textarea {
+  display: block; width: 100%; min-width: 0; padding: 9px; resize: vertical; border: 1px solid var(--line);
+  border-radius: 8px; color: var(--ink); background: var(--bg); font: 12px/1.4 ui-monospace, monospace;
+}
+.iphone-haptics .compass-chime { color: var(--ink); }
 .legacy-haptic { opacity: 0; pointer-events: none; position: absolute; width: 1px; height: 1px; overflow: hidden; }
 
 .fasting-content { display: grid; gap: 12px; }
@@ -298,6 +306,8 @@ input[type="file"]::file-selector-button { background: var(--raised); color: var
 #fastingRelative { color: var(--accent); font-size: 11px; font-weight: 690; }
 #fastingRelative:not(:empty) { margin-bottom: 3px; }
 .fasting-mark { background: var(--raised); color: var(--warm); padding: 4px 7px; border-radius: 7px; font-size: 11px; font-weight: 690; white-space: nowrap; }
+.fasting-mark[data-status="fasted"] { color: var(--ok); }
+.fasting-mark[data-status="made-up"] { color: var(--accent); }
 .fasting-times { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 10px 0 4px; }
 .fasting-times > div {
   background: linear-gradient(150deg, var(--raised), var(--shade)); border: 1px solid var(--line);
@@ -311,13 +321,12 @@ input[type="file"]::file-selector-button { background: var(--raised); color: var
 .fasting-times div:last-child dd { color: var(--secondary); }
 #fastingEstimated { color: var(--warm); font-size: 10px; }
 .fasting-span { margin-top: 6px; color: var(--muted); font-weight: 650; font-size: 12px; font-variant-numeric: tabular-nums; }
-.fasting-actions { margin-top: 11px; }
-#fastingQuickAction { min-height: 44px; width: 100%; }
-#fastingQuickAction[aria-disabled="true"] { color: var(--ok); background: var(--accent-deep); border-color: var(--line); cursor: default; filter: none; }
-.fasting-other-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
-.fasting-other-actions button { min-height: 35px; padding: 5px 7px; font-size: 12px; }
-.fasting-other-actions .secondary-button { background: var(--shade); }
-.fasting-other-actions .text-button { margin-left: auto; }
+.fasting-actions { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+#fastingQuestion > p { margin-bottom: 7px; color: var(--ink); font-size: 13px; font-weight: 710; }
+.fasting-answer-buttons { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.fasting-answer-buttons button, #fastingMadeUp { min-height: 44px; }
+#fastingMadeUp { width: 100%; }
+#clearFastingEntry { display: block; padding-inline: 0; }
 .month-nav { justify-content: space-between; margin-bottom: 10px; }
 .fasting-period { text-align: center; min-width: 0; }
 .fasting-period h3 { font-size: clamp(14px, 4vw, 17px); }
@@ -356,7 +365,6 @@ input[type="file"]::file-selector-button { background: var(--raised); color: var
 .volume-controls input { flex: 1 1 0; min-width: 0; min-height: 34px; }
 .volume-controls output { min-width: 44px; color: var(--accent); font-variant-numeric: tabular-nums; text-align: right; font-weight: 700; }
 .alert-actions, .test-buttons, .setting-action-row { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 10px; }
-.reminder-next { font-size: 13px; color: var(--accent); margin-top: 8px; }
 .test-head { display: flex; justify-content: flex-end; }
 .test-results { display: grid; grid-template-columns: repeat(auto-fit,minmax(120px,1fr)); gap: 6px; margin-top: 8px; }
 .test-result { display: grid; border-radius: 9px; background: var(--shade); padding: 8px; font-size: 11px; }
@@ -389,10 +397,12 @@ input[type="file"]::file-selector-button { background: var(--raised); color: var
 .palette-choices { display: grid; grid-template-columns: repeat(auto-fit,minmax(95px, 1fr)); gap: 6px; }
 .palette-choice { color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 11px; padding: 5px 6px 6px; min-width: 0; text-align: left; font-size: 11px; font-weight: 690; }
 .palette-choice[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
-.palette-sample { display: block; border-radius: 7px; height: 28px; margin-bottom: 4px; border: 1px solid var(--line); background: var(--pattern), linear-gradient(130deg,var(--raised),var(--shade)); }
+.palette-sample { display: block; position: relative; border-radius: 7px; height: 28px; margin-bottom: 4px; border: 1px solid var(--line); background: var(--pattern), linear-gradient(130deg,var(--raised),var(--shade)); }
 .palette-sample i { display: inline-block; width: 9px; height: 9px; margin: 7px 0 0 5px; border-radius: 8px; background: var(--accent); }
 .palette-sample i:nth-child(2) { background: var(--secondary); margin-left: 2px; }
 .palette-sample i:nth-child(3) { background: var(--night); margin-left: 2px; }
+.palette-icon { display: none; position: absolute; right: 3px; top: 2px; border-radius: 5px; }
+.palette-choices[data-match-icon="true"] .palette-icon { display: block; }
 .app-dock {
   z-index: 100; position: fixed; bottom: calc(6px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%);
   width: min(calc(100% - 20px), 574px); background: var(--panel); border: 1px solid var(--line); border-radius: 19px;
@@ -405,7 +415,17 @@ input[type="file"]::file-selector-button { background: var(--raised); color: var
 body[data-layout="timeline"] {
   --radius: 12px; --inset-radius: 8px; --shadow: none;
 }
-body[data-layout="timeline"] .hero-card { border-left: 3px solid var(--accent); }
+body[data-layout="timeline"] .hero-card { display: flex; flex-direction: column; border-left: 3px solid var(--accent); }
+body[data-layout="timeline"] .hero-top { justify-content: flex-end; margin-bottom: 4px; }
+body[data-layout="timeline"] .hero-overline { display: none; }
+body[data-layout="timeline"] .hero-bottom {
+  order: 1; align-items: flex-start; flex-direction: column; gap: 4px;
+  border: 0; margin: 0; padding: 0;
+}
+body[data-layout="timeline"] .hero-live-message { font-size: clamp(22px, 5.8vw, 32px); padding: 0; background: transparent; }
+body[data-layout="timeline"] .hero-content { order: 2; padding-top: 9px; margin-top: 9px; border-top: 1px solid var(--line); }
+body[data-layout="timeline"] .hero-arabic { display: none; }
+body[data-layout="timeline"] .hero-name { font-size: clamp(20px, 5.1vw, 28px); }
 body[data-layout="timeline"] .times-list { padding-left: 25px; }
 body[data-layout="timeline"] .times-list::before {
   position: absolute; content: ""; left: 8px; top: var(--rail-top,0); height: var(--rail-height,0); width: 2px;
@@ -448,10 +468,13 @@ body[data-layout="horizon"] .hero-live-time { font-size: 12px; }
 body[data-layout="horizon"] .sun-chart { order: 2; }
 body[data-layout="horizon"] .hero-content { order: 3; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
 .horizon-prayer-label { display: none; }
-body[data-layout="horizon"] .horizon-prayer-label { display: block; color: var(--muted); font-size: 11px; }
+body:is([data-layout="timeline"], [data-layout="horizon"]) .horizon-prayer-label { display: block; color: var(--muted); font-size: 11px; }
 body[data-layout="horizon"] .hero-arabic { display: none; }
 body[data-layout="horizon"] .hero-name { font-size: clamp(19px, 4.8vw, 27px); }
 body[data-layout="horizon"] .hero-time { font-size: clamp(17px, 4.3vw, 24px); }
+.horizon-date-slot { padding-bottom: 11px; margin-bottom: 11px; border-bottom: 1px solid var(--line); }
+.horizon-date-slot .date-nav { justify-content: center; max-width: 360px; margin-inline: auto; }
+.horizon-date-slot .day-picker-button { flex: 1; }
 .sun-chart { margin: 8px -5px 0; }
 .sun-chart svg { width: 100%; overflow: visible; }
 .sun-chart-label { color: var(--muted); display: flex; justify-content: space-between; padding: 0 6px; font-size: 10px; }

@@ -33,6 +33,8 @@ with sync_playwright() as p:
     page.locator('#settingsLayout').select_option(layout)
     page.locator('[data-screen-target="today"]').click()
     assert page.locator('#sunChart').is_visible() == (layout=='horizon')
+    date_parent = 'horizonDateSlot' if layout=='horizon' else 'prayerHeading'
+    assert page.locator('#prayerDateControls').evaluate('(el) => el.parentNode.id') == date_parent
     page.locator('[data-screen-target="qibla"]').click()
     assert page.locator('#qiblaBearing').inner_text().startswith('114.4')
     page.locator('[data-screen-target="today"]').click()

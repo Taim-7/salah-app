@@ -47,7 +47,7 @@ const tick=async(type,request)=>{
  await caches.open('salah-static:/salah-app/:v15');
  await caches.open('salah-static:/other-app/:v15');
  await tick('install');
- assert.equal(stores.has('salah-static:/salah-app/:v24'),true);
+ assert.equal(stores.has('salah-static:/salah-app/:v25'),true);
  await tick('activate');
  assert.equal(stores.has('salah-static:/salah-app/:v15'),false);
  assert.equal(stores.has('salah-static:/other-app/:v15'),true);
@@ -63,6 +63,8 @@ const tick=async(type,request)=>{
   assert(resp?.ok,`Not cached offline: ${u}`);
   assert((await resp.arrayBuffer()).byteLength>0,`Empty asset ${u}`);
  }
+ const refreshedIcon=await tick('fetch',{url:base+'icons/ocean/icon-180.png?v=25',method:'GET',mode:'same-origin'});
+ assert(refreshedIcon?.ok,'Updated icon should work offline with its version query');
  const missingJs=await tick('fetch',{url:base+'not-found.js',method:'GET',mode:'same-origin'});
  assert.equal(missingJs.status,503);
  const missNav=await tick('fetch',{url:base+'some-new-path',method:'GET',mode:'navigate'});

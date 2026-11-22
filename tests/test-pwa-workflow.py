@@ -80,7 +80,11 @@ try:
         assert page.locator('#prayerList').get_by_text('Time unavailable').count() == 2
         page.locator('[data-screen-target="sounds"]').click()
         assert page.locator('#exportCalendar').count() == 0
+        assert page.locator('#reminderNext').count() == 0
         assert page.locator('#reminderLead option').evaluate_all('(options) => options.map(o => +o.value)') == [15, 20, 25, 30]
+        page.locator('#reminderEnabled').uncheck()
+        assert page.locator('#reminderLead').is_disabled()
+        page.locator('#reminderEnabled').check()
         page.locator('#reminderLead').select_option('25')
         assert page.locator('#reminderLead').input_value() == '25'
 
@@ -100,15 +104,20 @@ try:
         page.locator('#fastingToday').click()
         assert page.locator('#fastingEstimated').is_visible()
         assert page.locator('#fastingIftar').inner_text() != '—'
+        assert page.locator('#fastingQuickAction').inner_text() == 'Yes, I fasted'
+        assert page.locator('#fastingMadeUp').is_hidden()
         page.locator('[data-fast-status="due"]').click()
         assert '1 to make up' in page.locator('#fastingSummary').inner_text()
-        assert page.locator('#fastingQuickAction').inner_text() == 'Mark as made up'
+        assert page.locator('#fastingMadeUp').is_visible()
+        assert page.locator('#fastingQuestion').is_hidden()
+        assert page.locator('#fastingMark').inner_text() == 'Missed'
         page.locator('#fastingToMakeUp summary').click()
         page.locator('#fastingDueDates button[data-date="2026-06-21"]').click()
-        page.locator('#fastingQuickAction').click()
+        page.locator('#fastingMadeUp').click()
         assert '0 to make up' in page.locator('#fastingSummary').inner_text()
         page.reload()
-        assert page.locator('#fastingQuickAction').inner_text() == '✓ Made up'
+        assert page.locator('#fastingMark').inner_text() == 'Made up'
+        assert page.locator('#fastingMadeUp').is_hidden()
         assert page.locator('.fast-day[aria-current="date"] small').inner_text() == '↺'
         page.locator('[data-fasting-view="month"]').click()
         page.locator('#fastingNext').click()
@@ -116,21 +125,21 @@ try:
         page.locator('#fastingToday').click()
         assert page.locator('#fastingMonth').inner_text() == 'June 2026'
         page.locator('[data-fast-status=""]').click()
-        assert page.locator('[data-fast-status=""]').is_disabled()
+        assert page.locator('[data-fast-status=""]').is_hidden()
         page.locator('.fast-day[data-date="2026-06-20"]').click()
         assert page.locator('#fastingDate').inner_text() == 'Saturday 20 June'
-        assert page.locator('#fastingQuickAction').evaluate('(button) => button === document.activeElement')
+        assert page.locator('#fastingDate').evaluate('(heading) => heading === document.activeElement')
         page.locator('#fastingQuickAction').click()
         assert page.locator('#fastingCompleted').inner_text() == '1'
 
         page.locator('[data-screen-target="settings"]').click()
         page.locator('[data-palette="ocean"]').click()
         page.locator('#settingsLayout').select_option('horizon')
-        assert page.locator('#touchIcon').get_attribute('href') == './icons/ocean/icon-180.png'
+        assert page.locator('#touchIcon').get_attribute('href') == './icons/ocean/icon-180.png?v=25'
         assert page.locator('#appManifest').get_attribute('href') == './manifest-ocean.webmanifest'
         assert page.evaluate("fetch('./icons/ocean/icon-180.png').then(r => r.ok)")
         page.locator('.icon-settings summary').click()
-        assert page.locator('#homeIconName').inner_text() == 'Ocean blue'
+        assert page.locator('#homeIconName').inner_text() == 'Ocean blue · Compass'
         with page.expect_download() as download:
             page.locator('#saveFastingLog').click()
         backup = download.value.path()
@@ -145,7 +154,7 @@ try:
         }
         install = context.new_page()
         install.goto(page.locator('#homeIconPage').evaluate('(link) => link.href'))
-        assert install.locator('link[rel="apple-touch-icon"]').get_attribute('href') == '../icons/ocean/icon-180.png'
+        assert install.locator('link[rel="apple-touch-icon"]').get_attribute('href') == '../icons/ocean/icon-180.png?v=25'
         assert install.evaluate("fetch('../manifest-ocean.webmanifest').then(r => r.json()).then(m => m.start_url)") == './?icon=ocean'
         install.close()
         page.locator('[data-icon-choice="minaret"]').click()
@@ -198,9 +207,18 @@ try:
         assert page.evaluate('vibrationPatterns.length') == 1
         page.evaluate('pointPhone(170, 7); pointPhone(112, 7)')
         assert page.evaluate('vibrationPatterns.length') == 2
+        page.locator('#qiblaTestFeedback').click()
+        assert page.evaluate('vibrationPatterns.at(-1)') == [180, 100, 220]
+        page.locator('#qiblaFelt').select_option('no')
+        page.locator('#copyPhoneReport').click()
+        report = page.locator('#phoneReport').input_value()
+        assert 'Salah v25 phone test' in report
+        assert 'Web vibration test: Accepted' in report
+        assert 'Pulse felt in last test: no' in report
+        assert 'Buncrana' not in report and 'Mozilla/' not in report
         page.evaluate("Object.defineProperty(navigator, 'vibrate', {configurable:true,value:undefined}); pointPhone(170, 7); pointPhone(113, 7)")
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'aligned'
-        assert page.evaluate('vibrationPatterns.length') == 2
+        assert page.evaluate('vibrationPatterns.length') == 3
         assert page.evaluate('compassTones.slice(-2)') == [740, 990]
         page.locator('#qiblaTestFeedback').click()
         assert 'Played the alignment chime' in page.locator('#qiblaTestStatus').inner_text()

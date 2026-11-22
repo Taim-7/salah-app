@@ -24,7 +24,7 @@
 </a>
 
 </header>
-<main><section aria-label="Prayer times" class="app-screen" data-screen="today" id="today"><div class="heading-line"><div><h1>Prayer times</h1><div class="location-line"><svg aria-hidden="true" fill="none" viewbox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z" stroke="currentColor" stroke-width="1.8"></path><circle cx="12" cy="10" r="2.8" stroke="currentColor" stroke-width="1.8"></circle></svg><span id="locationLabel">Derry, Northern Ireland</span><span class="light-divider">·</span><span id="timezoneLabel">Europe/London</span><span class="light-divider">·</span><span id="locationMode">Fixed location</span></div></div><div class="date-nav"><button aria-label="Previous day" class="day-arrow" id="previousDay" type="button">‹</button><button class="day-picker-button" id="dateButton" type="button"><span id="dateLabel">Today</span><span id="dateSubLabel"></span></button><button aria-label="Next day" class="day-arrow" id="nextDay" type="button">›</button><input aria-label="Choose a date" class="hidden-date" id="nativeDate" type="date"/></div></div><p aria-live="polite" class="location-live-status" id="liveLocationStatus"></p><p id="offlineIndicator" class="offline-indicator" hidden>Offline · local calculation available</p><div class="notice hidden" id="notice" role="status"></div><div class="dashboard">
+<main><section aria-label="Prayer times" class="app-screen" data-screen="today" id="today"><div class="heading-line" id="prayerHeading"><div><h1>Prayer times</h1><div class="location-line"><svg aria-hidden="true" fill="none" viewbox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z" stroke="currentColor" stroke-width="1.8"></path><circle cx="12" cy="10" r="2.8" stroke="currentColor" stroke-width="1.8"></circle></svg><span id="locationLabel">Derry, Northern Ireland</span><span class="light-divider">·</span><span id="timezoneLabel">Europe/London</span><span class="light-divider">·</span><span id="locationMode">Fixed location</span></div></div><div class="date-nav" id="prayerDateControls"><button aria-label="Previous day" class="day-arrow" id="previousDay" type="button">‹</button><button class="day-picker-button" id="dateButton" type="button"><span id="dateLabel">Today</span><span id="dateSubLabel"></span></button><button aria-label="Next day" class="day-arrow" id="nextDay" type="button">›</button><input aria-label="Choose a date" class="hidden-date" id="nativeDate" type="date"/></div></div><p aria-live="polite" class="location-live-status" id="liveLocationStatus"></p><p id="offlineIndicator" class="offline-indicator" hidden>Offline · local calculation available</p><div class="notice hidden" id="notice" role="status"></div><div class="dashboard">
 <section aria-label="Upcoming prayer" class="hero-card">
   <div class="hero-top">
     <span class="hero-overline" id="heroHeading">Next prayer</span>
@@ -64,7 +64,7 @@
     <span class="hero-live-time" id="heroLiveTime"></span>
   </div>
 </section>
-<section aria-label="Prayer timetable" class="times-panel"><div class="panel-head"><div><h2>Timetable</h2></div><span class="tiny-pill" id="timesTag">Local time</span></div><div class="times-list" id="prayerList"><p class="loading">Calculating prayer times…</p></div>
+<section aria-label="Prayer timetable" class="times-panel"><div class="horizon-date-slot" id="horizonDateSlot" hidden></div><div class="panel-head"><div><h2>Timetable</h2></div><span class="tiny-pill" id="timesTag">Local time</span></div><div class="times-list" id="prayerList"><p class="loading">Calculating prayer times…</p></div>
 <details class="study-links prayer-limits">
   <summary>About the forbidden times</summary>
   <p>Avoid general voluntary prayer after you pray Fajr until the Sun rises clear of the horizon, around solar noon until the Sun declines, and after you pray Asr until sunset. The after-Fajr and after-Asr periods start when you perform the prayer.</p>
@@ -179,19 +179,26 @@
       <div><dt>To Makkah</dt><dd id="qiblaDistance">—</dd></div>
       <div id="qiblaPrecisionRow" hidden><dt>Phone accuracy</dt><dd id="qiblaPrecision">—</dd></div>
     </dl>
-    <details class="study-links">
+    <details class="study-links" id="qiblaSettings">
       <summary>Compass settings</summary>
-      <label class="tracking-toggle" id="qiblaHapticControl" hidden><input id="qiblaHaptic" type="checkbox"/><span>Vibrate near the Qibla</span></label>
-      <fieldset class="iphone-haptics" id="iphoneHaptics" hidden>
-        <legend>iPhone haptics</legend>
-        <label class="compass-chime" for="qiblaTapTest"><span>Tap the switch to test</span><input id="qiblaTapTest" type="checkbox" switch/></label>
-        <label class="tracking-toggle"><input id="qiblaLegacyPulse" type="checkbox"/><span>Try a pulse on alignment</span></label>
-        <p>Experimental. Some older versions may pulse shortly after a tap. Newer Safari can require a direct tap on the switch.</p>
-      </fieldset>
-      <div class="setting-action-row">
-        <button class="secondary-button" id="qiblaTestFeedback" type="button">Test feedback</button>
-        <span class="form-note" id="qiblaTestStatus" role="status"></span>
-      </div>
+      <section class="phone-test" aria-labelledby="qiblaPhoneTitle">
+        <h3 id="qiblaPhoneTitle" tabindex="-1">Vibration test</h3>
+        <p id="qiblaHapticHelp" class="setting-hint"></p>
+        <label class="tracking-toggle" id="qiblaHapticControl" hidden><input id="qiblaHaptic" type="checkbox"/><span>Vibrate near the Qibla</span></label>
+        <div id="iphoneHaptics" class="iphone-haptics" hidden>
+          <div class="compass-chime"><label for="qiblaTapTest">Tap the switch itself</label><input id="qiblaTapTest" type="checkbox" switch/></div>
+          <label class="tracking-toggle" id="qiblaLegacyControl" hidden><input id="qiblaLegacyPulse" type="checkbox"/><span>Try an alignment pulse on older Safari</span></label>
+        </div>
+        <button class="secondary-button" id="qiblaTestFeedback" type="button">Test vibration</button>
+        <p class="form-note" id="qiblaTestStatus" role="status"></p>
+        <div id="qiblaFeltField" hidden>
+          <label class="block-label" for="qiblaFelt">Did you feel a pulse?</label>
+          <select id="qiblaFelt"><option value="">Select an answer</option><option value="yes">Yes</option><option value="no">No</option></select>
+        </div>
+        <button class="text-button" id="copyPhoneReport" type="button">Copy phone report</button>
+        <textarea id="phoneReport" aria-label="Phone test report" rows="9" readonly hidden></textarea>
+        <p id="phoneReportStatus" class="form-note" role="status"></p>
+      </section>
       <label class="block-label" for="declinationOverride">Magnetic correction in degrees east</label>
       <div class="declination-fields"><input id="declinationOverride" max="180" min="-180" placeholder="Automatic" step="0.1" type="number"/><button class="secondary-button" id="clearDeclination" type="button">Use automatic</button></div>
       <p class="qibla-state" id="qiblaState"></p>
@@ -220,7 +227,7 @@
     </section>
     <section class="fasting-detail" id="fastingDetail" aria-labelledby="fastingDate">
       <div class="fasting-detail-top">
-        <div><p id="fastingRelative"></p><h3 id="fastingDate"></h3></div>
+        <div><p id="fastingRelative"></p><h3 id="fastingDate" tabindex="-1"></h3></div>
         <span id="fastingMark" class="fasting-mark" hidden></span>
       </div>
       <dl class="fasting-times">
@@ -236,12 +243,15 @@
       <p class="fasting-span"><span id="fastingDuration">—</span><span id="fastingLengthLabel"> fasting</span></p>
       <p class="setting-hint" id="fastingEstimate"></p>
       <div class="fasting-actions" role="group" aria-label="Log the selected day">
-        <button id="fastingQuickAction" class="primary-button" type="button" data-fast-status="fasted">Mark as fasted</button>
-        <div class="fasting-other-actions">
-          <button class="secondary-button" type="button" data-fast-status="due">Log as missed</button>
-          <button class="secondary-button" id="fastingMadeUp" type="button" data-fast-status="made-up">Already made up</button>
-          <button class="text-button" type="button" data-fast-status="">Clear entry</button>
+        <div id="fastingQuestion">
+          <p>Did you fast?</p>
+          <div class="fasting-answer-buttons">
+            <button id="fastingQuickAction" class="primary-button" type="button" data-fast-status="fasted">Yes, I fasted</button>
+            <button class="secondary-button" type="button" data-fast-status="due">I missed it</button>
+          </div>
         </div>
+        <button class="primary-button" id="fastingMadeUp" type="button" data-fast-status="made-up" hidden>Mark as made up</button>
+        <button class="text-button" id="clearFastingEntry" type="button" data-fast-status="" hidden>Clear entry</button>
       </div>
       <p id="fastingStatus" class="form-note" role="status"></p>
     </section>
@@ -289,7 +299,6 @@
         <option value="15">15 minutes before</option><option value="20">20 minutes before</option>
         <option value="25">25 minutes before</option><option value="30">30 minutes before</option>
       </select>
-      <p id="reminderNext" class="reminder-next"></p>
       <p class="setting-hint">Salah shows reminders while it’s open. Tap Play sound to hear them. Locking the phone pauses scheduled reminders.</p>
     </div>
   </div>

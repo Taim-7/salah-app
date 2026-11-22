@@ -1,6 +1,6 @@
 const BASE = new URL(self.registration.scope);
 const PREFIX = 'salah-static:' + BASE.pathname + ':';
-const CACHE_NAME = PREFIX + 'v24';
+const CACHE_NAME = PREFIX + 'v25';
 const iconVariants = ['ocean', 'midnight', 'sand', 'slate', 'mihrab', 'minaret', 'compass', 'mat'];
 const iconFiles = iconVariants.flatMap(name => [
   './manifest-' + name + '.webmanifest',

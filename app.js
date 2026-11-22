@@ -1,5 +1,6 @@
 (() => {
   'use strict';
+  const APP_VERSION = 25;
   const $ = id => document.getElementById(id);
   const defaults = {
     lat: 54.9966, lng: -7.3086, location: 'Derry, Northern Ireland', timeZone: 'Europe/London',
@@ -41,6 +42,7 @@
   const palettes = {
     forest:'Forest green', ocean:'Ocean blue', midnight:'Midnight navy', sand:'Amber sand', slate:'Cool slate'
   };
+  const matchingSymbols = { forest:'Crescent', ocean:'Compass', midnight:'Minaret', sand:'Mihrab', slate:'Prayer mat' };
   const iconDesigns = { mihrab:'Mihrab', minaret:'Minaret', compass:'Compass', mat:'Prayer mat' };
   const layouts = ['compact', 'timeline', 'horizon'];
   const compassViews = ['guide', 'needle'];
@@ -638,7 +640,6 @@
     dayInfo = getDay(selectedKey);
     if (!$('comparisonPanel').hidden) renderComparison();
     if (!$('fastingPanel').hidden) renderFasting();
-    if (!$('soundPanel').hidden) renderReminderNext();
     drawSunChart(dayInfo);
     $('timesTag').textContent = cfg.timeZone === 'Europe/Dublin' ? 'Ireland time' : 'UK time';
     if (!dayInfo.valid) {
@@ -859,33 +860,43 @@
       replies.some(r => r.status === 'fulfilled') ? 'No matches. Try another name or enter coordinates.' : 'Town search is offline. Enter coordinates or use GPS.');
   }
 
+  const iconAsset = (id, size) => {
+    const folder = id === 'forest' ? './icons/' : './icons/' + id + '/';
+    const updated = id !== 'forest' && Object.hasOwn(palettes, id);
+    return folder + 'icon-' + size + '.png' + (updated ? '?v=' + APP_VERSION : '');
+  };
   const paletteChoices = $('paletteChoices');
   paletteChoices.innerHTML = Object.entries(palettes).map(([id, label]) =>
-    `<button type="button" class="palette-choice" data-palette="${id}"><span class="palette-sample" aria-hidden="true"><i></i><i></i><i></i></span>${label}</button>`).join('');
-  const iconFolder = id => id === 'forest' ? './icons/' : './icons/' + id + '/';
+    `<button type="button" class="palette-choice" data-palette="${id}"><span class="palette-sample" aria-hidden="true"><i></i><i></i><i></i><img class="palette-icon" src="${iconAsset(id, 180)}" alt="" width="21" height="21"/></span>${label}</button>`).join('');
   const iconChoices = $('iconChoices');
   iconChoices.innerHTML = Object.entries({ match:'Match colour', ...iconDesigns }).map(([id, label]) =>
     '<button type="button" data-icon-choice="' + id + '"><img width="42" height="42" alt="" src="' +
-    iconFolder(id === 'match' ? cfg.accent : id) + 'icon-180.png"/><span>' + label + '</span></button>').join('');
+    iconAsset(id === 'match' ? cfg.accent : id, 180) + '"/><span>' + label + '</span></button>').join('');
 
   function applyAppearance() {
     document.body.dataset.layout = cfg.layout;
     document.body.dataset.accent = cfg.accent;
     $('settingsLayout').value = cfg.layout;
     $('settingsTimeFormat').value = cfg.timeFormat;
+    const horizon = cfg.layout === 'horizon';
+    const dateSlot = $('horizonDateSlot');
+    dateSlot.hidden = !horizon;
+    const dateParent = horizon ? dateSlot : $('prayerHeading');
+    const dateControls = $('prayerDateControls');
+    if (dateControls.parentNode !== dateParent) dateParent.append(dateControls);
+    paletteChoices.dataset.matchIcon = String(cfg.iconChoice === 'match');
     for (const choice of paletteChoices.children) choice.setAttribute('aria-pressed', choice.dataset.palette === cfg.accent);
     const background = getComputedStyle(document.body).getPropertyValue('--bg').trim();
     document.documentElement.style.backgroundColor = background;
     document.querySelector('meta[name="theme-color"]').content = background;
     const icon = cfg.iconChoice === 'match' ? cfg.accent : cfg.iconChoice;
-    const iconBase = iconFolder(icon);
-    $('tabIcon').href = iconBase + 'icon-192.png';
-    $('touchIcon').href = iconBase + 'icon-180.png';
+    $('tabIcon').href = iconAsset(icon, 192);
+    $('touchIcon').href = iconAsset(icon, 180);
     $('appManifest').href = icon === 'forest' ? './manifest.webmanifest' : './manifest-' + icon + '.webmanifest';
-    iconChoices.querySelector('[data-icon-choice="match"] img').src = iconFolder(cfg.accent) + 'icon-180.png';
+    iconChoices.querySelector('[data-icon-choice="match"] img').src = iconAsset(cfg.accent, 180);
     for (const choice of iconChoices.children) choice.setAttribute('aria-pressed', choice.dataset.iconChoice === cfg.iconChoice);
     $('homeIconPreview').src = $('touchIcon').href;
-    $('homeIconName').textContent = iconDesigns[icon] || palettes[icon];
+    $('homeIconName').textContent = iconDesigns[icon] || palettes[icon] + ' · ' + matchingSymbols[icon];
     $('homeIconPage').href = './install/' + icon + '.html';
     $('homeIconURL').value = $('homeIconPage').href;
     $('homeIconURL').hidden = true;
@@ -1234,29 +1245,17 @@
     }
     return events;
   }
-  function renderReminderNext(events = reminderEvents()) {
-    $('reminderLead').disabled = !cfg.reminderEnabled;
-    if (!cfg.reminderEnabled) { $('reminderNext').textContent = 'Pre-prayer reminders are off.'; return; }
-    const lead = cfg.reminderLead * 60000;
-    const now = Date.now();
-    const next = events.find(event => event.at - lead > now);
-    if (!next) { $('reminderNext').textContent = 'No upcoming reminder available.'; return; }
-    const when = new Date(+next.at - lead);
-    const tomorrow = dateParts(when, cfg.timeZone) !== todayKey();
-    $('reminderNext').textContent = (tomorrow ? 'Tomorrow at ' : 'Next at ') + fmt(when) +
-      ' · ' + next.en + (next.estimated ? ' (estimate)' : '');
-  }
   $('reminderLead').value = String(cfg.reminderLead);
+  $('reminderLead').disabled = !cfg.reminderEnabled;
   $('reminderEnabled').checked = cfg.reminderEnabled;
   $('reminderLead').addEventListener('change', () => {
     cfg.reminderLead = Number($('reminderLead').value);
     store();
-    renderReminderNext();
   });
   $('reminderEnabled').addEventListener('change', () => {
     cfg.reminderEnabled = $('reminderEnabled').checked;
+    $('reminderLead').disabled = !cfg.reminderEnabled;
     store();
-    renderReminderNext();
   });
 
   function checkPrayerSounds() {
@@ -1264,7 +1263,6 @@
     const now = Date.now(), today = todayKey();
     const days = [dayShift(today, -1), today, dayShift(today, 1)];
     const events = reminderEvents();
-    if (!$('soundPanel').hidden) renderReminderNext(events);
     soundSeen = new Set([...soundSeen].filter(id => days.includes(id.slice(0, 10))));
     for (const event of events) {
       const at = event.at.getTime();
@@ -1307,16 +1305,28 @@
   let headingTimer = null, compassProblemTimer = null;
   let compassIssuesPlayed = new Set();
   const supportsVibration = () => typeof navigator.vibrate === 'function';
+  const safariVersion = navigator.userAgent.match(/\bVersion\/(\d+)(?:\.(\d+))?/);
+  const safariRequiresTap = isIOS && safariVersion &&
+    (+safariVersion[1] > 26 || (+safariVersion[1] === 26 && +(safariVersion[2] || 0) >= 5));
+  const canTryLegacyPulse = isIOS && !safariRequiresTap && (!safariVersion || +safariVersion[1] >= 18);
+  const phoneTest = {
+    web:'Not tested', tap:'Not tested', legacy:'Not tested', last:'None', alignment:'No alignment yet'
+  };
 
   function vibrate(pattern) {
-    try { return supportsVibration() && navigator.vibrate(pattern); }
-    catch { return false; }
+    if (!supportsVibration()) return 'Unavailable';
+    try { return navigator.vibrate(pattern) ? 'Accepted' : 'Declined'; }
+    catch { return 'Declined'; }
   }
 
   function tryLegacyPulse() {
-    if (!isIOS || !cfg.qiblaLegacyPulse || navigator.userActivation?.isActive === false) return false;
+    if (!canTryLegacyPulse) return 'Unavailable';
+    if (!cfg.qiblaLegacyPulse) return 'Off';
+    if (navigator.userActivation?.isActive === false) return 'No recent tap';
+    const control = $('qiblaLegacySwitch');
+    const wasChecked = control.checked;
     $('qiblaLegacyTrigger').click();
-    return true;
+    return control.checked !== wasChecked ? 'Switch toggled' : 'No switch change';
   }
 
   function playCompassChime(notes) {
@@ -1448,7 +1458,9 @@
       ? 'M160 ' + (160 - radius) + ' A' + radius + ' ' + radius + ' 0 0 ' + (direction < 0 ? 0 : 1) + ' ' + target : '');
 
     if (withinTarget && !lastAlignment && !$('qiblaPanel').hidden && !document.hidden) {
-      if (!cfg.qiblaHaptic || !vibrate(alignmentPulse)) tryLegacyPulse();
+      const web = cfg.qiblaHaptic ? vibrate(alignmentPulse) : 'Off';
+      const legacy = web === 'Accepted' ? 'Skipped' : tryLegacyPulse();
+      phoneTest.alignment = 'Web vibration ' + web.toLowerCase() + ', older Safari pulse ' + legacy.toLowerCase();
       playCompassChime(alignmentNotes);
     }
     if (live) lastAlignment = withinTarget;
@@ -1595,10 +1607,21 @@
   $('qiblaHapticControl').hidden = !supportsVibration();
   $('qiblaChime').checked = cfg.qiblaSound;
   $('iphoneHaptics').hidden = !isIOS;
+  $('qiblaLegacyControl').hidden = !canTryLegacyPulse;
   $('qiblaLegacyPulse').checked = cfg.qiblaLegacyPulse;
+  $('qiblaHapticHelp').textContent = isIOS ?
+    (safariRequiresTap ? 'This Safari version uses a direct switch tap for haptics.' :
+      'Tap the iPhone switch to check haptics. The alignment pulse is experimental on older Safari.') :
+    (supportsVibration() ? 'The test asks your phone for two pulses.' : 'This browser has no web vibration control.');
+  function labelVibrationTest() {
+    $('qiblaTestFeedback').textContent = supportsVibration() || (canTryLegacyPulse && cfg.qiblaLegacyPulse) ?
+      'Test vibration' : 'Test chime';
+  }
+  labelVibrationTest();
   $('qiblaLegacyPulse').addEventListener('change', () => {
     cfg.qiblaLegacyPulse = $('qiblaLegacyPulse').checked;
     store();
+    labelVibrationTest();
   });
   $('qiblaHaptic').addEventListener('change', () => {
     cfg.qiblaHaptic = $('qiblaHaptic').checked;
@@ -1610,15 +1633,34 @@
     if (cfg.qiblaSound) compassAudioReady = audio.unlock();
   });
 
+  function recordPhoneTest(method, canFeel) {
+    phoneTest.last = method;
+    $('qiblaFeltField').hidden = !canFeel;
+    $('qiblaFelt').value = '';
+    $('phoneReport').hidden = true;
+    $('phoneReportStatus').textContent = '';
+  }
+
+  $('qiblaTapTest').addEventListener('change', () => {
+    phoneTest.tap = 'Switch toggled';
+    recordPhoneTest('iPhone switch tap', true);
+    $('qiblaTestStatus').textContent = 'Switch toggled. Did you feel a pulse?';
+  });
+
   async function testCompassFeedback(feedback) {
-    if (vibrate(alignmentPulse)) {
-      feedback.textContent = 'Vibration requested. Feel for two pulses.';
+    phoneTest.web = vibrate([180, 100, 220]);
+    if (phoneTest.web === 'Accepted') {
+      recordPhoneTest('Web vibration', true);
+      feedback.textContent = 'The browser accepted the request for two pulses.';
       return;
     }
-    if (tryLegacyPulse()) {
-      feedback.textContent = 'Tried the automatic pulse. Tap the iPhone switch if you felt nothing.';
+    phoneTest.legacy = tryLegacyPulse();
+    if (phoneTest.legacy === 'Switch toggled') {
+      recordPhoneTest('Older Safari pulse', true);
+      feedback.textContent = 'The browser toggled the older Safari switch. Did you feel a pulse?';
       return;
     }
+    recordPhoneTest('Chime only', false);
     if (cfg.soundVolume === 0) {
       feedback.textContent = 'Vibration unavailable. Raise the sound level to hear the chime.';
       return;
@@ -1628,6 +1670,46 @@
       'Vibration and sound are unavailable.';
   }
   $('qiblaTestFeedback').addEventListener('click', () => void testCompassFeedback($('qiblaTestStatus')));
+
+  $('copyPhoneReport').addEventListener('click', async () => {
+    const knownBrowsers = [
+      ['Edge', /\b(?:EdgiOS|EdgA|Edg)\/(\d+(?:\.\d+)?)/],
+      ['Firefox', /\b(?:FxiOS|Firefox)\/(\d+(?:\.\d+)?)/],
+      ['Samsung Internet', /\bSamsungBrowser\/(\d+(?:\.\d+)?)/],
+      ['Chrome', /\b(?:CriOS|Chrome)\/(\d+(?:\.\d+)?)/],
+      ['Safari', /\bVersion\/(\d+(?:\.\d+)?)/]
+    ];
+    let browser = 'Version unavailable';
+    for (const [name, pattern] of knownBrowsers) {
+      const found = pattern.exec(navigator.userAgent);
+      if (found) { browser = name + ' ' + found[1]; break; }
+    }
+    const device = isIOS ? 'iPhone/iPad' : /\bAndroid\b/.test(navigator.userAgent) ? 'Android' : 'Other';
+    const field = $('phoneReport');
+    field.value = [
+      'Salah v' + APP_VERSION + ' phone test',
+      'Platform: ' + device,
+      'Browser: ' + browser,
+      'Opened from: ' + (isStandalone() ? 'Home Screen' : 'Browser tab'),
+      'Secure page: ' + (isSecureContext ? 'Yes' : 'No'),
+      'Web vibration available: ' + (supportsVibration() ? 'Yes' : 'No'),
+      'Web vibration test: ' + phoneTest.web,
+      'iPhone switch tap: ' + phoneTest.tap,
+      'Older Safari test: ' + phoneTest.legacy,
+      'Last alignment request: ' + phoneTest.alignment,
+      'Last test: ' + phoneTest.last,
+      'Pulse felt in last test: ' + ($('qiblaFelt').value || 'Not answered')
+    ].join('\n');
+    field.hidden = false;
+    try {
+      await navigator.clipboard.writeText(field.value);
+      $('phoneReportStatus').textContent = 'Phone report copied.';
+    } catch {
+      field.focus();
+      field.select();
+      $('phoneReportStatus').textContent = 'Select and copy the report above.';
+    }
+  });
   function setCompassView(view) {
     $('qiblaView').dataset.view = view;
     for (const button of $('qiblaLayouts').children) button.setAttribute('aria-pressed', button.dataset.qiblaView === view);
@@ -1642,7 +1724,7 @@
     renderQibla();
   });
 
-  const fastingLabels = { fasted:'Fasted', due:'To make up', 'made-up':'Made up' };
+  const fastingLabels = { fasted:'Fasted', due:'Missed', 'made-up':'Made up' };
   const fastingSymbols = { fasted:'✓', due:'•', 'made-up':'↺' };
   const fastingStore = 'salah-fasting-log';
   let fastingKey = todayKey();
@@ -1730,18 +1812,13 @@
       !times.fajr ? 'Fajr is unavailable under the selected method.' : '';
 
     const mark = fastingRecords[fastingKey] || '';
-    const quick = $('fastingQuickAction'), badge = $('fastingMark');
-    const completed = mark === 'fasted' || mark === 'made-up';
-    quick.dataset.fastStatus = mark === 'due' ? 'made-up' : mark === 'made-up' ? 'made-up' : 'fasted';
-    quick.textContent = completed ? '✓ ' + fastingLabels[mark] : mark === 'due' ? 'Mark as made up' : 'Mark as fasted';
-    quick.setAttribute('aria-disabled', completed);
+    const badge = $('fastingMark');
     badge.textContent = fastingLabels[mark] || '';
-    badge.hidden = mark !== 'due';
-    $('fastingMadeUp').hidden = mark === 'due' || mark === 'made-up';
-    const missed = document.querySelector('[data-fast-status="due"]');
-    missed.hidden = mark === 'due';
-    const clear = document.querySelector('[data-fast-status=""]');
-    clear.hidden = clear.disabled = !mark;
+    badge.dataset.status = mark;
+    badge.hidden = !mark;
+    $('fastingQuestion').hidden = !!mark;
+    $('fastingMadeUp').hidden = mark !== 'due';
+    $('clearFastingEntry').hidden = !mark;
     if (cfg.activeSource === 'moonsighting' && navigator.onLine) void fetchOnline(cfg.activeSource, fastingKey);
   }
 
@@ -1774,8 +1851,8 @@
   function openFastingDate(event) {
     const day = event.target.closest('button[data-date]');
     if (!day) return;
-    $('fastingQuickAction').focus({ preventScroll:true });
     selectFastingDate(day.dataset.date);
+    $('fastingDate').focus({ preventScroll:true });
     $('fastingDetail').scrollIntoView({ block:'nearest' });
   }
   $('fastingDays').addEventListener('click', openFastingDate);
@@ -1789,7 +1866,7 @@
   });
   document.querySelector('.fasting-actions').addEventListener('click', event => {
     const button = event.target.closest('[data-fast-status]');
-    if (!button || button.disabled || button.getAttribute('aria-disabled') === 'true') return;
+    if (!button || button.closest('[hidden]')) return;
     const mark = button.dataset.fastStatus;
     const updated = readFastingLog();
     if (mark) updated[fastingKey] = mark;
@@ -1797,7 +1874,7 @@
     try {
       writeFastingLog(updated);
       $('fastingStatus').textContent = mark ? fastingLabels[mark] + ' saved.' : 'Entry cleared.';
-      if (button.disabled || button.hidden) $('fastingQuickAction').focus({ preventScroll:true });
+      if (button.closest('[hidden]')) $('fastingDate').focus({ preventScroll:true });
     } catch {
       $('fastingStatus').textContent = 'Could not save this entry.';
     }
@@ -1916,7 +1993,18 @@
     $('testFeedback').textContent='Requesting GPS…';
     navigator.geolocation.getCurrentPosition(p=>{$('testFeedback').textContent=`GPS acquired: ±${Math.round(p.coords.accuracy)} metres. Qibla can use this position.`},e=>{$('testFeedback').textContent=`GPS permission or positioning issue: ${e.message}`},{enableHighAccuracy:true,timeout:12000,maximumAge:10000});
   });
-  $('testVibration').addEventListener('click', () => void testCompassFeedback($('testFeedback')));
+  if (isIOS && !supportsVibration()) $('testVibration').textContent = 'Open vibration test';
+  $('testVibration').addEventListener('click', () => {
+    if (isIOS && !supportsVibration()) {
+      showScreen('qibla');
+      $('qiblaSettings').open = true;
+      const title = $('qiblaPhoneTitle');
+      title.focus({ preventScroll:true });
+      title.scrollIntoView({ block:'start' });
+      return;
+    }
+    void testCompassFeedback($('testFeedback'));
+  });
 
   const screenIds = {today:'today', compare:'comparisonPanel', qibla:'qiblaPanel', fasting:'fastingPanel', sounds:'soundPanel', settings:'settingsDialog'};
   function showScreen(target) {
@@ -1934,7 +2022,7 @@
     if (target === 'settings') showSettings();
     if (target === 'compare') renderComparison();
     if (target === 'fasting') renderFasting();
-    if (target === 'sounds') { renderReminderNext(); basicChecks(); }
+    if (target === 'sounds') basicChecks();
     if (target === 'qibla') {
       renderQibla();
       if (qiblaCompassOn) void loadVariation().then(renderQibla);
