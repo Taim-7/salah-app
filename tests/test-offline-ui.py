@@ -11,16 +11,21 @@ with sync_playwright() as p:
   page.set_content((root/'index.html').read_text(),wait_until='domcontentloaded')
   page.add_style_tag(path=str(root/'styles.css'))
   page.evaluate('''() => {Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>false});window.fetch=()=>{throw Error('Offline fetch was attempted')};}''')
-  for f in ['region.js','solar.js','providers.js','audio.js','app.js']:page.add_script_tag(path=str(root/f))
+  for f in ['region.js','solar.js','providers.js','timetable.js','audio.js','reminders.js','app.js']:page.add_script_tag(path=str(root/f))
   assert page.locator('#heroMethod').inner_text().startswith('15° / 13°')
   assert page.locator('#prayerList .prayer-entry').count()==6,(width,page.locator('#prayerList .prayer-entry').count())
   assert page.locator('#prayerList .avoid-entry').count()==3
   assert page.locator('#offlineIndicator').is_visible()
   assert page.locator('#settingsTheme').count()==0
   assert page.locator('body').get_attribute('data-layout')=='compact'
-  for tab in ['compare','qibla','fasting','sounds','settings','today']:
+  for tab in ['qibla','fasting','sounds','settings','today']:
    page.locator(f'[data-screen-target="{tab}"]').click()
    assert page.evaluate('document.documentElement.scrollWidth-document.documentElement.clientWidth')<3,(width,tab)
+  page.locator('[data-screen-target="settings"]').click()
+  page.locator('#comparisonPanel > summary').click()
+  page.locator('#comparisonBody tr').last.wait_for()
+  assert page.locator('#comparisonTable').is_visible()
+  assert page.evaluate('document.documentElement.scrollWidth-document.documentElement.clientWidth')<3, (width, 'compare')
   page.locator('[data-screen-target="sounds"]').click()
   assert page.locator('#soundChoice option').count()>=7
   assert page.locator('#saveOfflineAdhans').count()==0
@@ -42,5 +47,5 @@ with sync_playwright() as p:
     assert page.evaluate('document.documentElement.scrollWidth-document.documentElement.clientWidth')<3, layout
   assert not errors,(width,errors)
   cases+=1;context.close()
- print('PASS',cases,'offline simulated UI widths: local prayer list, 6 tabs, 3 layouts, sound controls, no overflow, no JS exceptions')
+ print('PASS',cases,'offline simulated UI widths: local prayer list, 5 tabs, 3 layouts, sound controls, no overflow, no JS exceptions')
  b.close()

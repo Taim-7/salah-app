@@ -51,7 +51,9 @@ try:
         page.clock.set_fixed_time(datetime(2026, 6, 21, 12, 0, tzinfo=timezone.utc))
         page.goto(url)
         page.wait_for_function('navigator.serviceWorker.controller !== null')
-        page.locator('[data-screen-target="compare"]').click()
+        page.locator('[data-screen-target="settings"]').click()
+        if not page.locator('#comparisonPanel').evaluate('panel => panel.open'):
+            page.locator('#comparisonPanel > summary').click()
         assert not aladhan_requests
         with page.expect_request(lambda request: request.url.startswith('https://api.aladhan.com/')):
             page.locator('#refreshSources').click()
@@ -64,7 +66,9 @@ try:
         assert page.locator('#prayerList .prayer-entry').count() == 6
         assert page.locator('#prayerList .avoid-entry').count() == 3
 
-        page.locator('[data-screen-target="compare"]').click()
+        page.locator('[data-screen-target="settings"]').click()
+        if not page.locator('#comparisonPanel').evaluate('panel => panel.open'):
+            page.locator('#comparisonPanel > summary').click()
         page.locator('#summerCompare summary').click()
         page.locator('#summerCompareBody tr').last.wait_for()
         assert page.locator('#summerCompareBody tr').count() == 6
@@ -146,12 +150,12 @@ try:
         page.locator('[data-screen-target="settings"]').click()
         page.locator('[data-palette="ocean"]').click()
         page.locator('#settingsLayout').select_option('horizon')
-        assert page.locator('#touchIcon').get_attribute('href') == './icons/themed/ocean/mihrab-180.png'
-        assert page.locator('#appManifest').get_attribute('href') == './manifest-ocean-mihrab.webmanifest'
-        assert page.evaluate("fetch('./icons/themed/ocean/mihrab-180.png').then(r => r.ok)")
+        assert page.locator('#touchIcon').get_attribute('href') == './icons/art/ocean/crescent-180.png'
+        assert page.locator('#appManifest').get_attribute('href') == './manifest-ocean-crescent.webmanifest'
+        assert page.evaluate("fetch('./icons/art/ocean/crescent-180.png').then(r => r.ok)")
         page.locator('.icon-settings summary').click()
-        assert page.locator('#homeIconName').inner_text() == 'Mihrab'
-        assert page.locator('[data-icon-choice]').all_inner_texts() == ['Mihrab', 'Minaret', 'Compass', 'Prayer mat']
+        assert page.locator('#homeIconName').inner_text() == 'Crescent'
+        assert page.locator('[data-icon-choice]').all_inner_texts() == ['Crescent', 'Mihrab', 'Minaret', 'Compass', 'Prayer mat']
         with page.expect_download() as download:
             page.locator('#saveFastingLog').click()
         backup = download.value.path()
@@ -166,21 +170,21 @@ try:
         }
         install = context.new_page()
         install.goto(page.locator('#homeIconPage').evaluate('(link) => link.href'))
-        assert install.locator('link[rel="apple-touch-icon"]').get_attribute('href') == '../icons/themed/ocean/mihrab-180.png'
-        assert install.evaluate("fetch('../manifest-ocean-mihrab.webmanifest').then(r => r.json()).then(m => m.start_url)") == './?icon=mihrab&palette=ocean'
+        assert install.locator('link[rel="apple-touch-icon"]').get_attribute('href') == '../icons/art/ocean/crescent-180.png'
+        assert install.evaluate("fetch('../manifest-ocean-crescent.webmanifest').then(r => r.json()).then(m => m.start_url)") == './?icon=crescent&palette=ocean'
         install.close()
         page.locator('[data-icon-choice="minaret"]').click()
         for palette in ['midnight', 'forest', 'sand', 'slate', 'ocean']:
             page.locator(f'[data-palette="{palette}"]').click()
             assert page.locator('body').get_attribute('data-accent') == palette
             assert page.locator('#homeIconName').inner_text() == 'Minaret'
-            assert page.locator('#touchIcon').get_attribute('href') == f'./icons/themed/{palette}/minaret-180.png'
+            assert page.locator('#touchIcon').get_attribute('href') == f'./icons/art/{palette}/minaret-180.png'
             assert page.locator('[data-icon-choice] img').evaluate_all('images => images.map(image => image.getAttribute("src"))') == [
-                f'./icons/themed/{palette}/{design}-180.png' for design in ['mihrab', 'minaret', 'compass', 'mat']
+                f'./icons/art/{palette}/{design}-180.png' for design in ['crescent', 'mihrab', 'minaret', 'compass', 'mat']
             ]
         install = context.new_page()
         install.goto(page.locator('#homeIconPage').evaluate('(link) => link.href'))
-        assert install.locator('link[rel="apple-touch-icon"]').get_attribute('href') == '../icons/themed/ocean/minaret-180.png'
+        assert install.locator('link[rel="apple-touch-icon"]').get_attribute('href') == '../icons/art/ocean/minaret-180.png'
         assert install.evaluate("fetch('../manifest-ocean-minaret.webmanifest').then(r => r.json()).then(m => m.start_url)") == './?icon=minaret&palette=ocean'
         install.close()
 
@@ -188,6 +192,7 @@ try:
         assert page.locator('#qiblaView').get_attribute('data-view') == 'guide'
         assert page.locator('#qiblaTurnAngle').is_visible()
         assert page.locator('#qiblaArrow').count() == 0
+        assert page.locator('#qiblaAligned').is_hidden()
         assert page.locator('#qiblaLayouts').count() == 0
         page.evaluate("""() => {
           window.vibrationPatterns = [];
@@ -246,17 +251,10 @@ try:
         page.evaluate("""Object.defineProperty(navigator, 'vibrate', {
             configurable:true, value:pattern => { vibrationPatterns.push(pattern); return true; }
         })""")
-        page.locator('[data-screen-target="sounds"]').click()
-        page.locator('#deviceTests summary').click()
+        assert page.locator('#deviceTests, #runBasicChecks, #copyPhoneReport').count() == 0
         page.locator('#testVibration').click()
         assert page.evaluate('vibrationPatterns.at(-1)') == [180, 100, 220]
-        page.locator('#qiblaFelt').select_option('no')
-        page.locator('#copyPhoneReport').click()
-        report = page.locator('#phoneReport').input_value()
-        assert 'Salah v26 phone test' in report
-        assert 'Web vibration test: Accepted' in report
-        assert 'Pulse felt in last test: no' in report
-        assert 'Buncrana' not in report and 'Mozilla/' not in report
+        assert page.locator('#vibrationStatus').inner_text() == 'Requested two pulses.'
 
         context.route('https://api.bigdatacloud.net/**', lambda route: route.fulfill(
             json={'countryCode': 'GB', 'city': 'Enniskillen', 'principalSubdivision': 'Northern Ireland'}

@@ -12,13 +12,13 @@
   "lang": "en-GB",
   "icons": [
     {
-      "src": "./icons/themed/midnight/mihrab-192.png",
+      "src": "./icons/art/midnight/mihrab-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./icons/themed/midnight/mihrab-512.png",
+      "src": "./icons/art/midnight/mihrab-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"

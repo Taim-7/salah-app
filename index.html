@@ -10,8 +10,8 @@
 <meta content="Salah" name="apple-mobile-web-app-title"/>
 <meta content="Prayer times, Qibla direction, fasting tracker and sound reminders for the UK and Ireland." name="description"/>
 <link id="appManifest" href="./manifest.webmanifest" rel="manifest"/>
-<link id="tabIcon" href="./icons/themed/forest/mihrab-192.png" rel="icon" type="image/png"/>
-<link id="touchIcon" href="./icons/themed/forest/mihrab-180.png" rel="apple-touch-icon"/>
+<link id="tabIcon" href="./icons/art/forest/crescent-192.png" rel="icon" type="image/png"/>
+<link id="touchIcon" href="./icons/art/forest/crescent-180.png" rel="apple-touch-icon"/>
 <link href="./styles.css" rel="stylesheet"/>
 <title>Salah — Prayer times</title>
 </head>
@@ -67,9 +67,7 @@
 <section aria-label="Prayer timetable" class="times-panel"><div class="horizon-date-slot" id="horizonDateSlot" hidden></div><div class="panel-head"><div><h2>Timetable</h2></div><span class="tiny-pill" id="timesTag">Local time</span></div><div class="times-list" id="prayerList"><p class="loading">Calculating prayer times…</p></div>
 <details class="study-links prayer-limits">
   <summary>About the forbidden times</summary>
-  <p>Avoid general voluntary prayer after you pray Fajr until the Sun rises clear of the horizon, around solar noon until the Sun declines, and after you pray Asr until sunset. The after-Fajr and after-Asr periods start when you perform the prayer.</p>
-  <p>The highlighted rows show the shorter solar periods from the hadith of ‘Uqbah ibn ‘Amir. Sunrise and sunset use a 4° low-Sun estimate. Midday starts eight minutes before solar noon as a precaution. The visible signs take priority.</p>
-  <p><a href="https://sunnah.com/muslim:831" target="_blank" rel="noopener">Sahih Muslim 831</a> · <a href="https://sunnah.com/bukhari:586" target="_blank" rel="noopener">Sahih al-Bukhari 586</a> · <a href="https://old.binothaimeen.net/content/11596" target="_blank" rel="noopener">Ibn ‘Uthaymin on exceptions</a> · <a href="https://doi.org/10.21580/al-hilal.2025.7.2.27963" target="_blank" rel="noopener">Ishraq altitude study</a></p>
+  <p>The rows show the three short periods at sunrise, midday and sunset. The wider restriction on general optional prayers starts after you pray Fajr or Asr.</p>
 </details></section>
 </div></section>
 
@@ -78,43 +76,7 @@
 
 
 
-<section aria-labelledby="compareTitle" class="comparison-panel app-screen" data-screen="compare" hidden="" id="comparisonPanel">
-<div class="comparison-header"><div><h2 id="compareTitle">Compare prayer times</h2></div><button class="secondary-button" id="refreshSources" type="button">Load AlAdhan</button></div>
-<div aria-label="Choose main timetable source" class="source-picker" id="sourcePicker" role="group"></div>
-<p class="comparison-status" id="comparisonStatus" role="status"></p>
-<div class="compare-date-nav">
-  <button type="button" class="day-arrow" id="comparePrevious" aria-label="Previous comparison date">‹</button>
-  <span id="compareDate"></span>
-  <button type="button" class="day-arrow" id="compareNext" aria-label="Next comparison date">›</button>
-</div>
-<div aria-label="Prayer time comparison" class="compare-scroll" tabindex="0">
-  <table class="compare-table" id="comparisonTable">
-    <caption>Prayer times compared by source. Differences are measured from the main timetable.</caption>
-    <thead id="comparisonHead"></thead><tbody id="comparisonBody"></tbody>
-  </table>
-</div>
-<details class="study-links" id="summerCompare">
-  <summary>Compare missing-angle methods</summary>
-  <p>These methods use the angle pair in Settings. Halfway runs from sunset to the next Fajr. Est. marks a substituted twilight time or a halfway point that depends on one.</p>
-  <div class="compare-scroll" tabindex="0">
-    <table class="compare-table summer-table">
-      <thead><tr><th scope="col">Rule</th><th scope="col">Fajr</th><th scope="col">Isha</th><th scope="col">Halfway</th></tr></thead>
-      <tbody id="summerCompareBody"></tbody>
-    </table>
-  </div>
-</details>
-<details class="study-links">
-  <summary>Prayer signs and sources</summary>
-  <p>True dawn is light spreading across the eastern horizon. Fasting begins at that same dawn. Isha begins when the red twilight fades. The models estimate when that happens. A solar angle describes the Sun’s position. The colour and spread of the light depend on local conditions.</p>
-  <p>The first third and halfway point use sunset to the following Fajr. An estimated Fajr affects both markers.</p>
-  <p>AlAdhan calculates a prayer timetable using its Moonsighting preset. Lunar month announcements use a separate process.</p>
-  <p><a href="https://quran.com/2/187" rel="noopener" target="_blank">Qur’an 2:187</a> · <a href="https://sunnah.com/muslim:612d" rel="noopener" target="_blank">Sahih Muslim 612</a> · <a href="https://sunnah.com/muslim:831" rel="noopener" target="_blank">Sahih Muslim 831</a></p>
-  <p><a href="https://openfajr.org/" rel="noopener" target="_blank">OpenFajr · Birmingham</a> · <a href="https://taybatrust.org/index.php/projects/establishing-dawn/34-dp-all-loc" rel="noopener" target="_blank">Tayba · Leicester</a> · <a href="https://astronomycenter.net/latitude.html?l=en" rel="noopener" target="_blank">Local Relative Estimation</a></p>
-  <p><a href="https://islamqa.info/ar/answers/135415" rel="noopener" target="_blank">Guidance on late and absent Isha signs</a> · <a href="https://aa.usno.navy.mil/faq/RST_defs" rel="noopener" target="_blank">Astronomical definitions</a></p>
-  <p><a href="https://www.moonsighting.com/how-we.html" rel="noopener" target="_blank">Moonsighting.com method</a></p>
-  <p><a href="https://waqt.uk/northwestislamiccentre/" rel="noopener" target="_blank">North West Islamic Centre timetable</a> · <a href="https://islaminletterkenny.com/" rel="noopener" target="_blank">Letterkenny and Donegal timetables</a></p>
-</details>
-</section><section aria-labelledby="qiblaTitle" class="qibla-panel app-screen" data-screen="qibla" hidden="" id="qiblaPanel">
+<section aria-labelledby="qiblaTitle" class="qibla-panel app-screen" data-screen="qibla" hidden="" id="qiblaPanel">
 <header class="qibla-heading">
   <div><h2 id="qiblaTitle">Qibla</h2><p id="qiblaPosition"></p></div>
   <div class="compass-controls">
@@ -125,9 +87,9 @@
 <p class="form-note" id="qiblaGPSStatus" role="status"></p>
 <div class="qibla-content" id="qiblaView" data-view="guide">
   <div class="compass-holder">
-    <div class="compass-status" id="qiblaAligned" data-state="reference">
+    <div class="compass-status" id="qiblaAligned" data-state="reference" hidden>
       <span id="qiblaCueMark" aria-hidden="true"></span>
-      <p id="qiblaCue">Qibla bearing</p>
+      <p id="qiblaCue"></p>
     </div>
     <div class="compass-outer" id="qiblaDial" data-state="reference" aria-hidden="true">
       <svg class="compass-art" viewBox="0 0 320 320">
@@ -149,10 +111,10 @@
       </svg>
       <div class="qibla-angle">
         <strong id="qiblaTurnAngle">—</strong>
-        <span id="qiblaTurnLabel">From north</span>
+        <span id="qiblaTurnLabel">From true north</span>
       </div>
     </div>
-    <p class="qibla-help" id="qiblaAccuracy" role="status"></p>
+    <p class="qibla-help" id="qiblaAccuracy" role="status" hidden></p>
     <button class="primary-button" id="startCompass" type="button">Start compass</button>
   </div>
   <div class="qibla-readout">
@@ -163,8 +125,12 @@
     </dl>
     <details class="study-links" id="qiblaSettings">
       <summary>Compass settings</summary>
-      <label class="tracking-toggle" id="qiblaHapticControl" hidden><input id="qiblaHaptic" type="checkbox"/><span>Vibrate near the Qibla</span></label>
-      <label class="block-label" for="declinationOverride">Magnetic correction in degrees east</label>
+      <div id="qiblaHapticControl" hidden>
+        <label class="tracking-toggle"><input id="qiblaHaptic" type="checkbox"/><span>Vibrate near the Qibla</span></label>
+        <button class="text-button" id="testVibration" type="button">Test vibration</button>
+        <p id="vibrationStatus" class="form-note" role="status"></p>
+      </div>
+      <label class="block-label" for="declinationOverride">Magnetic correction (° east)</label>
       <div class="declination-fields"><input id="declinationOverride" max="180" min="-180" placeholder="Automatic" step="0.1" type="number"/><button class="secondary-button" id="clearDeclination" type="button">Use automatic</button></div>
       <p class="qibla-state" id="qiblaState"></p>
     </details>
@@ -264,31 +230,44 @@
         <option value="15">15 minutes before</option><option value="20">20 minutes before</option>
         <option value="25">25 minutes before</option><option value="30">30 minutes before</option>
       </select>
-      <p class="setting-hint">Salah shows reminders while it’s open. Tap Play sound to hear them. Locking the phone pauses scheduled reminders.</p>
+      <div class="closed-reminders">
+        <label class="tracking-toggle"><input id="closedReminders" type="checkbox" disabled/><span>Notifications while closed</span></label>
+        <p id="closedReminderStatus" class="setting-hint" role="status"></p>
+        <button class="text-button" id="testClosedReminder" type="button" hidden>Send test notification</button>
+        <p id="closedTestStatus" class="form-note" role="status"></p>
+      </div>
     </div>
   </div>
-  <details class="device-tests study-links" id="deviceTests">
-    <summary>Device checks</summary>
-    <div class="test-head"><button class="secondary-button" id="runBasicChecks" type="button">Run checks</button></div>
-    <div aria-live="polite" class="test-results" id="testResults"></div>
-    <div class="test-buttons">
-      <button class="secondary-button" id="testAdhan" type="button">Test adhan</button>
-      <button class="secondary-button" id="testEarlyChime" type="button">10-second alert</button>
-      <button class="secondary-button" id="testNotification" type="button">Test notification</button>
-      <button class="secondary-button" id="testGPS" type="button">Test GPS</button>
-      <button class="secondary-button" id="testVibration" type="button" hidden>Test vibration</button>
-    </div>
-    <p class="test-feedback" id="testFeedback" role="status"></p>
-    <div id="qiblaFeltField" hidden>
-      <label class="block-label" for="qiblaFelt">Did you feel a pulse?</label>
-      <select id="qiblaFelt"><option value="">Select an answer</option><option value="yes">Yes</option><option value="no">No</option></select>
-    </div>
-    <button class="text-button" id="copyPhoneReport" type="button">Copy phone report</button>
-    <textarea id="phoneReport" aria-label="Phone test report" rows="8" readonly hidden></textarea>
-    <p id="phoneReportStatus" class="form-note" role="status"></p>
-  </details>
 </section>
-<section aria-labelledby="settingsTitle" class="app-screen settings-screen" data-screen="settings" hidden="" id="settingsDialog"><form class="settings-sheet"><header class="dialog-heading"><div><h2 id="settingsTitle">Settings</h2></div><button aria-hidden="true" aria-label="Close settings" class="close-dialog" hidden="" id="closeSettings" tabindex="-1" type="button">✕</button></header><div class="dialog-scroll"><section class="settings-group" id="appearanceSettings">
+<section aria-labelledby="settingsTitle" class="app-screen settings-screen" data-screen="settings" hidden="" id="settingsDialog"><form class="settings-sheet"><header class="dialog-heading"><div><h2 id="settingsTitle">Settings</h2></div></header><div class="dialog-scroll">
+<details class="settings-group settings-comparison" id="comparisonPanel">
+  <summary>Compare prayer times</summary>
+  <div aria-label="Choose main timetable source" class="source-picker" id="sourcePicker" role="group"></div>
+  <p class="comparison-status" id="comparisonStatus" role="status"></p>
+  <div class="compare-controls">
+    <div class="compare-date-nav">
+      <button type="button" class="day-arrow" id="comparePrevious" aria-label="Previous comparison date">‹</button>
+      <span id="compareDate"></span>
+      <button type="button" class="day-arrow" id="compareNext" aria-label="Next comparison date">›</button>
+    </div>
+    <button class="secondary-button" id="refreshSources" type="button">Load AlAdhan</button>
+  </div>
+  <div aria-label="Prayer time comparison" class="compare-scroll" tabindex="0">
+    <table class="compare-table" id="comparisonTable" aria-label="Differences from your main timetable">
+      <thead id="comparisonHead"></thead><tbody id="comparisonBody"></tbody>
+    </table>
+  </div>
+  <details class="study-links" id="summerCompare">
+    <summary>Compare missing-angle methods</summary>
+    <div class="compare-scroll" tabindex="0">
+      <table class="compare-table summer-table">
+        <thead><tr><th scope="col">Rule</th><th scope="col">Fajr</th><th scope="col">Isha</th><th scope="col">Halfway</th></tr></thead>
+        <tbody id="summerCompareBody"></tbody>
+      </table>
+    </div>
+  </details>
+</details>
+<section class="settings-group" id="appearanceSettings">
   <h3>Appearance</h3>
   <div class="field-grid appearance-fields">
     <label for="settingsLayout">App style
@@ -304,9 +283,9 @@
     <summary>Home Screen icon</summary>
     <div class="icon-choices" id="iconChoices" role="group" aria-label="Home Screen icon design"></div>
     <div class="home-icon-option">
-      <img id="homeIconPreview" src="./icons/themed/forest/mihrab-180.png" alt="" width="52" height="52"/>
-      <strong id="homeIconName">Mihrab</strong>
-      <a id="homeIconPage" class="secondary-button" href="./install/forest-mihrab.html">Open icon page</a>
+      <img id="homeIconPreview" src="./icons/art/forest/crescent-180.png" alt="" width="52" height="52"/>
+      <strong id="homeIconName">Crescent</strong>
+      <a id="homeIconPage" class="secondary-button" href="./install/forest-crescent.html">Open icon page</a>
       <button id="copyIconPage" class="secondary-button" type="button" hidden>Copy Safari link</button>
     </div>
     <input id="homeIconURL" type="url" aria-label="Icon page link" readonly hidden/>
@@ -327,10 +306,10 @@
   <label class="block-label" for="ishaLimit">Ordinary Isha cutoff</label>
   <select id="ishaLimit">
     <option value="half">Half of the night (default)</option>
-    <option value="third">First third · al-Umm</option>
+    <option value="third">First third</option>
     <option value="half-necessity">Half · show necessity period to Fajr</option>
   </select>
-  <p class="setting-hint">The night runs from sunset to the next Fajr. Ibn ‘Uthaymin treated halfway as the end. Ibn Baz used halfway for the ordinary period and distinguished a necessity period that lasts to Fajr.</p>
+  <p class="setting-hint">The night runs from sunset to the next Fajr.</p>
   <p class="block-label">Preferred delay within the ordinary window</p>
   <div aria-label="Preferred Isha timing" class="option-group" role="radiogroup">
     <label class="option-card"><input name="ishaPreference" type="radio" value="around-third"/><span><strong>Aim towards the first third</strong><small>Only applies after Isha enters and when that marker is inside the window</small></span></label>
@@ -353,15 +332,15 @@
     <summary>How the methods differ</summary>
     <p><strong>One seventh</strong> and <strong>angle fraction</strong> use the local interval between sunset and sunrise.</p>
     <p><strong>Local relative</strong> uses annual local twilight fractions and five-minute steps at either end of the period. <strong>Last valid day</strong> carries forward the last crossing’s clock time.</p>
-    <p><strong>Seasonal Tayba</strong> uses the Tayba research-based timetable for the missing prayer. Use Compare to select the full Tayba timetable. <strong>Crossings only</strong> shows unavailable twilight times with a dash.</p>
+    <p><strong>Seasonal Tayba</strong> estimates the missing prayer using Tayba. <strong>Crossings only</strong> leaves the time blank.</p>
   </details>
 </section></div>
 <footer class="dialog-actions"><p id="settingsStatus" class="form-note" role="status"></p><button class="primary-button" id="saveSettings" type="button">Save settings</button></footer></form></section></main>
 </div><aside id="reminderToast" class="reminder-toast" hidden><p id="reminderMessage" role="status"></p><button type="button" class="text-button" id="dismissReminder" aria-label="Dismiss prayer reminder">×</button></aside>
-<nav aria-label="Main navigation" class="app-dock" role="tablist"><button aria-controls="today" aria-selected="true" class="is-active" data-screen-target="today" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M12 4v3m0 10v3M4 12h3m10 0h3"></path></svg><span>Prayers</span></button><button aria-controls="comparisonPanel" aria-selected="false" class="" data-screen-target="compare" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M3 8h18M3 16h18M7 5v6m10 2v6"></path></svg><span>Compare</span></button><button aria-controls="qiblaPanel" aria-selected="false" class="" data-screen-target="qibla" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="m10 10 7-4-4 7-7 4z"></path></svg><span>Qibla</span></button><button aria-controls="fastingPanel" aria-selected="false" data-screen-target="fasting" role="tab" type="button">
+<nav aria-label="Main navigation" class="app-dock" role="tablist"><button aria-controls="today" aria-selected="true" class="is-active" data-screen-target="today" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M12 4v3m0 10v3M4 12h3m10 0h3"></path></svg><span>Prayers</span></button><button aria-controls="qiblaPanel" aria-selected="false" class="" data-screen-target="qibla" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="m10 10 7-4-4 7-7 4z"></path></svg><span>Qibla</span></button><button aria-controls="fastingPanel" aria-selected="false" data-screen-target="fasting" role="tab" type="button">
   <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="3"/><path d="M8 3.5v5M16 3.5v5M8.5 14l2.4 2.4 4.6-4.6"/></svg><span>Fasting</span>
 </button><button aria-controls="soundPanel" aria-selected="false" class="" data-screen-target="sounds" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0v5l2 3H4l2-3V9M10 20h4"></path></svg><span>Sounds</span></button><button aria-controls="settingsDialog" aria-selected="false" class="" data-screen-target="settings" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M12 3v3m0 12v3M3 12h3m12 0h3m-3.7-6.7-2.1 2.1m-7.4 7.4-2.1 2.1m0-11.6 2.1 2.1m7.4 7.4 2.1 2.1"></path><circle cx="12" cy="12" r="3"></circle></svg><span>Settings</span></button></nav>
 
-<script src="./region.js"></script><script src="./solar.js"></script><script src="./providers.js"></script><script src="./audio.js"></script><script src="./app.js"></script>
+<script src="./region.js"></script><script src="./solar.js"></script><script src="./providers.js"></script><script src="./timetable.js"></script><script src="./audio.js"></script><script src="./reminders.js"></script><script src="./app.js"></script>
 </body>
 </html>

@@ -1,6 +1,5 @@
 (() => {
   'use strict';
-  const APP_VERSION = 26;
   const $ = id => document.getElementById(id);
   const defaults = {
     lat: 54.9966, lng: -7.3086, location: 'Derry, Northern Ireland', timeZone: 'Europe/London',
@@ -8,7 +7,7 @@
     ishaPreference: 'around-third', ishaLimit: 'half', magneticDeclination: '', highLatRule: 'seventh',
     activeSource: 'angles', soundChoice: 'adhan-abu-bakr', soundVolume: 40,
     reminderLead: 15, reminderEnabled: true, qiblaHaptic: true, qiblaSound: true,
-    fastingView: 'week', timeFormat: '12', layout: 'compact', accent: 'forest', iconChoice: 'mihrab'
+    fastingView: 'week', timeFormat: '12', layout: 'compact', accent: 'forest', iconChoice: 'crescent'
   };
   const names = [
     { key: 'fajr', en: 'Fajr', ar: 'الفجر', icon: 'sun-horizon', desc: 'Dawn' },
@@ -42,8 +41,8 @@
   const palettes = {
     forest:'Forest green', ocean:'Ocean blue', midnight:'Midnight navy', sand:'Amber sand', slate:'Cool slate'
   };
-  const previousMatchingIcons = { forest:'mihrab', ocean:'compass', midnight:'minaret', sand:'mihrab', slate:'mat' };
-  const iconDesigns = { mihrab:'Mihrab', minaret:'Minaret', compass:'Compass', mat:'Prayer mat' };
+  const previousMatchingIcons = { forest:'crescent', ocean:'compass', midnight:'minaret', sand:'mihrab', slate:'mat' };
+  const iconDesigns = { crescent:'Crescent', mihrab:'Mihrab', minaret:'Minaret', compass:'Compass', mat:'Prayer mat' };
   const layouts = ['compact', 'timeline', 'horizon'];
   const fastingViews = ['week', 'month'];
   const launchQuery = new URLSearchParams(location.search);
@@ -127,9 +126,13 @@
   }
 
   let cfg = loadConfig();
-  const store = () => { try { localStorage.setItem('salah-config', JSON.stringify(cfg)); } catch {} };
+  let closedPush = null;
+  const store = () => {
+    try { localStorage.setItem('salah-config', JSON.stringify(cfg)); } catch {}
+    closedPush?.sync();
+  };
   if (Object.hasOwn(palettes, paletteQuery) || Object.hasOwn(palettes, iconQuery) || Object.hasOwn(iconDesigns, iconQuery)) store();
-  const anglePair = () => cfg.method === 'custom' ? [+cfg.fajrAngle, +cfg.ishaAngle] : cfg.method.split('-').map(Number);
+  const anglePair = () => SalahTimetable.angles(cfg);
   const todayKey = () => dateParts(new Date(), cfg.timeZone);
 
   function fmt(date) {
@@ -152,6 +155,7 @@
   let browsing = false, dayInfo = null, gpsLoading = false, lastListRefresh = 0;
   let currentHero = null, sunChart = null;
   let geoWatch = null, placeRequest = 0, searchRequest = 0, lastTrackingLookup = 0;
+  const comparisonOpen = () => $('comparisonPanel').open && !$('settingsDialog').hidden;
 
   function note(message) {
     $('notice').textContent = message;
@@ -161,10 +165,9 @@
 
   const methods = [
     { id:'angles', title:'Your angles', sub:'Local calculation' },
-    { id:'tayba', title:'Tayba', sub:'Seasonal Fajr · red twilight model' },
-    { id:'moonsighting', title:'AlAdhan · Moonsighting', sub:'Fajr and Isha · online' }
+    { id:'tayba', title:'Tayba', sub:'Seasonal model' },
+    { id:'moonsighting', title:'AlAdhan', sub:'Moonsighting' }
   ];
-  const onlineKinds = ['moonsighting'];
   const providerPrefix = 'salah-v4-provider:';
   const cacheId = (kind, key, place = cfg) => [
     providerPrefix + kind, key, place.lat, place.lng, place.timeZone, '1'
@@ -215,7 +218,7 @@
         Date.now() - failedOnline.get(id) < 120000)) return;
     pendingOnline.add(id);
     failedOnline.delete(id);
-    if (key === selectedKey && !$('comparisonPanel').hidden) renderComparison();
+    if (key === selectedKey && comparisonOpen()) renderComparison();
     try {
       const url = SalahProviders.buildUrl(kind, key, lat, lng, timeZone);
       const raw = await fetchJson(url);
@@ -253,10 +256,7 @@
     const [fa, ia] = anglePair();
     const id = [source, key, cfg.lat, cfg.lng, fa, ia, rule].join(':');
     if (localDays.has(id)) return localDays.get(id);
-    let day;
-    if (source === 'tayba') day = SalahProviders.taybaDay(key, cfg.lat, cfg.lng);
-    else if (rule === 'tayba') day = SalahProviders.hybridTwilightDay(key, cfg.lat, cfg.lng, fa, ia);
-    else day = SalahSolar.calculateFullDay(dateAtNoonUTC(key), cfg.lat, cfg.lng, fa, ia, rule);
+    const day = SalahTimetable.localDay(key, cfg, source, rule);
     if (localDays.size >= 540) localDays.delete(localDays.keys().next().value);
     localDays.set(id, day);
     return day;
@@ -268,27 +268,19 @@
     const local = localDay(key);
     if (!today || !local.valid) return { ...local, sourceFallback:true };
     const next = readCached(cfg.activeSource, dayShift(key, 1));
-    const fajr = today.fajr < local.sunrise ? today.fajr : null;
-    const isha = today.isha > local.maghrib ? today.isha : null;
-    return SalahSolar.withNight({
-      ...today, fajr, isha, sunrise:local.sunrise, dhuhr:local.dhuhr, asr:local.asr, maghrib:local.maghrib,
-      trueSunset:local.trueSunset, solarNoon:local.solarNoon,
-      fajrReason:fajr ? '' : 'AlAdhan Fajr is at or after the local sunrise time.',
-      ishaReason:isha ? '' : 'AlAdhan Isha does not follow the local sunset time.',
+    return {
+      ...SalahTimetable.aladhanDay(local, today, next),
       savedProviderData:today.savedProviderData || !navigator.onLine || Date.now() - today.retrievedAt > 3600000
-    }, next);
+    };
   }
-  function isEstimated(day, name) {
-    return !!day[name] && ((name === 'fajr' && (day.fajrFallback || day.providerEstimate)) ||
-      (name === 'isha' && (day.ishaFallback || day.providerEstimate)));
-  }
+  const { isEstimated } = SalahTimetable;
 
   function renderComparison() {
     const id = cacheId('moonsighting', selectedKey);
     const provider = readCached('moonsighting', selectedKey);
     const cols = [
       { id:'angles', title:'Your ' + anglePair().join('° / ') + '°', desc:summerRules[cfg.highLatRule], day:localDay(selectedKey) },
-      { id:'tayba', title:'Tayba', desc:'Earlier Isha', day:localDay(selectedKey, 'tayba') },
+      { id:'tayba', title:'Tayba', desc:'Seasonal model', day:localDay(selectedKey, 'tayba') },
       { id:'moonsighting', title:'AlAdhan', desc:'Moonsighting red preset', day:provider }
     ];
     const picker = $('sourcePicker');
@@ -319,11 +311,7 @@
         `<span class="unknown">${status}</span>`}</td>`;
     }).join('') + '</tr>').join('');
     const messages = [];
-    if (cfg.activeSource === 'moonsighting') {
-      if (active.sourceFallback) messages.push('Main timetable uses LOCAL FALLBACK while AlAdhan is unavailable.');
-      else messages.push(active.savedProviderData ? 'Main timetable uses saved AlAdhan Fajr and Isha with local daylight times.' :
-        'Main timetable uses AlAdhan for Fajr and Isha and local calculations for daylight times.');
-    }
+    if (active.sourceFallback) messages.push('Using local times while AlAdhan is unavailable.');
     if (cols[1].day.ishaReason) messages.push(cols[1].day.ishaReason);
     if (pendingOnline.has(id)) messages.push('Loading AlAdhan times…');
     else if (failedOnline.has(id)) messages.push('AlAdhan could not be reached.');
@@ -354,13 +342,8 @@
   }
   function getDay(key) { return getActiveDay(key); }
 
-  function ishaDeadline(day) {
-    return cfg.ishaLimit === 'third' ? day.firstThird : day.midnight;
-  }
-  function ishaHasWindow(day) {
-    const deadline = ishaDeadline(day);
-    return !!day.isha && !day.ishaOverlapsFajr && (!deadline || day.isha < deadline);
-  }
+  const ishaDeadline = day => SalahTimetable.ishaDeadline(day, cfg.ishaLimit);
+  const ishaHasWindow = day => SalahTimetable.ishaHasWindow(day, cfg.ishaLimit);
   function renderNotice(t) {
     const msgs = [];
     if (t.sourceFallback) msgs.push('AlAdhan is unavailable for this date. The timetable shows your local angle calculation.');
@@ -641,7 +624,7 @@
     $('offlineIndicator').hidden=navigator.onLine !== false;
     renderDate();
     dayInfo = getDay(selectedKey);
-    if (!$('comparisonPanel').hidden) renderComparison();
+    if (comparisonOpen()) renderComparison();
     if (!$('fastingPanel').hidden) renderFasting();
     drawSunChart(dayInfo);
     $('timesTag').textContent = cfg.timeZone === 'Europe/Dublin' ? 'Ireland time' : 'UK time';
@@ -862,7 +845,7 @@
       replies.some(r => r.status === 'fulfilled') ? 'No matches. Try another name or enter coordinates.' : 'Town search is offline. Enter coordinates or use GPS.');
   }
 
-  const iconAsset = (design, palette, size) => './icons/themed/' + palette + '/' + design + '-' + size + '.png';
+  const iconAsset = (design, palette, size) => './icons/art/' + palette + '/' + design + '-' + size + '.png';
   const paletteChoices = $('paletteChoices');
   paletteChoices.innerHTML = Object.entries(palettes).map(([id, label]) =>
     `<button type="button" class="palette-choice" data-palette="${id}"><span class="palette-sample" aria-hidden="true"><i></i><i></i><i></i><img class="palette-icon" alt="" width="21" height="21"/></span>${label}</button>`).join('');
@@ -937,7 +920,6 @@
   });
   applyAppearance();
 
-  $('closeSettings').addEventListener('click', () => showScreen('today')); 
   $('saveSettings').addEventListener('click', save);
   $('settingsDialog').querySelector('form').addEventListener('submit', e => { e.preventDefault(); save(); });
   document.querySelectorAll('input[name="method"]').forEach(r => r.addEventListener('change', updateCustomVisibility));
@@ -993,6 +975,7 @@
   for (const [id, step] of [['previousDay', -1], ['nextDay', 1], ['comparePrevious', -1], ['compareNext', 1]]) {
     $(id).addEventListener('click', () => showDate(dayShift(selectedKey, step)));
   }
+  $('comparisonPanel').addEventListener('toggle', () => { if (comparisonOpen()) renderComparison(); });
   $('summerCompare').addEventListener('toggle', () => { if ($('summerCompare').open) renderSummerComparison(); });
   $('dateButton').addEventListener('click', () => {
     const input = $('nativeDate');
@@ -1037,7 +1020,8 @@
       if (Date.now() - lastListRefresh >= 30000) renderPrayerList(dayInfo);
     }
     checkPrayerSounds();
-    if (navigator.onLine && [...failedOnline.values()].some(at => Date.now() - at >= 120000)) loadComparison();
+    if (navigator.onLine && cfg.activeSource === 'moonsighting' &&
+        [...failedOnline.values()].some(at => Date.now() - at >= 120000)) loadComparison();
   }, 15000);
 
   $('sourcePicker').addEventListener('click', e => {
@@ -1271,7 +1255,7 @@
       const pre = id + ':before';
       const reminder = at - cfg.reminderLead * 60000;
       const estimate = event.estimated ? ' (estimate)' : '';
-      if (cfg.reminderEnabled && now >= reminder && now < reminder + 45000 && !soundSeen.has(pre)) {
+      if (cfg.reminderEnabled && !closedPush?.deliversReminders() && now >= reminder && now < reminder + 45000 && !soundSeen.has(pre)) {
         rememberSound(pre);
         audio.chime(reminderNotes);
         showReminder(event.en + ' at ' + fmt(event.at) + estimate + ' · ' + cfg.reminderLead + ' minutes away');
@@ -1306,12 +1290,10 @@
   let headingTimer = null, compassProblemTimer = null;
   let compassIssuesPlayed = new Set();
   const supportsVibration = () => typeof navigator.vibrate === 'function';
-  const phoneTest = { web:'Not tested', alignment:'No alignment yet' };
-
   function vibrate(pattern) {
-    if (!supportsVibration()) return 'Unavailable';
-    try { return navigator.vibrate(pattern) ? 'Accepted' : 'Declined'; }
-    catch { return 'Declined'; }
+    if (!supportsVibration()) return false;
+    try { return navigator.vibrate(pattern); }
+    catch { return false; }
   }
 
   function playCompassChime(notes) {
@@ -1383,8 +1365,7 @@
       : '';
     checkCompassProblem(problem);
 
-    let state = 'reference', cue = 'Qibla bearing', mark = '↑';
-    let help = 'Measured clockwise from true north.';
+    let state = 'reference', cue = '', mark = '', help = '';
     if (compassFailure) {
       state = 'weak'; cue = 'Compass unavailable'; mark = '!';
       help = compassFailure;
@@ -1414,9 +1395,11 @@
     dial.classList.toggle('live', live);
     dial.classList.toggle('aligned', aligned);
     dial.dataset.state = status.dataset.state = state;
+    status.hidden = !cue;
     $('qiblaCueMark').textContent = mark;
     if ($('qiblaCue').textContent !== cue) $('qiblaCue').textContent = cue;
     if ($('qiblaAccuracy').textContent !== help) $('qiblaAccuracy').textContent = help;
+    $('qiblaAccuracy').hidden = !help;
     $('qiblaBearing').textContent = bearing.toFixed(1) + '°';
     $('qiblaCardinal').textContent = compassPoints[Math.round(bearing / 22.5) % 16];
     $('qiblaTurnAngle').textContent = aligned ? '✓' : (live ? angle : bearing.toFixed(1)) + '°';
@@ -1441,8 +1424,7 @@
       ? 'M160 ' + (160 - radius) + ' A' + radius + ' ' + radius + ' 0 0 ' + (direction < 0 ? 0 : 1) + ' ' + target : '');
 
     if (withinTarget && !lastAlignment && !$('qiblaPanel').hidden && !document.hidden) {
-      const web = cfg.qiblaHaptic ? vibrate(alignmentPulse) : 'Off';
-      phoneTest.alignment = 'Web vibration ' + web.toLowerCase();
+      if (cfg.qiblaHaptic) vibrate(alignmentPulse);
       playCompassChime(alignmentNotes);
     }
     if (live) lastAlignment = withinTarget;
@@ -1598,54 +1580,11 @@
     if (cfg.qiblaSound) compassAudioReady = audio.unlock();
   });
 
-  $('testVibration').hidden = !supportsVibration();
   $('testVibration').addEventListener('click', () => {
-    phoneTest.web = vibrate([180, 100, 220]);
-    const accepted = phoneTest.web === 'Accepted';
-    $('qiblaFeltField').hidden = !accepted;
-    $('qiblaFelt').value = '';
-    $('phoneReport').hidden = true;
-    $('phoneReportStatus').textContent = '';
-    $('testFeedback').textContent = accepted ? 'The browser accepted the request for two pulses.' :
-      'The phone did not accept the vibration request.';
+    $('vibrationStatus').textContent = vibrate([180, 100, 220]) ?
+      'Requested two pulses.' : 'The phone declined vibration.';
   });
 
-  $('copyPhoneReport').addEventListener('click', async () => {
-    const knownBrowsers = [
-      ['Edge', /\b(?:EdgiOS|EdgA|Edg)\/(\d+(?:\.\d+)?)/],
-      ['Firefox', /\b(?:FxiOS|Firefox)\/(\d+(?:\.\d+)?)/],
-      ['Samsung Internet', /\bSamsungBrowser\/(\d+(?:\.\d+)?)/],
-      ['Chrome', /\b(?:CriOS|Chrome)\/(\d+(?:\.\d+)?)/],
-      ['Safari', /\bVersion\/(\d+(?:\.\d+)?)/]
-    ];
-    let browser = 'Version unavailable';
-    for (const [name, pattern] of knownBrowsers) {
-      const found = pattern.exec(navigator.userAgent);
-      if (found) { browser = name + ' ' + found[1]; break; }
-    }
-    const device = isIOS ? 'iPhone/iPad' : /\bAndroid\b/.test(navigator.userAgent) ? 'Android' : 'Other';
-    const field = $('phoneReport');
-    field.value = [
-      'Salah v' + APP_VERSION + ' phone test',
-      'Platform: ' + device,
-      'Browser: ' + browser,
-      'Opened from: ' + (isStandalone() ? 'Home Screen' : 'Browser tab'),
-      'Secure page: ' + (isSecureContext ? 'Yes' : 'No'),
-      'Web vibration available: ' + (supportsVibration() ? 'Yes' : 'No'),
-      'Web vibration test: ' + phoneTest.web,
-      'Last alignment request: ' + phoneTest.alignment,
-      'Pulse felt in last test: ' + ($('qiblaFelt').value || 'Not answered')
-    ].join('\n');
-    field.hidden = false;
-    try {
-      await navigator.clipboard.writeText(field.value);
-      $('phoneReportStatus').textContent = 'Phone report copied.';
-    } catch {
-      field.focus();
-      field.select();
-      $('phoneReportStatus').textContent = 'Select and copy the report above.';
-    }
-  });
   const fastingLabels = { fasted:'Fasted', due:'Missed', 'made-up':'Made up' };
   const fastingSymbols = { fasted:'✓', due:'•', 'made-up':'↺' };
   const fastingStore = 'salah-fasting-log';
@@ -1862,62 +1801,12 @@
     }
   });
 
-  function addTestRow(label,message,state){
-    const row=document.createElement('div');row.className=`test-result test-${state}`;
-    const strong=document.createElement('strong');strong.textContent=label;
-    const small=document.createElement('span');small.textContent=message;
-    row.append(strong,small);$('testResults').append(row);
-  }
-  function basicChecks(){
-    $('testResults').replaceChildren();
-    addTestRow('App installation',window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true?'Home Screen mode':'Open in Safari or add to Home Screen',window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true?'pass':'info');
-    addTestRow('Connection',navigator.onLine?'Online now':'Offline now',navigator.onLine?'pass':'info');
-    addTestRow('Offline files','serviceWorker' in navigator?(navigator.serviceWorker.controller?'Offline worker controls this page':'Worker not controlling the page yet — reload after installation'):'No service worker support','serviceWorker' in navigator && navigator.serviceWorker.controller?'pass':'info');
-    addTestRow('Prayer reminders', cfg.reminderEnabled ? cfg.reminderLead + ' minutes early while Salah is open' : 'Turned off','info');
-    addTestRow('Notification API', ('Notification' in window && 'serviceWorker' in navigator)?`Supported · ${Notification.permission}`:'Not exposed by this browser',('Notification' in window&&'serviceWorker' in navigator)?'pass':'info');
-    addTestRow('Background push','No server connected — not available in this build','info');
-    addTestRow('Motion sensor',typeof DeviceOrientationEvent!=='undefined'?'Permission and compass test available':'Not exposed','info');
-    addTestRow('Vibration',supportsVibration()?'Browser supports vibration':'Visual cue and optional compass chime',supportsVibration()?'pass':'info');
-  }
-  $('runBasicChecks').addEventListener('click',basicChecks);
-  $('testAdhan').addEventListener('click',async()=>{
-    $('testFeedback').textContent='Requesting adhan…';
-    await playSound(cfg.soundChoice.startsWith('adhan-') ? cfg.soundChoice : 'adhan-abu-bakr', true);
-    $('testFeedback').textContent = $('soundStatus').textContent;
-  });
-  let testingChimeTimer=null;
-  $('testEarlyChime').addEventListener('click', async () => {
-    clearTimeout(testingChimeTimer);
-    if (!await audio.unlock()) {
-      $('testFeedback').textContent = 'Audio unavailable. Tap Play sound to try again.';
-      return;
-    }
-    audio.chime(reminderNotes);
-    $('testFeedback').textContent = 'Keep Salah open to hear another chime in 10 seconds.';
-    testingChimeTimer = setTimeout(() => {
-      const played = !document.hidden && audio.chime(reminderNotes);
-      $('testFeedback').textContent = played ? '10-second reminder played.' : 'Open Salah and tap Play sound to start audio.';
-    }, 10000);
-  });
-  $('testNotification').addEventListener('click',async()=>{
-    const show=m=>$('testFeedback').textContent=m;
-    if(!('Notification' in window)||!('serviceWorker' in navigator)){show('Notifications are unavailable here. Install Salah to your iPhone Home Screen first.');return}
-    try {
-      const permission=await Notification.requestPermission();
-      if(permission!=='granted'){show(`Notification permission: ${permission}`);return}
-      const ready=await Promise.race([navigator.serviceWorker.ready, new Promise((_,reject)=>setTimeout(()=>reject(Error('No service worker ready within 8 seconds')),8000))]);
-      await ready.showNotification('Salah test',{body:'This is a test notification, not a prayer reminder.',icon:$('tabIcon').href,tag:'salah-self-test'});
-      show('Test notification sent to the system. Check Notification Centre; background scheduled alerts still require a push server.');
-    } catch(err){show(`Notification test failed: ${err.message}`)}
-  });
-  $('testGPS').addEventListener('click',()=>{
-    if(!navigator.geolocation){$('testFeedback').textContent='GPS unavailable in this browser.';return}
-    $('testFeedback').textContent='Requesting GPS…';
-    navigator.geolocation.getCurrentPosition(p=>{$('testFeedback').textContent=`GPS acquired: ±${Math.round(p.coords.accuracy)} metres. Qibla can use this position.`},e=>{$('testFeedback').textContent=`GPS permission or positioning issue: ${e.message}`},{enableHighAccuracy:true,timeout:12000,maximumAge:10000});
-  });
-
-  const screenIds = {today:'today', compare:'comparisonPanel', qibla:'qiblaPanel', fasting:'fastingPanel', sounds:'soundPanel', settings:'settingsDialog'};
+  const screenIds = {today:'today', qibla:'qiblaPanel', fasting:'fastingPanel', sounds:'soundPanel', settings:'settingsDialog'};
   function showScreen(target) {
+    if (target === 'compare') {
+      target = 'settings';
+      $('comparisonPanel').open = true;
+    }
     if (!screenIds[target]) target = 'today';
     for (const [name,id] of Object.entries(screenIds)) {
       $(id).hidden = name !== target;
@@ -1929,10 +1818,12 @@
       button.tabIndex = active ? 0 : -1;
     });
     if (target === 'today' && dayInfo?.valid) { renderHero(dayInfo); renderPrayerList(dayInfo); updateSunChart(Date.now()); }
-    if (target === 'settings') showSettings();
-    if (target === 'compare') renderComparison();
+    if (target === 'settings') {
+      showSettings();
+      if (comparisonOpen()) renderComparison();
+    }
     if (target === 'fasting') renderFasting();
-    if (target === 'sounds') basicChecks();
+    if (target === 'sounds') closedPush?.refresh();
     if (target === 'qibla') {
       renderQibla();
       if (qiblaCompassOn) void loadVariation().then(renderQibla);
@@ -1959,13 +1850,21 @@
     event.preventDefault();
     showScreen('today');
   });
+  closedPush = SalahReminders.create({
+    needsHomeScreen: isIOS && !isStandalone(),
+    settings: () => {
+      const { lat, lng, timeZone, method, fajrAngle, ishaAngle, highLatRule, activeSource, ishaLimit,
+        reminderEnabled, reminderLead, timeFormat } = cfg;
+      return { lat, lng, timeZone, method, fajrAngle: +fajrAngle, ishaAngle: +ishaAngle, highLatRule, activeSource, ishaLimit,
+        reminderEnabled, reminderLead, timeFormat };
+    }
+  });
   showScreen(location.hash.slice(1));
   cacheAdhansAutomatically();
 
   window.addEventListener('online', () => { $('offlineIndicator').hidden=true; failedOnline.clear(); loadComparison(); void cacheAdhansAutomatically(); });
   window.addEventListener('offline', () => { $('offlineIndicator').hidden=false; render(); });
 
-  basicChecks();
   renderQibla();
   if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});
   render(); startTracking(); checkPrayerSounds();
