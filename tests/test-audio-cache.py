@@ -42,7 +42,9 @@ try:
 
         context.route('https://raw.githubusercontent.com/alsuleiman-lab/**', adhan)
         context.add_init_script("""(() => {
-          window.bufferStarts = 0; window.decoded = 0;
+          window.bufferStarts = 0; window.decoded = 0; window.chimeNotes = 0;
+          const tone = OscillatorNode.prototype.start;
+          OscillatorNode.prototype.start = function(...args) { chimeNotes++; return tone.apply(this,args); };
           Object.defineProperty(HTMLMediaElement.prototype, 'volume', {
             configurable:true, get(){return 1}, set(){throw Error('volume locked');}
           });
@@ -77,10 +79,10 @@ try:
             if (!db.objectStoreNames.contains('audio')) { db.close(); resolve(false); return; }
             const tx = db.transaction('audio','readonly');
             const count = tx.objectStore('audio').count();
-            tx.oncomplete = () => { db.close(); resolve(count.result === 3); };
+            tx.oncomplete = () => { db.close(); resolve(count.result === 2); };
           };
         })""")
-        assert len(network_requests) == 3
+        assert len(network_requests) == 2
         context.set_offline(True)
         page.reload()
         page.locator('[data-screen-target="sounds"]').click()
@@ -97,7 +99,21 @@ try:
         page.locator('#soundChoice').select_option('adhan-fajr-abu-bakr')
         page.locator('#testSound').click()
         page.wait_for_function('bufferStarts === 2')
-        assert len(network_requests) == 3
+        assert len(network_requests) == 2
+        assert page.locator('#soundChoice option').all_text_contents() == ['Abu Bakr', 'Echo', 'Gentle chime', 'Clear bell', 'Silent', 'Import a sound']
+        for choice in ['soft', 'bell']:
+            page.locator('#soundChoice').select_option(choice)
+            page.locator('#repeatChime').check()
+            old_notes = page.evaluate('chimeNotes')
+            page.locator('#testSound').click()
+            page.wait_for_function(f'chimeNotes >= {old_notes + 4}')
+            page.locator('#stopSound').click()
+            stopped = page.evaluate('chimeNotes')
+            page.wait_for_timeout(1800)
+            assert page.evaluate('chimeNotes') == stopped
+        page.locator('#soundChoice').select_option('off')
+        assert page.locator('#repeatChime').is_hidden()
+        assert page.locator('#closedReminders').count() == 0
         assert not errors, errors
         browser.close()
     print('PASS: all adhan recordings cache in IndexedDB, offline reload decodes a recording, and the gain slider attenuates and mutes despite locked media volume.')

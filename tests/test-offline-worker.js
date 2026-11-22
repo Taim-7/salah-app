@@ -8,7 +8,7 @@ const origin='https://salah.example';
 const base=origin+'/salah-app/';
 const listeners={};
 const stores=new Map();
-const notifications=[], opened=[];
+let unsubscribed=false;
 let useNetwork=false, requests=0;
 const key=req=>new URL(typeof req==='string'?req:req.url,base).href;
 const cache={
@@ -32,9 +32,9 @@ const caches={
   async match(req){for(const entries of stores.values()){let v=entries.get(key(req));if(v)return v.clone()}return undefined}
 };
 const scope={
-  self:{location:{origin},registration:{scope:base,showNotification:async(title, options)=>notifications.push({title,...options})},
+  self:{location:{origin},registration:{scope:base,pushManager:{getSubscription:async()=>({unsubscribe:async()=>{unsubscribed=true}})}},
     addEventListener:(name,fn)=>listeners[name]=fn,skipWaiting:async()=>{},
-    clients:{claim:async()=>{},matchAll:async()=>[],openWindow:async url=>opened.push(url)}},
+    clients:{claim:async()=>{}}},
   caches,URL,Request,Response,Promise,
   fetch:async()=>{requests++;if(!useNetwork)throw new Error('Offline');return new Response('Network response',{status:200})}
 };
@@ -50,11 +50,11 @@ const tick=async(type,request,fields={})=>{
  await caches.open('salah-static:/salah-app/:v15');
  await caches.open('salah-static:/other-app/:v15');
  await tick('install');
- assert.equal(stores.has('salah-static:/salah-app/:v27'),true);
+ assert.equal(stores.has('salah-static:/salah-app/:v28'),true);
  await tick('activate');
  assert.equal(stores.has('salah-static:/salah-app/:v15'),false);
  assert.equal(stores.has('salah-static:/other-app/:v15'),true);
- const urls=['','index.html','styles.css','region.js','solar.js','providers.js','timetable.js','reminders.js','audio.js','app.js','manifest.webmanifest','vendor/magvar/magvar.mjs','vendor/magvar/utils.mjs','vendor/magvar/WMMCOF2025.mjs'];
+ const urls=['','index.html','styles.css','region.js','solar.js','providers.js','timetable.js','hijri.js','audio.js','app.js','manifest.webmanifest','vendor/magvar/magvar.mjs','vendor/magvar/utils.mjs','vendor/magvar/WMMCOF2025.mjs'];
  const variants = ['ocean','midnight','sand','slate','mihrab','minaret','compass','mat'];
  for(const preset of variants) urls.push('manifest-'+preset+'.webmanifest');
  urls.push('install/icon.js', ...['forest', ...variants].map(preset => 'install/' + preset + '.html'));
@@ -80,14 +80,7 @@ const tick=async(type,request,fields={})=>{
  const api=await tick('fetch',{url:base+'api/reminders',method:'GET',mode:'same-origin'});
  assert.equal(api,undefined);
  assert.equal(requests,2);
- await tick('push',null,{data:{json:()=>({type:'test'})}});
- await tick('push',null,{data:{json:()=>({type:'prayer',title:'Fajr',time:'3:10 am',estimated:true,tag:'salah-2026-06-21:fajr'})}});
- assert.equal(notifications[0].body,'Test notification');
- assert.equal(notifications[1].title,'Fajr');
- assert.equal(notifications[1].body,'Starts at 3:10 am (estimate)');
- let closed=false;
- await tick('notificationclick',null,{notification:{close:()=>{closed=true}}});
- assert.equal(closed,true);
- assert.deepEqual(opened,[base]);
+ assert.equal(unsubscribed,true);
+ assert.equal(listeners.push,undefined);
  console.log(`PASS: ${urls.length} precached URLs; offline shell, icon pages and scripts; navigation fallback; missing script 503; cross-origin bypass`);
 })().catch(e=>{console.error(e);process.exitCode=1});

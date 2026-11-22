@@ -24,7 +24,7 @@
 </a>
 
 </header>
-<main><section aria-label="Prayer times" class="app-screen" data-screen="today" id="today"><div class="heading-line" id="prayerHeading"><div><h1>Prayer times</h1><div class="location-line"><svg aria-hidden="true" fill="none" viewbox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z" stroke="currentColor" stroke-width="1.8"></path><circle cx="12" cy="10" r="2.8" stroke="currentColor" stroke-width="1.8"></circle></svg><span id="locationLabel">Derry, Northern Ireland</span><span class="light-divider">·</span><span id="timezoneLabel">Europe/London</span><span class="light-divider">·</span><span id="locationMode">Fixed location</span></div></div><div class="date-nav" id="prayerDateControls"><button aria-label="Previous day" class="day-arrow" id="previousDay" type="button">‹</button><button class="day-picker-button" id="dateButton" type="button"><span id="dateLabel">Today</span><span id="dateSubLabel"></span></button><button aria-label="Next day" class="day-arrow" id="nextDay" type="button">›</button><input aria-label="Choose a date" class="hidden-date" id="nativeDate" type="date"/></div></div><p aria-live="polite" class="location-live-status" id="liveLocationStatus"></p><p id="offlineIndicator" class="offline-indicator" hidden>Offline · local calculation available</p><div class="notice hidden" id="notice" role="status"></div><div class="dashboard">
+<main><section aria-label="Prayer times" class="app-screen" data-screen="today" id="today"><div class="heading-line" id="prayerHeading"><div><h1>Prayer times</h1><div class="location-line"><svg aria-hidden="true" fill="none" viewbox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z" stroke="currentColor" stroke-width="1.8"></path><circle cx="12" cy="10" r="2.8" stroke="currentColor" stroke-width="1.8"></circle></svg><span id="locationLabel">Derry, Northern Ireland</span><span class="light-divider">·</span><span id="timezoneLabel">Europe/London</span><span class="light-divider">·</span><span id="locationMode">Fixed location</span></div></div><div class="date-nav" id="prayerDateControls"><button aria-label="Previous day" class="day-arrow" id="previousDay" type="button">‹</button><button class="day-picker-button" id="dateButton" type="button"><span id="dateLabel">Today</span><span id="dateSubLabel"></span><span id="hijriDate" title="Estimated Hijri date" hidden></span></button><button aria-label="Next day" class="day-arrow" id="nextDay" type="button">›</button><input aria-label="Choose a date" class="hidden-date" id="nativeDate" type="date"/></div></div><p aria-live="polite" class="location-live-status" id="liveLocationStatus"></p><p id="offlineIndicator" class="offline-indicator" hidden>Offline · local calculation available</p><div class="notice hidden" id="notice" role="status"></div><div class="dashboard">
 <section aria-label="Upcoming prayer" class="hero-card">
   <div class="hero-top">
     <span class="hero-overline" id="heroHeading">Next prayer</span>
@@ -64,11 +64,7 @@
     <span class="hero-live-time" id="heroLiveTime"></span>
   </div>
 </section>
-<section aria-label="Prayer timetable" class="times-panel"><div class="horizon-date-slot" id="horizonDateSlot" hidden></div><div class="panel-head"><div><h2>Timetable</h2></div><span class="tiny-pill" id="timesTag">Local time</span></div><div class="times-list" id="prayerList"><p class="loading">Calculating prayer times…</p></div>
-<details class="study-links prayer-limits">
-  <summary>About the forbidden times</summary>
-  <p>The rows show the three short periods at sunrise, midday and sunset. The wider restriction on general optional prayers starts after you pray Fajr or Asr.</p>
-</details></section>
+<section aria-label="Prayer timetable" class="times-panel"><div class="horizon-date-slot" id="horizonDateSlot" hidden></div><div class="panel-head"><div><h2>Timetable</h2></div><span class="tiny-pill" id="timesTag">Local time</span></div><div class="times-list" id="prayerList"><p class="loading">Calculating prayer times…</p></div></section>
 </div></section>
 
 
@@ -123,17 +119,7 @@
       <div><dt>True bearing</dt><dd><span id="qiblaBearing">—</span> <small id="qiblaCardinal"></small></dd></div>
       <div id="qiblaPrecisionRow" hidden><dt>Compass accuracy</dt><dd id="qiblaPrecision">—</dd></div>
     </dl>
-    <details class="study-links" id="qiblaSettings">
-      <summary>Compass settings</summary>
-      <div id="qiblaHapticControl" hidden>
-        <label class="tracking-toggle"><input id="qiblaHaptic" type="checkbox"/><span>Vibrate near the Qibla</span></label>
-        <button class="text-button" id="testVibration" type="button">Test vibration</button>
-        <p id="vibrationStatus" class="form-note" role="status"></p>
-      </div>
-      <label class="block-label" for="declinationOverride">Magnetic correction (° east)</label>
-      <div class="declination-fields"><input id="declinationOverride" max="180" min="-180" placeholder="Automatic" step="0.1" type="number"/><button class="secondary-button" id="clearDeclination" type="button">Use automatic</button></div>
-      <p class="qibla-state" id="qiblaState"></p>
-    </details>
+
   </div>
 </div>
 </section>
@@ -146,6 +132,28 @@
       <button type="button" data-fasting-view="month" aria-pressed="false">Month</button>
     </div>
   </header>
+  <section class="fasting-totals" aria-labelledby="undatedFastingTitle" id="fastingTotals">
+    <h3 id="undatedFastingTitle">Fasts without dates</h3>
+    <div class="fasting-total-fields">
+      <div class="fasting-total">
+        <label for="undatedFasted">Fasted</label>
+        <div class="count-stepper">
+          <button class="secondary-button" type="button" data-count="fasted" data-step="-1" aria-label="Subtract one fasted day">−</button>
+          <input id="undatedFasted" data-count="fasted" type="number" min="0" step="1" value="0" inputmode="numeric"/>
+          <button class="secondary-button" type="button" data-count="fasted" data-step="1" aria-label="Add one fasted day">+</button>
+        </div>
+      </div>
+      <div class="fasting-total">
+        <label for="undatedMissed">Missed</label>
+        <div class="count-stepper">
+          <button class="secondary-button" type="button" data-count="missed" data-step="-1" aria-label="Subtract one missed day">−</button>
+          <input id="undatedMissed" data-count="missed" type="number" min="0" step="1" value="0" inputmode="numeric"/>
+          <button class="secondary-button" type="button" data-count="missed" data-step="1" aria-label="Add one missed day">+</button>
+        </div>
+      </div>
+    </div>
+    <p id="fastingCountStatus" class="form-note" role="status"></p>
+  </section>
   <div class="fasting-content" id="fastingView" data-view="week">
     <section class="fasting-calendar" aria-labelledby="fastingMonth">
       <div class="month-nav">
@@ -194,6 +202,15 @@
       </details>
     </div>
   </div>
+  <section class="fasting-upcoming" id="fastingUpcoming" aria-labelledby="upcomingTitle" hidden>
+    <h3 id="upcomingTitle">Upcoming dates</h3>
+    <p class="setting-hint">Hijri dates are estimates. Follow your local announcement for Ramadan and Eid.</p>
+    <dl class="upcoming-list" id="hijriOccasions"></dl>
+    <details class="study-links" id="sunnahFasts">
+      <summary>Sunnah fasts</summary>
+      <dl class="upcoming-list" id="sunnahDates"></dl>
+    </details>
+  </section>
 </section>
 
 <section aria-labelledby="soundTitle" class="sound-panel app-screen" data-screen="sounds" hidden id="soundPanel">
@@ -202,20 +219,20 @@
     <div class="sound-card">
       <label class="block-label" for="soundChoice">Prayer-time sound</label>
       <select id="soundChoice">
-        <option value="soft">Gentle chime</option>
         <option value="adhan-abu-bakr">Abu Bakr</option>
-        <option value="adhan-fajr-abu-bakr">Abu Bakr + Echo</option>
-        <option value="adhan-thabet">Thabet</option>
+        <option value="adhan-fajr-abu-bakr">Echo</option>
+        <option value="soft">Gentle chime</option>
         <option value="bell">Clear bell</option>
-        <option value="custom">My imported sound</option>
         <option value="off">Silent</option>
+        <option value="custom">Import a sound</option>
       </select>
+      <label class="tracking-toggle" id="repeatChimeControl" hidden><input id="repeatChime" type="checkbox"/><span>Repeat until stopped</span></label>
       <label class="block-label" for="soundVolume">Sound level</label>
       <div class="volume-controls"><input id="soundVolume" max="100" min="0" step="1" type="range" value="40"/><output for="soundVolume" id="soundVolumeLabel">40%</output></div>
       <p class="setting-hint" id="iosVolumeNote" hidden>Use the phone’s volume buttons to adjust overall loudness.</p>
       <div class="alert-actions"><button class="primary-button" id="testSound" type="button">Play sound</button><button class="secondary-button" id="stopSound" type="button">Stop</button></div>
       <p class="alert-status" id="soundStatus" role="status">Tap Play sound to start audio for this session.</p>
-      <details class="study-links custom-sound-row">
+      <details class="study-links custom-sound-row" id="customSoundPanel">
         <summary>Import a sound</summary>
         <label class="block-label" for="customAudio">Audio file · up to 8 MB</label>
         <input accept="audio/mpeg,audio/mp4,audio/wav,audio/x-m4a,audio/*" id="customAudio" type="file"/>
@@ -230,12 +247,7 @@
         <option value="15">15 minutes before</option><option value="20">20 minutes before</option>
         <option value="25">25 minutes before</option><option value="30">30 minutes before</option>
       </select>
-      <div class="closed-reminders">
-        <label class="tracking-toggle"><input id="closedReminders" type="checkbox" disabled/><span>Notifications while closed</span></label>
-        <p id="closedReminderStatus" class="setting-hint" role="status"></p>
-        <button class="text-button" id="testClosedReminder" type="button" hidden>Send test notification</button>
-        <p id="closedTestStatus" class="form-note" role="status"></p>
-      </div>
+
     </div>
   </div>
 </section>
@@ -341,6 +353,6 @@
   <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="3"/><path d="M8 3.5v5M16 3.5v5M8.5 14l2.4 2.4 4.6-4.6"/></svg><span>Fasting</span>
 </button><button aria-controls="soundPanel" aria-selected="false" class="" data-screen-target="sounds" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0v5l2 3H4l2-3V9M10 20h4"></path></svg><span>Sounds</span></button><button aria-controls="settingsDialog" aria-selected="false" class="" data-screen-target="settings" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M12 3v3m0 12v3M3 12h3m12 0h3m-3.7-6.7-2.1 2.1m-7.4 7.4-2.1 2.1m0-11.6 2.1 2.1m7.4 7.4 2.1 2.1"></path><circle cx="12" cy="12" r="3"></circle></svg><span>Settings</span></button></nav>
 
-<script src="./region.js"></script><script src="./solar.js"></script><script src="./providers.js"></script><script src="./timetable.js"></script><script src="./audio.js"></script><script src="./reminders.js"></script><script src="./app.js"></script>
+<script src="./region.js"></script><script src="./solar.js"></script><script src="./providers.js"></script><script src="./timetable.js"></script><script src="./hijri.js"></script><script src="./audio.js"></script><script src="./app.js"></script>
 </body>
 </html>

@@ -63,6 +63,10 @@ try:
         page.reload()
         assert page.locator('#offlineIndicator').is_visible()
         assert page.locator('#timezoneLabel').inner_text() == 'UK time'
+        assert page.locator('#hijriDate').inner_text().endswith('AH · est.')
+        assert page.locator('#countdown').evaluate('el => parseFloat(getComputedStyle(el).fontSize)') >= 16
+        assert page.locator('[data-event="fajr"]').evaluate('el => el.classList.contains("is-elapsed")')
+        assert page.locator('.prayer-limits').count() == 0
         assert page.locator('#prayerList .prayer-entry').count() == 6
         assert page.locator('#prayerList .avoid-entry').count() == 3
 
@@ -188,17 +192,40 @@ try:
         assert install.evaluate("fetch('../manifest-ocean-minaret.webmanifest').then(r => r.json()).then(m => m.start_url)") == './?icon=minaret&palette=ocean'
         install.close()
 
+        page.locator('[data-screen-target="fasting"]').click()
+        assert page.locator('[data-occasion="ramadan"]').is_visible()
+        page.locator('#sunnahFasts summary').click()
+        assert page.locator('[data-occasion="white"]').is_visible()
+        page.locator('#undatedFasted').fill('17')
+        page.locator('#undatedFasted').press('Tab')
+        page.get_by_role('button', name='Add one fasted day').click()
+        page.locator('#undatedMissed').fill('3')
+        page.locator('#undatedMissed').press('Tab')
+        page.get_by_role('button', name='Subtract one missed day').click()
+        assert page.locator('#undatedFasted').input_value() == '18'
+        assert page.locator('#fastingDue').inner_text() == '3'
+        page.reload()
+        assert page.locator('#undatedMissed').input_value() == '2'
+        assert page.locator('#undatedFasted').input_value() == '18'
+
         page.locator('[data-screen-target="qibla"]').click()
         assert page.locator('#qiblaView').get_attribute('data-view') == 'guide'
         assert page.locator('#qiblaTurnAngle').is_visible()
         assert page.locator('#qiblaArrow').count() == 0
         assert page.locator('#qiblaAligned').is_hidden()
         assert page.locator('#qiblaLayouts').count() == 0
-        page.evaluate("""() => {
-          window.vibrationPatterns = [];
-          Object.defineProperty(navigator, 'vibrate', {
-            configurable:true, value:pattern => { vibrationPatterns.push(pattern); return true; }
-          });
+        assert page.locator('#qiblaSettings, #qiblaHaptic, #testVibration').count() == 0
+        page.evaluate("""async () => {
+          const config = JSON.parse(localStorage.getItem('salah-config'));
+          const model = await import('./vendor/magvar/magvar.mjs');
+          const bearing = Number.parseFloat(document.querySelector('#qiblaBearing').textContent);
+          const correction = model.magvar(config.lat, config.lng, 0, new Date());
+          window.pointPhone = (offset, accuracy) => {
+            const heading = (bearing + offset - correction + 360) % 360;
+            const event = new Event('deviceorientation');
+            Object.defineProperties(event, { webkitCompassHeading: { value: heading }, webkitCompassAccuracy: { value: accuracy } });
+            window.dispatchEvent(event);
+          };
           window.addEventListener('deviceorientation', event => {
             if (event.isTrusted) event.stopImmediatePropagation();
           }, true);
@@ -208,36 +235,28 @@ try:
         }""")
         page.locator('#startCompass').click()
         page.wait_for_function("document.querySelector('#startCompass').textContent === 'Stop compass'")
-        page.evaluate("""() => {
-          window.pointPhone = (heading, accuracy) => {
-          const event = new Event('deviceorientation');
-          Object.defineProperties(event, { webkitCompassHeading: { value: heading }, webkitCompassAccuracy: { value: accuracy } });
-          window.dispatchEvent(event);
-          };
-          pointPhone(177, 7);
-        }""")
+        page.evaluate('pointPhone(55, 10)')
         page.locator('#qiblaDial.live').wait_for()
-        page.locator('#qiblaPanel summary').click()
-        assert 'WMM 2025' in page.locator('#qiblaState').inner_text()
         assert 'left' in page.locator('#qiblaCue').inner_text()
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'turn'
         assert page.locator('#qiblaArc').evaluate('arc => getComputedStyle(arc).stroke') == 'rgb(255, 133, 137)'
-        correction = page.locator('#declinationOverride')
-        correction.fill('0')
-        page.evaluate('pointPhone(125, 7)')
+        page.evaluate('pointPhone(12, 10)')
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'near'
-        assert page.locator('#qiblaArc').evaluate('arc => getComputedStyle(arc).stroke') == 'rgb(241, 197, 109)'
-        page.evaluate('pointPhone(115, 7); pointPhone(116, 7)')
+        page.evaluate('pointPhone(2, 10)')
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'aligned'
         assert page.locator('#qiblaTurnLabel').inner_text() == 'Qibla'
+        assert page.locator('#qiblaPrecision').inner_text() == '±10°'
         assert page.locator('#qiblaMarker rect').evaluate('marker => getComputedStyle(marker).stroke') == 'rgb(114, 220, 163)'
-        assert page.evaluate('vibrationPatterns.length') == 1
-        page.evaluate('pointPhone(170, 7); pointPhone(112, 7)')
-        assert page.evaluate('vibrationPatterns.length') == 2
-        page.evaluate("Object.defineProperty(navigator, 'vibrate', {configurable:true,value:undefined}); pointPhone(170, 7); pointPhone(113, 7)")
-        assert page.locator('#qiblaAligned').get_attribute('data-state') == 'aligned'
-        assert page.evaluate('vibrationPatterns.length') == 2
         assert page.evaluate('compassTones.slice(-2)') == [740, 990]
+        page.evaluate('pointPhone(7, 10)')
+        assert page.locator('#qiblaAligned').get_attribute('data-state') == 'aligned'
+        page.evaluate('pointPhone(9, 10)')
+        assert page.locator('#qiblaAligned').get_attribute('data-state') == 'near'
+        page.evaluate('pointPhone(0, 35)')
+        assert page.locator('#qiblaAligned').get_attribute('data-state') == 'weak'
+        assert page.locator('#qiblaDial').evaluate('dial => !dial.classList.contains("live")')
+        page.evaluate('pointPhone(0, -1)')
+        assert page.locator('#qiblaAligned').get_attribute('data-state') == 'weak'
         page.locator('#startCompass').click()
         page.evaluate("""() => {
           compassTones.length = 0;
@@ -248,13 +267,6 @@ try:
         assert page.evaluate('compassTones') == [520, 370]
         assert page.locator('#qiblaCue').inner_text() == 'Compass unavailable'
         assert page.locator('#qiblaBearing').is_visible()
-        page.evaluate("""Object.defineProperty(navigator, 'vibrate', {
-            configurable:true, value:pattern => { vibrationPatterns.push(pattern); return true; }
-        })""")
-        assert page.locator('#deviceTests, #runBasicChecks, #copyPhoneReport').count() == 0
-        page.locator('#testVibration').click()
-        assert page.evaluate('vibrationPatterns.at(-1)') == [180, 100, 220]
-        assert page.locator('#vibrationStatus').inner_text() == 'Requested two pulses.'
 
         context.route('https://api.bigdatacloud.net/**', lambda route: route.fulfill(
             json={'countryCode': 'GB', 'city': 'Enniskillen', 'principalSubdivision': 'Northern Ireland'}
