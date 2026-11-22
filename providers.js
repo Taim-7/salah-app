@@ -1,6 +1,4 @@
-/* Salah comparison providers. No result is silently presented as an observation.
-   Only the directly selected latitude/longitude and requested date are sent to
-   AlAdhan when the user elects to load an online comparison. */
+
 (function (root) {
   'use strict';
   const solar = root.SalahSolar;
@@ -16,19 +14,12 @@
   const dayAngles = (key, lat, lon, fajr, isha) => solar.solarEvents(...parts(key), lat, lon, fajr, isha);
   const dateDiffMs = (a, b) => a.getTime() - b.getTime();
 
-  // Tayba Trust, northern latitudes: when 18 degrees cannot be reached,
-  // carry forward the 14.5-degree sunrise/sunset interval from the final
-  // spring day with an 18-degree crossing. This is a *derived*
-  // implementation of published guidance, NOT a live Tayba timetable.
   function taybaBase(key, lat, lon, side) {
     const s = dayAngles(key, lat, lon, 14.5, 14.5);
     const crossing = side === 'fajr' ? 'fajrRaw' : 'ishaRaw';
     if (Math.abs(lat) <= 48.5 || dayAngles(key, lat, lon, 18, 18)[crossing])
       return { time: s[crossing], estimated: !s[crossing], note: '14.5° crossing' };
     let nearest = null;
-    // Tayba's published UK method carries the interval from the last spring
-    // day when 18° was still reached, throughout the missing-angle period.
-    // Choosing the closer autumn edge silently changes the stated method.
     for (let dist = 1; dist <= 200; dist++) {
       const edgeKey = keyShift(key, -dist);
       const edge = dayAngles(edgeKey, lat, lon, 18, 18);
@@ -59,12 +50,9 @@
     let isha = ishaBase.time;
     let redMinimum = null;
     const raw8 = dayAngles(key, lat, lon, 8, 8).ishaRaw;
-    // Tayba Isha option 2: if calculated Isha is >90 min after sunset,
-    // reduce it to 90 minutes, but not earlier than the 8-degree crossing.
     if (isha.getTime() - b.trueSunset.getTime() > 90 * MS) {
       redMinimum = raw8;
       if (raw8) isha = new Date(Math.max(b.trueSunset.getTime() + 90 * MS, raw8.getTime()));
-      // A missing 8-degree crossing cannot be certified as red twilight.
       else return { valid: false, reason: 'Even 8° is absent: Tayba red-twilight option cannot be applied safely.' };
     }
     const t = {
@@ -92,8 +80,6 @@
     return t;
   }
 
-  // AlAdhan supplies date-specific local clock times, either ISO 8601 (preferred)
-  // or HH:mm. Convert without using the traveller's device time zone.
   function offsetMinutes(zone, date) {
     const f = new Intl.DateTimeFormat('en-GB', { timeZone: zone,
       year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
@@ -114,7 +100,6 @@
   }
   function parsePrayerTime(raw, key, zone) {
     if (typeof raw !== 'string') return null;
-    // Require offset for ISO timestamps. No host-local Date.parse fallback.
     if (/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|[+-]\d\d:\d\d)$/i.test(raw)) {
       const date = new Date(raw);
       return Number.isFinite(+date) ? date : null;
@@ -145,8 +130,6 @@
     if (metaMethod != null && Number(metaMethod) !== spec.method) throw Error('Unexpected method from online provider');
     const returnedZone = json.data.meta?.timezone;
     if (returnedZone && returnedZone !== zone) {
-      // UK/Irish zone names can be aliases. Accept only equivalent offsets
-      // on this date AND six months later; never trust an arbitrary different zone.
       const aliases = ['Europe/London','Europe/Belfast','Europe/Dublin'];
       const midpoint = new Date(`${key}T12:00:00Z`);
       const later = new Date(midpoint); later.setUTCMonth(later.getUTCMonth() + 6);
@@ -162,12 +145,9 @@
       if (!time) throw Error(`Bad ${k} time from provider`);
       out[k] = time;
     }
-    // Reject corrupted data and timezone/date mixups.
     for (const [a, b] of [['fajr','sunrise'],['sunrise','dhuhr'],['dhuhr','asr'],['asr','maghrib'],['maghrib','isha']])
       if (out[a] >= out[b]) throw Error('Provider returned times in the wrong order');
     if (out.isha.getTime() - out.maghrib.getTime() > 9 * 3600000) throw Error('Unexpected Isha interval');
-    // Some upstream ISO timestamps have reportedly had a wrong date. Check
-    // the actual date in the requested time zone rather than just HH:mm.
     const zoneDate = value => {
       const f = new Intl.DateTimeFormat('en-GB', { timeZone: zone, year:'numeric', month:'2-digit', day:'2-digit' });
       const x = Object.fromEntries(f.formatToParts(value).filter(p=>p.type!=='literal').map(p=>[p.type,p.value]));

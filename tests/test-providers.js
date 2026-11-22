@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
-globalThis.SalahSolar = require('./solar.js');
-const P = require('./providers.js');
+globalThis.SalahSolar = require('../solar.js');
+const P = require('../providers.js');
 const locs = [[54.9966,-7.3086],[51.51,-.12],[40.71,-74.01],[35.68,139.69],[-33.87,151.21],[21.42,39.83],[-36.85,174.76]];
 let ok=0, missing=0;
 for (const [lat,lng] of locs) for (const y of [2026,2027]) for (let m=1;m<=12;m++) for (let d=1;d<=28;d++) {

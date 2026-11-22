@@ -1,9 +1,4 @@
-/*
- * Solar calculations based on the published SunCalc / Jean Meeus style formulae.
- * See https://github.com/mourner/suncalc and https://gml.noaa.gov/grad/solcalc/calcdetails.html
- * This is a compact independent implementation for local/offline prayer calculations.
- * All returned Date values represent instants; rendering uses the device's local timezone.
- */
+
 (function (root) {
   'use strict';
   const R = Math.PI / 180, DAY = 86400000, J1970 = 2440588, J2000 = 2451545;
@@ -29,7 +24,6 @@
     let low = rough.getTime() - 90 * 60000;
     let high = rough.getTime() + 90 * 60000;
     const f = t => actualAltitude(t, phi, lw) - targetAltitude;
-    // If no crossing is bracketed, return no prediction rather than a wrong crossing.
     const a = f(low), b = f(high);
     if (rising ? !(a < 0 && b > 0) : !(a > 0 && b < 0)) return null;
     for (let i = 0; i < 45; i++) {
@@ -56,8 +50,6 @@
   const roundUpMinute = date => date && new Date(Math.ceil(date.getTime() / 60000) * 60000);
   const roundDownMinute = date => date && new Date(Math.floor(date.getTime() / 60000) * 60000);
   const plusMinutes = (date, mins) => date && new Date(date.getTime() + mins * 60000);
-  // All civil dates are zone-independent. Never anchor the calculation to the phone's local noon:
-  // a traveller calculating for another continent would otherwise get the wrong solar day.
   const shiftDate = (y, m, d, shift) => {
     const x = new Date(Date.UTC(y, m - 1, d + shift, 12));
     return [x.getUTCFullYear(), x.getUTCMonth() + 1, x.getUTCDate()];
@@ -65,8 +57,6 @@
 
   function solarEvents(y, m, day, lat, lng, fajrAngle, ishaAngle) {
     const phi = lat * R, lw = -lng * R;
-    // Approximate solar noon at these coordinates in UTC, independent of the device zone.
-    // This selects the correct Julian cycle even near the International Date Line.
     const approxLocalSolarNoon = new Date(Date.UTC(y, m - 1, day, 12) - lng * 240000);
     const d = toDays(approxLocalSolarNoon);
     const n = julianCycle(d, lw);
@@ -117,7 +107,6 @@
     const isha = ishaFallback ? new Date(s.sunsetRaw.getTime() + portion(highLatRule, ishaAngle) * nextNight) : s.ishaRaw;
     if (!(fajr < s.sunriseRaw && isha > s.sunsetRaw))
       return { valid: false, reason: 'Twilight times are outside the expected night. Check the method and location.' };
-    // Round times conservatively where praying early could be a problem.
     return {
       valid: true,
       fajr: roundUpMinute(fajr),

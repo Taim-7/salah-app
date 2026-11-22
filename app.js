@@ -37,7 +37,6 @@
     try {
       const raw = JSON.parse(localStorage.getItem('salah-config') || '{}');
       const c = { ...defaults, ...raw };
-      // Keep existing settings on an upgrade.
       if (!raw.version4) {
         if (raw.method === '12-12') c.method = '15-13';
         c.calendarLead = 15;
@@ -46,7 +45,6 @@
       }
       if (!raw.version5 && !('theme' in raw)) c.theme='dark';
       if (!raw.version6 && c.soundChoice === 'adhan') c.soundChoice = 'soft';
-      // Upgrade the former default gentle chime once; keep other saved selections.
       if (!raw.audioDefaultV13 && c.soundChoice === 'soft') c.soundChoice = 'adhan-abu-bakr';
       c.audioDefaultV13 = true;
       c.version7 = true; c.version6 = true; c.version5 = true; c.version4 = true;
@@ -54,14 +52,13 @@
       if (!['12-12', '15-13', '18-17', 'custom'].includes(c.method)) c.method = defaults.method;
       if (!['around-third', 'after-third'].includes(c.ishaPreference)) c.ishaPreference = defaults.ishaPreference;
       if (!['angles', 'tayba', 'moonsighting'].includes(c.activeSource)) c.activeSource = 'angles';
-      // Upgrade the former Fajr-only echo setting to one sound choice for all prayers.
       if (raw.fajrSoundChoice === 'adhan-fajr-abu-bakr' && c.soundChoice === 'soft') c.soundChoice = 'adhan-fajr-abu-bakr';
       if (!['soft','bell','custom','off','adhan-abu-bakr','adhan-fajr-abu-bakr','adhan-thabet'].includes(c.soundChoice)) c.soundChoice = 'soft';
       delete c.fajrSoundChoice;
       c.soundVolume = Number.isFinite(+c.soundVolume) ? Math.max(15,Math.min(100,+c.soundVolume)) : 40;
       c.calendarLead = 15;
       c.timeFormat = ['12','24'].includes(String(c.timeFormat)) ? String(c.timeFormat) : '12';
-      c.theme = ['light','dark'].includes(c.theme) ? c.theme : 'dark';
+      c.theme = 'dark';
       c.layout = ['classic','compact','timeline'].includes(c.layout) ? c.layout : 'classic';
       c.accent = ['forest','ocean','dusk'].includes(c.accent) ? c.accent : 'forest';
       c.onlineCompare = c.onlineCompare !== false;
@@ -77,6 +74,8 @@
     } catch { return { ...defaults }; }
   }
   let cfg = loadConfig();
+  storeInitialAppearance();
+  function storeInitialAppearance() { try { const saved=JSON.parse(localStorage.getItem('salah-config') || '{}'); if(saved.theme !== 'dark')localStorage.setItem('salah-config',JSON.stringify({...saved,theme:'dark'})); } catch {} }
   const store = () => { try { localStorage.setItem('salah-config', JSON.stringify(cfg)); } catch {} };
   const anglePair = () => cfg.method === 'custom' ? [+cfg.fajrAngle, +cfg.ishaAngle] : cfg.method.split('-').map(Number);
   const todayKey = () => dateParts(new Date(), cfg.timeZone);
@@ -106,8 +105,6 @@
     { id: 'moonsighting', title: 'Moonsighting · red', sub: 'Seasonal / high-latitude model · AlAdhan', online: true }
   ];
   const onlineKinds = ['moonsighting'];
-  // Moonsighting documents seasonal formulas through 55° and a one-seventh-night
-  // estimate from 55° to 60°; UK/Ireland supported locations are below 60°.
   const moonsightingSupported = () => Math.abs(+cfg.lat) <= 60;
   const moonsightingNightFraction = () => Math.abs(+cfg.lat) > 55;
   const pendingOnline = new Set(), failedOnline = new Map(), onlineMem = new Map();
@@ -128,7 +125,7 @@
     if (kind === 'moonsighting' && !moonsightingSupported()) return;
     const id = cacheId(kind, key);
     if (pendingOnline.has(id)) return;
-    if (!force && (readCached(kind, key) || failedOnline.has(id))) return;
+    if (!force && (readCached(kind, key) || (failedOnline.has(id) && Date.now() - failedOnline.get(id).at < 2 * 60000))) return;
     pendingOnline.add(id); failedOnline.delete(id);
     if (key === selectedKey) renderComparison();
     try {
@@ -137,21 +134,18 @@
       const day = SalahProviders.decode(kind, key, cfg.timeZone, raw);
       onlineMem.set(id, day);
       try { localStorage.setItem(id, JSON.stringify({ at: Date.now(), raw })); } catch {}
-    } catch (e) { failedOnline.set(id, String(e.message || e)); }
+    } catch (e) { failedOnline.set(id, { at: Date.now(), message: String(e.message || e) }); }
     finally {
       pendingOnline.delete(id);
-      // A freshly loaded previous day can change the post-midnight Isha status.
       if ([dayShift(selectedKey, -1), selectedKey, dayShift(selectedKey, 1)].includes(key)) render();
     }
   }
   function loadComparison(force = false) {
-    // Pausing comparisons must never stop the main timetable's selected provider.
     if (!navigator.onLine && !force) return;
     const activeOnline = onlineKinds.includes(cfg.activeSource);
     const requested = (cfg.onlineCompare || force) ? onlineKinds : (activeOnline ? [cfg.activeSource] : []);
     for (const kind of requested) void fetchOnline(kind, selectedKey, force);
     if (activeOnline) {
-      // Following Fajr is needed for Islamic midnight; yesterday is needed after midnight.
       void fetchOnline(cfg.activeSource, dayShift(selectedKey, 1), force);
       if (selectedKey === todayKey()) void fetchOnline(cfg.activeSource, dayShift(selectedKey, -1), force);
     }
@@ -226,11 +220,7 @@
     $('locationLabel').textContent = cfg.location;
     $('timezoneLabel').textContent = cfg.timeZone === 'Europe/Dublin' ? 'Ireland time' : 'UK time';
     $('locationMode').textContent = cfg.autoLocation ? 'Location tracking on · while app is open' : 'Fixed location';
-    try {
-      $('hijriDate').textContent = new Intl.DateTimeFormat('en-GB-u-ca-islamic', {
-        timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric'
-      }).format(dateAtNoonUTC(selectedKey)) + ' AH · estimate';
-    } catch { $('hijriDate').textContent = 'Prayer times'; }
+    $('hijriDate').textContent = 'Prayer times';
   }
   function getDay(key) { return getActiveDay(key); }
   function renderNotice(t) {
@@ -272,9 +262,11 @@
     if (isBetween(instant,beforeSunset,t.maghrib)) return {level:'danger',label:'Avoid voluntary prayer',desc:'Sunset precaution · approximate buffer'};
     if (isBetween(instant,t.isha,t.firstThird) && !t.ishaBeyondFirstThird) return cfg.ishaPreference === 'around-third' ? {level:'calm',label:'Isha is open',desc:`Recommended delay towards ${fmt(t.firstThird)}`} : {level:'calm',label:'Isha is open',desc:`Preferred later · after ${fmt(t.firstThird)}`};
     if (isBetween(instant,t.firstThird,t.midnight) && instant >= t.isha.getTime()) return cfg.ishaPreference === 'after-third' ? {level:'preferred',label:'Preferred Isha period',desc:`Before ${fmt(t.midnight)}`} : {level:'calm',label:'Isha time',desc:`Ends ${fmt(t.midnight)}`};
-    if (instant >= t.midnight.getTime() && instant < t.nextFajr.getTime() && instant >= t.isha.getTime()) return {level:'caution',label:'After Islamic midnight',desc:'Isha ends at half the Islamic night'};
-    if (isBetween(instant,t.dhuhr,t.asr)) return {level:'calm',label:'Dhuhr time',desc:`Until ${fmt(t.asr)}`};
-    if (isBetween(instant,t.maghrib,t.isha)) return {level:'calm',label:'Maghrib time',desc:`Until ${fmt(t.isha)}`};
+    if (instant >= t.midnight.getTime() && instant < t.nextFajr.getTime() && instant >= t.isha.getTime()) return {level:'calm',label:'Night',desc:''};
+    if (isBetween(instant,t.fajr,t.sunrise)) return {level:'preferred',label:'Fajr time',desc:`Until ${fmt(t.sunrise)}`};
+    if (isBetween(instant,t.dhuhr,t.asr)) return {level:'preferred',label:'Dhuhr time',desc:`Until ${fmt(t.asr)}`};
+    if (isBetween(instant,t.asr,t.maghrib)) return {level:'preferred',label:'Asr time',desc:`Until ${fmt(t.maghrib)}`};
+    if (isBetween(instant,t.maghrib,t.isha)) return {level:'preferred',label:'Maghrib time',desc:`Until ${fmt(t.isha)}`};
     return {level:'calm',label:'Today',desc:''};
   }
   function renderPrayerList(t) {
@@ -286,22 +278,31 @@
     ];
     const events = names.map(n => ({at:t[n.key],title:n.en,desc:n.desc,kind:'prayer',name:n,estimated:(n.key==='fajr'&&(t.fajrFallback||t.providerHighLatEstimate))||(n.key==='isha'&&(t.ishaFallback||t.providerHighLatEstimate))}));
     const milestones = [
-      {at:t.firstThird,title:cfg.ishaPreference==='after-third'?'Preferred Isha from here':'Preferred Isha target',desc:'First third of the night',kind:'night',icon:'third'},
+      {at:t.firstThird,
+       title:t.ishaBeyondFirstThird?'First third passed before Isha':(cfg.ishaPreference==='after-third'?'Preferred Isha from here':'Preferred Isha target'),
+       desc:t.ishaBeyondFirstThird?'Calculated Isha begins later tonight':'First third of the night',kind:'night',icon:'third'},
       {at:t.midnight,title:'Isha ends',desc:'Half of the night',kind:'night',icon:'half'}
     ];
     const sorted=[...events,...intervals.map(e=>({...e,icon:'alert'})),...milestones]
       .filter(e=>e.at instanceof Date && !isNaN(e.at))
       .sort((a,b)=>a.at-b.at || (a.kind==='prayer'?-1:1));
+    const currentPrayer = !current ? null :
+      isBetween(now,t.fajr,t.sunrise) ? 'fajr' :
+      isBetween(now,t.dhuhr,t.asr) ? 'dhuhr' :
+      isBetween(now,t.asr,t.maghrib) ? 'asr' :
+      isBetween(now,t.maghrib,t.isha) ? 'maghrib' :
+      isBetween(now,t.isha,t.midnight) ? 'isha' : null;
     const currentIndex = current ? sorted.reduce((index,e,i)=>e.at.getTime()<=now ? i : index, -1) : -1;
     const nextIndex = current ? sorted.findIndex(e=>e.at.getTime()>now) : -1;
     $('prayerList').style.setProperty('--timeline-fill', `${Math.round(100*(currentIndex+0.5)/sorted.length)}%`);
     $('prayerList').innerHTML=sorted.map((e,i)=>{
-      const phase=current ? (i===currentIndex?'is-now':i===nextIndex?'is-next':i<currentIndex?'is-past':'is-future') : '';
+      const phase=current ? (i===currentIndex?(e.kind==='prayer'?'is-now':'is-current-marker'):i===nextIndex?'is-next':i<currentIndex?'is-past':'is-future') : '';
+      const isCurrentPrayer = e.kind==='prayer' && e.name.key===currentPrayer;
       const activeRange=!!e.end && current && isBetween(now,e.at,e.end);
       const extra=(e.kind==='avoid'||e.kind==='caution')?`<span class="range-label">to ${fmt(e.end)}</span>`:'';
       const following=dateParts(e.at,cfg.timeZone)!==selectedKey?'<span class="next-day">+1 day</span>':'';
-      const label = i===currentIndex ? '<span class="phase-pill">NOW</span>' : i===nextIndex ? '<span class="phase-pill next-pill">NEXT</span>' : '';
-      return `<div class="time-row ${e.kind==='prayer'?'prayer-entry':''} ${e.kind==='night'?'night-summary':''} ${e.kind==='avoid'?'avoid-entry':''} ${e.kind==='caution'?'caution-entry':''} ${phase} ${activeRange?'within-range':''}" data-event-time="${e.at.getTime()}">
+      const label = isCurrentPrayer ? '<span class="phase-pill current-pill">CURRENT</span>' : i===currentIndex && e.kind==='avoid' ? '<span class="phase-pill next-pill">NOW</span>' : i===nextIndex ? '<span class="phase-pill next-pill">NEXT</span>' : '';
+      return `<div class="time-row ${e.kind==='prayer'?'prayer-entry':''} ${e.kind==='night'?'night-summary':''} ${e.kind==='avoid'?'avoid-entry':''} ${e.kind==='caution'?'caution-entry':''} ${phase} ${isCurrentPrayer?'current-prayer':''} ${activeRange?'within-range':''}" data-event-time="${e.at.getTime()}">
         <span class="time-icon">${svgIcon(e.kind==='prayer'?e.name.icon:e.icon)}</span>
         <div class="time-text"><div class="time-name">${e.title}${e.estimated?'<span class="estimate-dot">EST.</span>':''}${label}</div><div class="time-desc">${e.desc}</div></div>
         <div class="time-data"><time class="time-value" datetime="${e.at.toISOString()}">${fmt(e.at)}</time>${extra}${following}</div>
@@ -309,7 +310,6 @@
     }).join('');
   }
   function setHero(event, now, nextDay = false, otherDate = false) {
-    // Date is shown beside the date picker.
     $('nextPrayerName').textContent = event.en;
     $('nextPrayerArabic').textContent = event.ar;
     $('nextPrayerTime').textContent = fmt(event.at);
@@ -322,7 +322,6 @@
     const [a, b] = anglePair();
     $('heroMethod').textContent = cfg.activeSource === 'angles' || t.sourceFallback ? `${a}° / ${b}°${t.sourceFallback?' · fallback':''}` : (cfg.activeSource==='moonsighting'&&moonsightingNightFraction()?'Moonsighting · estimated':methods.find(m=>m.id===cfg.activeSource)?.title) || 'Prayer times';
 
-    // The live status below the countdown updates automatically.
     const now = new Date();
     const events = prayers.map(p => ({ ...p, at: t[p.key] }));
     if (selectedKey === todayKey()) {
@@ -336,11 +335,9 @@
     } else setHero(events[0], now, false, true);
     updateHeroStatus(t);
   }
-  // Before Fajr, the previous day's Maghrib still defines the current Islamic night.
   function activeNightForNow(t, instant) {
     if (!t?.valid || !t.fajr || instant >= t.fajr.getTime()) return t;
     const yesterday = dayShift(selectedKey, -1);
-    // Re-read the provider cache after updates; a failed prior lookup must not stick.
     const previous = getDay(yesterday);
     return previous?.valid && !previous.sourceFallback && previous.maghrib <= instant && previous.nextFajr > instant
       ? previous : null;
@@ -358,6 +355,7 @@
     $('heroLiveTime').textContent=state.desc||'';
   }
   function render() {
+    $('offlineIndicator').hidden=navigator.onLine !== false;
     renderDate();
     dayInfo = getDay(selectedKey);
     renderComparison();
@@ -384,7 +382,6 @@
     if (end) end.checked = true;
     pendingPlace = null; $('gpsStatus').textContent = '';
     $('cityResults').replaceChildren(); updateCustomVisibility();
-    // Settings are displayed as their own bottom tab.
   }
   function updateCustomVisibility() {
     const method = document.querySelector('input[name="method"]:checked')?.value;
@@ -404,7 +401,7 @@
     const ishaPreference = document.querySelector('input[name="ishaPreference"]:checked')?.value || 'around-third';
     const newCfg = {
       activeSource: cfg.activeSource, soundChoice: cfg.soundChoice, soundVolume:cfg.soundVolume, calendarLead: cfg.calendarLead, onlineCompare: $('onlineCompare').checked,
-      theme: cfg.theme, layout: cfg.layout, accent: cfg.accent, timeFormat: cfg.timeFormat, version4: true, version5:true,version6:true,version7:true,
+      theme: 'dark', layout: cfg.layout, accent: cfg.accent, timeFormat: cfg.timeFormat, version4: true, version5:true,version6:true,version7:true,
       lat, lng, location: $('placeInput').value.trim() || `Lat ${lat.toFixed(3)}°, Lon ${lng.toFixed(3)}°`,
       timeZone: zone, zoneVerified: pendingPlace ? pendingPlace.zoneVerified :
         kmApart({lat:+cfg.lat,lng:+cfg.lng},{lat,lng}) < 1 && cfg.timeZone === zone && cfg.zoneVerified,
@@ -436,7 +433,6 @@
     } finally { clearTimeout(timer); }
   }
   async function enrichLocation(lat, lng) {
-    // Both lookups are optional. Calculations never require an online connection.
     const coords = `latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lng)}`;
     const [nearby, zoneData] = await Promise.allSettled([
       fetchJson(`https://api.bigdatacloud.net/data/reverse-geocode-client?${coords}&localityLanguage=en`),
@@ -477,7 +473,6 @@
     cfg.lat = lat; cfg.lng = lng;
     variationPromise=null;magneticVariation=null; $('declinationOverride').value='';
     if (moved >= 5) cfg.location = `Near ${lat.toFixed(3)}°, ${lng.toFixed(3)}°`;
-    // A phone with automatic time zone enabled normally follows travel; network checks override it.
     if (['Europe/London','Europe/Dublin'].includes(deviceZone())) cfg.timeZone = deviceZone(); cfg.zoneVerified = false;
     if (!browsing) selectedKey = todayKey();
     store(); render();
@@ -534,10 +529,10 @@
   }
 
   function applyAppearance() {
-    document.body.dataset.theme = cfg.theme;
+    document.body.dataset.theme = 'dark';
     document.body.dataset.layout = cfg.layout;
     document.body.dataset.accent = cfg.accent;
-    $('settingsTheme').value=cfg.theme; $('settingsLayout').value=cfg.layout;
+    $('settingsLayout').value=cfg.layout;
     $('settingsAccent').value=cfg.accent; $('settingsTimeFormat').value=cfg.timeFormat;
     document.querySelector('meta[name="theme-color"]').content = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#1c2d34';
   }
@@ -545,7 +540,7 @@
     cfg[kind] = value; store(); applyAppearance();
     if (kind === 'timeFormat') render();
   }
-  [['settingsTheme','theme'],['settingsLayout','layout'],['settingsAccent','accent'],['settingsTimeFormat','timeFormat']].forEach(([id,key]) =>
+  [['settingsLayout','layout'],['settingsAccent','accent'],['settingsTimeFormat','timeFormat']].forEach(([id,key]) =>
     $(id).addEventListener('change', () => changeAppearance(key,$(id).value)));
   applyAppearance();
 
@@ -583,7 +578,7 @@
     if (document.hidden) stopTracking();
     else {
       if (!browsing) selectedKey = todayKey();
-      render(); startTracking();
+      render(); startTracking(); void cacheAdhansAutomatically();
     }
   });
   let lastToday = todayKey(), lastPhoneZone = deviceZone();
@@ -601,9 +596,9 @@
     if (dayInfo && dayInfo.valid && selectedKey === localDay) {
       renderHero(dayInfo); renderPrayerList(dayInfo); checkPrayerSounds();
     }
+    if (navigator.onLine && [...failedOnline.values()].some(v => Date.now() - v.at >= 2 * 60000)) loadComparison();
   }, 30000);
 
-  // Change the source used by the hero, timetable, Islamic-night markers and calendar.
   $('sourcePicker').addEventListener('click', e => {
     const btn = e.target.closest('button[data-source]');
     if (!btn || btn.disabled) return;
@@ -620,11 +615,9 @@
     loadComparison(true); renderComparison();
   });
 
-  // Offline chimes and three owner-authorised adhan streams.
 
-  let soundArmed = false, audioCtx = null, soundSeen = new Set();
+  let audioCtx = null, soundSeen = new Set();
   let savedAudioObjectUrl = null;
-  // IndexedDB is device-local; it does not send the sound to GitHub or providers.
   function audioDb() {
     return new Promise((resolve, reject) => {
       if (!window.indexedDB) { reject(Error('Local media storage unsupported')); return; }
@@ -634,13 +627,13 @@
       request.onerror = () => reject(request.error || Error('Storage error'));
     });
   }
-  async function audioData(action, blob) {
+  async function audioData(action, blob, key='custom') {
     const db = await audioDb();
     try {
       return await new Promise((resolve,reject) => {
         const tx = db.transaction('audio', action==='read' ? 'readonly' : 'readwrite');
-        const req = action==='read' ? tx.objectStore('audio').get('custom') :
-          action==='write' ? tx.objectStore('audio').put(blob,'custom') : tx.objectStore('audio').delete('custom');
+        const req = action==='read' ? tx.objectStore('audio').get(key) :
+          action==='write' ? tx.objectStore('audio').put(blob,key) : tx.objectStore('audio').delete(key);
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
         tx.onerror = () => reject(tx.error);
@@ -662,7 +655,7 @@
     try {
       await audioData('write',file);
       cfg.soundChoice='custom'; $('soundChoice').value='custom';store(); updateVolumeUI();
-      await updateAudioStatus(); $('soundStatus').textContent='Custom sound saved locally. Test it before arming; iPhone may restrict automatic audio.';
+      await updateAudioStatus(); $('soundStatus').textContent='Custom sound saved locally. Test it to check playback.';
     } catch(e) { $('soundStatus').textContent=`Could not save sound: ${e.message}.` }
   });
   $('clearAudio').addEventListener('click',async()=>{
@@ -681,34 +674,70 @@
     osc.connect(gain); gain.connect(ctx.destination);
     osc.start(at); osc.stop(at+duration+.03);
   }
-  // Three recordings selected for streaming with the owner's permission, as reported by the user.
   const ADHAN_RECORDINGS = Object.freeze({
     'adhan-abu-bakr': 'https://raw.githubusercontent.com/alsuleiman-lab/athkar-audio/main/fajr-adhan/fajr-abu-bakr.mp3',
     'adhan-fajr-abu-bakr': 'https://raw.githubusercontent.com/alsuleiman-lab/athkar-audio/main/fajr-adhan/abu-bakr.mp3',
     'adhan-thabet': 'https://raw.githubusercontent.com/alsuleiman-lab/athkar-audio/main/fajr-adhan/thabet.mp3'
   });
   let adhanPlayer = null, activeCustomPlayer = null;
+  const cachedAdhanUrls = new Map();
+  const adhanChoices = Object.keys(ADHAN_RECORDINGS);
+  let cachingAdhans = null;
+  let lastAudioCacheAttempt = 0;
+  async function loadSavedAdhans() {
+    for (const choice of adhanChoices) {
+      if (cachedAdhanUrls.has(choice)) continue;
+      try {
+        const blob = await audioData('read', null, choice);
+        if (blob && blob.size >= 10000) cachedAdhanUrls.set(choice, URL.createObjectURL(blob));
+      } catch { /* A storage failure should not stop online audio playback. */ }
+    }
+  }
+  async function cacheAdhansAutomatically() {
+    if (cachingAdhans) return cachingAdhans;
+    if (!navigator.onLine || Date.now() - lastAudioCacheAttempt < 10 * 60000) return;
+    lastAudioCacheAttempt = Date.now();
+    cachingAdhans = (async () => {
+      await loadSavedAdhans();
+      const choices = [cfg.soundChoice, ...adhanChoices].filter((x,i,arr)=>ADHAN_RECORDINGS[x] && arr.indexOf(x) === i);
+      for (const choice of choices) {
+        if (cachedAdhanUrls.has(choice)) continue;
+        try {
+          const result = await fetch(ADHAN_RECORDINGS[choice], {cache:'force-cache'});
+          if (!result.ok) continue;
+          const blob = await result.blob();
+          if (blob.size < 10000 || blob.size > 8 * 1048576) continue;
+          await audioData('write', blob, choice);
+          cachedAdhanUrls.set(choice, URL.createObjectURL(blob));
+        } catch { /* Network and local storage can be unavailable on iPhone. */ }
+      }
+    })();
+    try { await cachingAdhans; } finally { cachingAdhans = null; }
+  }
+  void loadSavedAdhans().then(() => cacheAdhansAutomatically());
   async function playAdhan(choice=cfg.soundChoice) {
     const src=ADHAN_RECORDINGS[choice];
     if (!src) { $('soundStatus').textContent='No adhan selected.'; return false; }
     if (adhanPlayer) { adhanPlayer.pause(); adhanPlayer.currentTime=0; }
     if (activeCustomPlayer) { activeCustomPlayer.pause(); activeCustomPlayer.currentTime=0; }
+    const localSource=cachedAdhanUrls.get(choice);
+    if (!localSource && !navigator.onLine) {
+      $('soundStatus').textContent='This adhan is unavailable offline. It will be saved automatically on the next online visit.';
+      return false;
+    }
     try {
-      const player = new Audio(src);
+      const source=localSource || src;
+      const player = new Audio(source);
       adhanPlayer=player;
       player.preload='auto';
       player.volume=cfg.soundVolume/100;
-      player.onended=() => {
-        if (adhanPlayer===player) $('soundStatus').textContent='Adhan finished.';
-      };
-      player.onerror=() => {
-        if (adhanPlayer===player) $('soundStatus').textContent='Audio could not load. Check your internet connection.';
-      };
+      player.onended=() => { if (adhanPlayer===player) $('soundStatus').textContent='Adhan finished.'; };
+      player.onerror=() => { if (adhanPlayer===player) $('soundStatus').textContent='Audio could not load. Save it on the Sounds tab while online.'; };
       await player.play();
-      $('soundStatus').textContent='Adhan playing. Use Stop sound to end it.';
+      $('soundStatus').textContent=localSource?'Playing adhan.':'Playing adhan from the internet.';
       return true;
     } catch {
-      $('soundStatus').textContent='Adhan could not play. Check your connection and tap Play again.';
+      $('soundStatus').textContent='Adhan could not play. Test it directly while the app is open.';
       return false;
     }
   }
@@ -766,7 +795,7 @@
   $('calendarLead').value='15';
   $('soundChoice').addEventListener('change', () => {
     if(adhanPlayer){adhanPlayer.pause();adhanPlayer.currentTime=0;}
-    cfg.soundChoice = $('soundChoice').value; store(); updateVolumeUI();
+    cfg.soundChoice = $('soundChoice').value; store(); updateVolumeUI(); void cacheAdhansAutomatically();
     $('soundStatus').textContent = 'Sound saved. Test it using Play sound.';
   });
   $('testSound').addEventListener('click', () => { void playSound(); });
@@ -775,29 +804,8 @@
     if(activeCustomPlayer) { activeCustomPlayer.pause(); activeCustomPlayer.currentTime=0; }
     $('soundStatus').textContent='Sound stopped.';
   });
-  $('armSound').addEventListener('click', async () => {
-    soundArmed = !soundArmed;
-    if (soundArmed) {
-      if (cfg.soundChoice !== 'off') playReminderChime();
-      if (cfg.soundChoice.startsWith('adhan-') && !adhanPlayer) {
-        adhanPlayer=new Audio(ADHAN_RECORDINGS[cfg.soundChoice]); adhanPlayer.volume=cfg.soundVolume/100; adhanPlayer.preload='auto';
-        try { adhanPlayer.load(); } catch {}
-      }
-      // Ignore all past reminders and prayer times when the user arms the page.
-      const now=Date.now();
-      soundSeen = new Set();
-      for(const p of prayers) {
-        const when=dayInfo?.[p.key]?.getTime();
-        if (!when) continue;
-        if (when - 15*60000 <= now) soundSeen.add(`${selectedKey}:pre:${p.key}`);
-        if (when <= now) soundSeen.add(`${selectedKey}:at:${p.key}`);
-      }
-    }
-    $('armSound').textContent = soundArmed ? 'Disarm sound' : 'Arm while open';
-    $('soundStatus').textContent = soundArmed ? 'Armed for a 15-minute early chime and prayer-time sound while this page stays open.' : 'Not armed.';
-  });
   function checkPrayerSounds() {
-    if (!soundArmed || document.hidden || !dayInfo?.valid) return;
+    if (document.hidden || selectedKey !== todayKey() || !dayInfo?.valid) return;
     for (const p of prayers) {
       const when = dayInfo[p.key]?.getTime(); if (!when) continue;
       const choice=cfg.soundChoice;
@@ -853,8 +861,6 @@
       `${result.eventCount} event(s) exported for up to 60 days. This static file will not automatically follow GPS, time-zone or method changes.`;
   });
 
-  // Great-circle bearing to the Kaaba. Live iPhone headings are magnetic, so a
-  // WMM2025 correction or a user-entered magnetic declination is required.
   const KAABA={lat:21.422487,lng:39.826206};
   const norm360=x=>(x%360+360)%360;
   function qiblaBearing(lat,lng) {
@@ -900,7 +906,6 @@
     if (variationPromise) return variationPromise;
     variationPromise=(async()=>{
       try {
-        // Pinned MIT package implementing NOAA/BGS WMM2025 (not an ad or account).
         const mod=await import('https://cdn.jsdelivr.net/npm/magvar@2.2.0/+esm');
         const magvar=mod.magvar||mod.default?.magvar;
         if(typeof magvar!=='function')throw Error('Magnetic module not compatible');
@@ -913,8 +918,6 @@
     return variationPromise;
   }
   function orientationHandler(e) {
-    // webkitCompassHeading is magnetic north on iPhone; alpha alone is not a
-    // reliable north-referenced compass, so never treat it as one.
     const h=Number(e.webkitCompassHeading);
     if (!Number.isFinite(h)||e.webkitCompassHeading==null||h<0) {
       qiblaHeading=null;
@@ -923,7 +926,6 @@
     }
     compassSensorAccuracy = e.webkitCompassAccuracy == null ? NaN : Number(e.webkitCompassAccuracy);
     if (Number.isFinite(compassSensorAccuracy) && compassSensorAccuracy < 0) {
-      // WebKit explicitly says a negative accuracy means the heading is unusable.
       qiblaHeading=null;
       $('qiblaState').textContent='Compass needs calibration. Move the phone in a figure eight, away from metal.';
       renderQibla(); return;
@@ -935,7 +937,6 @@
     if(!window.isSecureContext){$('qiblaState').textContent='Compass access requires HTTPS.';return;}
     if(typeof DeviceOrientationEvent==='undefined'){$('qiblaState').textContent='This device does not expose a compass heading.';return;}
     try {
-      // iOS requires a user gesture when requesting sensor permission.
       if(typeof DeviceOrientationEvent.requestPermission==='function'){
         const permission=await DeviceOrientationEvent.requestPermission();
         if(permission!=='granted'){$('qiblaState').textContent='Motion permission denied. Use the true-north bearing above.';return;}
@@ -1034,7 +1035,6 @@
     $('testFeedback').textContent=supported?`Vibration pattern ${accepted?'accepted by browser':'not accepted'}; physical feedback still needs checking.`:'iPhone Safari does not provide the web vibration API. The Qibla dial uses a visual alignment cue.';
   });
 
-  // Five genuine screens: inactive screens are removed from keyboard navigation and layout.
   const screenIds = {today:'today', compare:'comparisonPanel', qibla:'qiblaPanel', sounds:'soundPanel', settings:'settingsDialog'};
   function showScreen(target) {
     if (!screenIds[target]) target = 'today';
@@ -1066,6 +1066,9 @@
     controls[next].tabIndex=0;controls[next].focus();showScreen(controls[next].dataset.screenTarget);
   });
   showScreen(['today','compare','qibla','sounds','settings'].includes(location.hash.slice(1))?location.hash.slice(1):'today');
+
+  window.addEventListener('online', () => { $('offlineIndicator').hidden=true; failedOnline.clear(); loadComparison(); void cacheAdhansAutomatically(); });
+  window.addEventListener('offline', () => { $('offlineIndicator').hidden=false; render(); });
 
   basicChecks();
   renderQibla();

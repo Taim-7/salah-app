@@ -1,7 +1,7 @@
 /* Run: TZ=Europe/London node test-solar.js */
 'use strict';
 const assert = require('node:assert/strict');
-const { calculateFullDay } = require('./solar.js');
+const { calculateFullDay } = require('../solar.js');
 function min(p) {return p.getHours()*60 + p.getMinutes();}
 function day(y,m,d,isha=15,rule='seventh') {return calculateFullDay(new Date(y,m-1,d,12),54.9966,-7.3086,15,isha,rule);}
 const november = day(2026,11,21);

@@ -1,5 +1,5 @@
 const assert = require('node:assert/strict');
-const S = require('./solar.js');
+const S = require('../solar.js');
 const cities = [[54.9966,-7.3086],[51.51,-.12],[40.71,-74.01],[35.68,139.69],[-33.87,151.21],[21.42,39.83],[-36.85,174.76],[21.3,-157.85]];
 let count=0, estimates=0, invalid=0;
 for (const [lat,lng] of cities) for (const [fa,ia] of [[12,12],[15,13]]) {

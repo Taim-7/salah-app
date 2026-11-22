@@ -1,7 +1,7 @@
 'use strict';
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const src = fs.readFileSync(__dirname+'/app.js','utf8');
+const src = fs.readFileSync(__dirname+'/../app.js','utf8');
 const snippet = src.match(/  const KAABA=\{[^\n]+\};\n  const norm360=[\s\S]+?\n  \}/);
 assert(snippet,'Qibla bearing function should exist in app.js');
 const get = Function(snippet[0]+';return qiblaBearing;')();
