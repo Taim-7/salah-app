@@ -1,6 +1,6 @@
 const BASE = new URL(self.registration.scope);
 const PREFIX = 'salah-static:' + BASE.pathname + ':';
-const CACHE_NAME = PREFIX + 'v32';
+const CACHE_NAME = PREFIX + 'v33';
 const legacyIcons = ['ocean', 'midnight', 'sand', 'slate', 'mihrab', 'minaret', 'compass', 'mat'];
 const palettes = ['forest', 'ocean', 'midnight', 'sand', 'slate'];
 const iconDesigns = ['crescent', 'mihrab', 'minaret', 'compass', 'mat'];
@@ -11,7 +11,7 @@ const iconFiles = palettes.flatMap(palette => iconDesigns.flatMap(icon => [
 ]));
 const FILES = [
   './', './index.html', './styles.css', './region.js', './solar.js', './providers.js', './timetable.js',
-  './audio.js', './hijri.js', './app.js',
+  './audio.js', './hijri.js', './compass.js', './app.js',
   './manifest.webmanifest', './vendor/magvar/magvar.mjs', './vendor/magvar/utils.mjs', './vendor/magvar/WMMCOF2025.mjs',
   './install/icon.js', ...['forest', ...legacyIcons].map(name => './install/' + name + '.html'),
   ...legacyIcons.map(name => './manifest-' + name + '.webmanifest'), ...iconFiles

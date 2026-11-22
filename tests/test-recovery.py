@@ -1,5 +1,6 @@
 from os import environ
 from pathlib import Path
+from location_fixture import start_with_location
 from playwright.sync_api import sync_playwright
 root=Path(__file__).resolve().parents[1]
 clock="""(()=>{const O=Date;function F(...a){return a.length?new O(...a):new O('2026-11-22T01:30:00Z')};F.now=()=>new O('2026-11-22T01:30:00Z').getTime();F.parse=O.parse;F.UTC=O.UTC;F.prototype=O.prototype;window.Date=F})();"""
@@ -11,8 +12,9 @@ with sync_playwright() as p:
  errs=[];page.on('pageerror',lambda e:errs.append(str(e)))
  page.set_content((root/'index.html').read_text());page.add_style_tag(path=str(root/'styles.css'))
  page.evaluate(clock);page.evaluate(mock)
- page.evaluate("""Object.defineProperty(window,'localStorage',{configurable:true,value:{getItem(k){return k==='salah-config'?JSON.stringify({version4:true,version5:true,version6:true,version7:true,audioDefaultV13:true,soundChoice:'adhan-abu-bakr',method:'15-13',activeSource:'moonsighting',onlineCompare:false,timeZone:'Europe/London',lat:54.9966,lng:-7.3086}):null},setItem(){},removeItem(){}}})""")
- for f in ['region.js','solar.js','providers.js','timetable.js','audio.js','hijri.js','app.js']:page.add_script_tag(path=str(root/f))
+ page.evaluate("""Object.defineProperty(window,'localStorage',{configurable:true,value:{getItem(k){return k==='salah-config'?JSON.stringify({version4:true,version5:true,version6:true,version7:true,audioDefaultV13:true,soundChoice:'adhan-abu-bakr',method:'15-13',activeSource:'moonsighting',permissionSetupDone:true,useDeviceLocation:true}):null},setItem(){},removeItem(){}}})""")
+ start_with_location(page)
+ for f in ['region.js','solar.js','providers.js','timetable.js','audio.js','hijri.js','compass.js','app.js']:page.add_script_tag(path=str(root/f))
  page.wait_for_function('window.mockCalls.length>=3',timeout=5000)
  assert 'AlAdhan is unavailable' in page.locator('#notice').inner_text()
  page.evaluate('window.recovered=true;window.dispatchEvent(new Event("online"))')

@@ -50,11 +50,11 @@ const tick=async(type,request,fields={})=>{
  await caches.open('salah-static:/salah-app/:v15');
  await caches.open('salah-static:/other-app/:v15');
  await tick('install');
- assert.equal(stores.has('salah-static:/salah-app/:v32'),true);
+ assert.equal(stores.has('salah-static:/salah-app/:v33'),true);
  await tick('activate');
  assert.equal(stores.has('salah-static:/salah-app/:v15'),false);
  assert.equal(stores.has('salah-static:/other-app/:v15'),true);
- const urls=['','index.html','styles.css','region.js','solar.js','providers.js','timetable.js','hijri.js','audio.js','app.js','manifest.webmanifest','vendor/magvar/magvar.mjs','vendor/magvar/utils.mjs','vendor/magvar/WMMCOF2025.mjs'];
+ const urls=['','index.html','styles.css','region.js','solar.js','providers.js','timetable.js','hijri.js','audio.js','compass.js','app.js','manifest.webmanifest','vendor/magvar/magvar.mjs','vendor/magvar/utils.mjs','vendor/magvar/WMMCOF2025.mjs'];
  const variants = ['ocean','midnight','sand','slate','mihrab','minaret','compass','mat'];
  for(const preset of variants) urls.push('manifest-'+preset+'.webmanifest');
  urls.push('install/icon.js', ...['forest', ...variants].map(preset => 'install/' + preset + '.html'));

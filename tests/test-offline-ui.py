@@ -1,5 +1,6 @@
 from os import environ
 from pathlib import Path
+from location_fixture import start_with_location
 from playwright.sync_api import sync_playwright
 root=Path(__file__).resolve().parents[1]
 with sync_playwright() as p:
@@ -11,7 +12,10 @@ with sync_playwright() as p:
   page.set_content((root/'index.html').read_text(),wait_until='domcontentloaded')
   page.add_style_tag(path=str(root/'styles.css'))
   page.evaluate('''() => {Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>false});window.fetch=()=>{throw Error('Offline fetch was attempted')};}''')
-  for f in ['region.js','solar.js','providers.js','timetable.js','audio.js','hijri.js','app.js']:page.add_script_tag(path=str(root/f))
+  start_with_location(page)
+  for f in ['region.js','solar.js','providers.js','timetable.js','audio.js','hijri.js','compass.js','app.js']:page.add_script_tag(path=str(root/f))
+  page.locator('#allowPermissions').click()
+  page.locator('#prayerDashboard').wait_for()
   assert page.locator('#heroMethod').count() == 0
   assert page.locator('#nextPrayerTime').bounding_box()['y'] < page.locator('#countdown').bounding_box()['y']
   assert page.locator('#countdown').evaluate('node => parseFloat(getComputedStyle(node).fontSize) < parseFloat(getComputedStyle(document.querySelector("#nextPrayerTime")).fontSize)')

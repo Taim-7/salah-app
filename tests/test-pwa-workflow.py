@@ -43,6 +43,10 @@ try:
             motionRequests.push({ absolute, active:navigator.userActivation.isActive });
             return 'granted';
           };
+          DeviceMotionEvent.requestPermission = async () => {
+            motionRequests.push({ gyro:true, active:navigator.userActivation.isActive });
+            return 'granted';
+          };
           window.compassTones = [];
           const create = AudioContext.prototype.createOscillator;
           AudioContext.prototype.createOscillator = function () {
@@ -58,15 +62,18 @@ try:
         page.clock.set_fixed_time(datetime(2026, 6, 21, 12, 0, tzinfo=timezone.utc))
         page.goto(url)
         assert page.get_by_role('dialog', name='Set up Salah').is_visible()
-        assert page.locator('#locationMode').inner_text() == 'Saved location'
+        assert page.locator('#locationLabel').inner_text() == 'Location needed'
+        assert page.locator('#prayerDashboard').is_hidden()
         assert page.evaluate('motionRequests.length') == 0
         page.get_by_role('button', name='Allow location and compass').click()
         assert page.locator('#permissionSetup').is_hidden()
-        assert page.evaluate('motionRequests') == [{'absolute':True, 'active':True}]
-        page.wait_for_function("document.getElementById('locationMode').textContent === 'Following GPS'")
+        assert page.evaluate('motionRequests') == [{'absolute':True, 'active':True}, {'gyro':True, 'active':True}]
+        page.locator('#prayerDashboard').wait_for()
+        assert page.locator('#locationMode').is_visible()
+        assert "Derry" in page.locator('#locationLabel').inner_text()
         page.wait_for_function('navigator.serviceWorker.controller !== null')
         page.locator('[data-screen-target="settings"]').click()
-        assert page.locator('#trackLocation').is_checked()
+        assert page.locator('#trackLocation, #setDerry, #cityQuery').count() == 0
         if not page.locator('#comparisonPanel').evaluate('panel => panel.open'):
             page.locator('#comparisonPanel > summary').click()
         assert not aladhan_requests
@@ -77,6 +84,7 @@ try:
         page.locator('[data-screen-target="today"]').click()
         page.reload()
         assert page.locator('#permissionSetup').is_hidden()
+        page.locator('#prayerDashboard').wait_for()
         assert page.locator('#offlineIndicator').is_visible()
         assert page.locator('#timezoneLabel').inner_text() == 'UK time'
         assert page.locator('#hijriDate').inner_text().endswith('AH · est.')
@@ -98,9 +106,8 @@ try:
 
         page.locator('[data-screen-target="settings"]').click()
         assert page.locator('#onlineCompare').count() == 0
-        page.locator('#cityQuery').fill('Buncrana')
-        page.locator('#citySearch').click()
-        page.locator('#cityResults button').filter(has_text='Buncrana').click()
+        context.set_geolocation({'latitude':55.1333, 'longitude':-7.45, 'accuracy':10})
+        page.wait_for_function("document.querySelector('#locationLabel').textContent.includes('Buncrana')")
         assert page.locator('#asrShadow').count() == 0
         assert page.locator('#highLatSelect option').filter(has_text='Half-night estimate').count() == 0
         page.locator('#highLatSelect').select_option('crossings')
@@ -277,16 +284,19 @@ try:
         assert page.locator('#qiblaAligned').is_hidden()
         assert page.locator('#qiblaLayouts').count() == 0
         assert page.locator('#qiblaSettings, #qiblaHaptic, #testVibration').count() == 0
+        config = page.evaluate("JSON.parse(localStorage.getItem('salah-config'))")
+        assert config['useDeviceLocation'] is True
+        assert not {'lat', 'lng', 'timeZone', 'location'} & config.keys()
         page.evaluate("""async () => {
-          const config = JSON.parse(localStorage.getItem('salah-config'));
+          const lat = 55.1333, lng = -7.45;
           const model = await import('./vendor/magvar/magvar.mjs');
           const radians = Math.PI / 180;
-          const fromLat = config.lat * radians, toLat = 21.422487 * radians;
-          const longitudeGap = (39.826206 - config.lng) * radians;
+          const fromLat = lat * radians, toLat = 21.422487 * radians;
+          const longitudeGap = (39.826206 - lng) * radians;
           const bearing = 360 + Math.atan2(
             Math.sin(longitudeGap), Math.cos(fromLat) * Math.tan(toLat) - Math.sin(fromLat) * Math.cos(longitudeGap)
           ) / radians;
-          const correction = model.magvar(config.lat, config.lng, 0, new Date());
+          const correction = model.magvar(lat, lng, 0, new Date());
           window.pointPhone = (offset, accuracy = 10, beta = 0, gamma = 0) => {
             const heading = (bearing + offset - correction + 360) % 360;
             const event = new Event('deviceorientation');
@@ -296,10 +306,18 @@ try:
             });
             window.dispatchEvent(event);
           };
+          let heldOffset = 0;
+          const wait = ms => new Promise(done => setTimeout(done, ms));
           window.holdPhone = async (offset, accuracy = 10) => {
+            while (Math.abs(offset - heldOffset) > 15) {
+              heldOffset += 15 * Math.sign(offset - heldOffset);
+              pointPhone(heldOffset, accuracy);
+              await wait(65);
+            }
+            heldOffset = offset;
             for (let i = 0; i < 9; i++) {
               pointPhone(offset, accuracy);
-              await new Promise(done => setTimeout(done, 62));
+              await wait(62);
             }
           };
           window.pointAbsolute = (offset, type = 'deviceorientationabsolute') => {
@@ -329,7 +347,6 @@ try:
         assert page.locator('#qiblaCue').inner_text() == 'Approximate alignment · 0.1° off'
         assert 'no compass accuracy estimate' in page.locator('#qiblaAccuracy').inner_text()
         assert page.locator('#qiblaPrecisionRow').is_hidden()
-        page.evaluate('pointPhone(55, 10)')
         page.evaluate('holdPhone(55)')
         page.locator('#qiblaDial.live').wait_for()
         assert 'left' in page.locator('#qiblaCue').inner_text()
@@ -345,9 +362,6 @@ try:
         assert page.locator('#qiblaPrecision').inner_text() == '±10°'
         assert page.locator('#qiblaMarker rect').evaluate('marker => getComputedStyle(marker).stroke') == 'rgb(114, 220, 163)'
         assert page.evaluate('compassTones.slice(-2)') == [740, 990]
-        page.evaluate('pointPhone(-178)')
-        assert page.locator('#qiblaTurnAngle').inner_text() == '2°'
-        assert page.locator('#qiblaAligned').get_attribute('data-state') == 'aligned'
         page.evaluate('holdPhone(-2.5)')
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'aligned'
         assert page.locator('#qiblaTurnAngle').inner_text() == '2.5°'
@@ -373,6 +387,36 @@ try:
         assert page.locator('#qiblaPrecision').inner_text() == 'Uncalibrated'
         page.evaluate('holdPhone(0)')
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'aligned'
+        ring = page.locator('#compassTicks').get_attribute('transform')
+        page.evaluate('pointAbsolute(90)')
+        assert page.locator('#qiblaDial.aligned').is_visible()
+        page.evaluate("""async () => {
+          for (let i = 0; i < 12; i++) {
+            pointPhone(90);
+            await new Promise(done => setTimeout(done, 45));
+          }
+        }""")
+        assert page.locator('#qiblaCue').inner_text() == 'Compass reading jumped'
+        assert page.locator('#compassTicks').get_attribute('transform') == ring
+        assert page.locator('#qiblaTurnAngle').inner_text() == '—'
+        assert page.locator('#startCompass').inner_text() == 'Restart compass'
+        page.evaluate('pointPhone(0)')
+        assert page.locator('#qiblaDial.aligned').is_visible()
+        page.evaluate("""() => {
+          Object.defineProperty(window, 'orientation', {configurable:true, value:90});
+          window.dispatchEvent(new Event('orientationchange'));
+          pointPhone(90);
+        }""")
+        assert page.locator('#qiblaCue').inner_text() == 'Turn your phone upright'
+        assert page.locator('#compassTicks').get_attribute('transform') == ring
+        page.evaluate("""async () => {
+          Object.defineProperty(window, 'orientation', {configurable:true, value:0});
+          window.dispatchEvent(new Event('orientationchange'));
+          pointPhone(90);
+          await new Promise(done => setTimeout(done, 270));
+          pointPhone(0);
+        }""")
+        assert page.locator('#qiblaDial.aligned').is_visible()
         page.evaluate("""() => {
           const invalid = new Event('deviceorientation');
           Object.defineProperties(invalid, { webkitCompassHeading: { value: -1 }, webkitCompassAccuracy: { value: 10 } });
@@ -400,18 +444,12 @@ try:
         assert page.locator('#qiblaCue').inner_text() == 'Compass unavailable'
         assert page.locator('#qiblaBearing').is_visible()
 
-        context.route('https://api.bigdatacloud.net/**', lambda route: route.fulfill(
-            json={'countryCode': 'GB', 'city': 'Enniskillen', 'principalSubdivision': 'Northern Ireland'}
-        ))
-        context.grant_permissions(['geolocation'])
-        context.set_geolocation({'latitude': 54.346, 'longitude': -7.642, 'accuracy': 10})
+        context.set_geolocation({'latitude': 51.5072, 'longitude': -0.1276, 'accuracy': 10})
         context.set_offline(False)
-        page.locator('[data-screen-target="settings"]').click()
-        page.locator('#setGPS').click()
-        page.wait_for_function("document.querySelector('#placeInput').value.startsWith('Enniskillen')")
-        page.locator('#saveSettings').click()
+        page.wait_for_function("document.querySelector('#qiblaPosition').textContent.startsWith('London')")
+        assert page.locator('#qiblaBearing').inner_text() == '119.0°'
         page.locator('[data-screen-target="today"]').click()
-        assert page.locator('#locationLabel').inner_text().startswith('Enniskillen')
+        assert page.locator('#locationLabel').inner_text().startswith('London')
         assert page.locator('#timezoneLabel').inner_text() == 'UK time'
         asr = datetime.fromisoformat(page.locator('[data-event="asr"] time').get_attribute('datetime'))
         page.clock.set_fixed_time(asr - timedelta(minutes=25) + timedelta(seconds=2))
