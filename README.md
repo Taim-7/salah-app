@@ -1,6 +1,6 @@
 # Salah
 
-Salah is a prayer timetable for the UK and Ireland, with Derry as its starting location. It also has a Qibla compass, a fasting log and prayer reminders. The local timetable, built-in town search, Qibla bearing and fasting log work offline after the app has loaded once.
+Salah is a prayer timetable for the UK and Ireland, with Derry as its starting location. It also has a Qibla compass, a fasting log, a calendar of Islamic dates and prayer reminders. The local timetable, town search, Qibla bearing, fasting log and calendar work offline after the first visit.
 
 ## Using Salah
 
@@ -10,9 +10,11 @@ Use **Settings → Compare prayer times** to choose your main timetable and see 
 
 Choose Focus, Dayline or Horizon in **Settings → Appearance**. All three show the forbidden-time rows. **Home Screen icon** offers Crescent, Mihrab, Minaret, Compass and Prayer mat in each colour preset. Open the icon page in Safari before adding it to the Home Screen. An installed copy offers **Copy Safari link**. Save your fasting log before replacing a shortcut and restore it in the new copy.
 
-In **Qibla**, tap **Start compass** and hold the phone flat. The arrow at the top marks the direction your phone faces. Follow the coloured arc towards the Qibla marker. The optional chime plays on alignment and when the compass has a problem. Green marks alignment with the phone’s reported heading. The accuracy shown is the phone’s estimate. The true bearing is also available for a separate compass.
+In **Qibla**, tap **Start compass** and hold the phone flat. The arrow at the top marks the direction your phone faces. Follow the coloured arc towards the Qibla marker. The dial turns green when the phone reports a heading within 3° of the Qibla, with the remaining difference shown in the centre. The optional chime plays on alignment and when the compass has a problem. The accuracy shown is the phone’s estimate. The true bearing gives the starting direction towards the Kaaba from geographic north. Salah uses the World Magnetic Model to correct magnetic headings on iPhone and Android.
 
-In **Fasting**, choose a day to see Fajr and iftar and log a fast. A missed entry appears in **To make up** until you mark it as made up. Use **Fasts without dates** to type a total or adjust it with the minus and plus buttons. Salah stores both kinds of entry on your device. **Upcoming dates** shows Ramadan, both Eids and optional fasts.
+In **Fasting**, choose a day to see Fajr and iftar and log a fast. Use **Log as a make-up fast** on the day you fasted to cover an earlier missed day. If you only recorded the missed date, you can also use **Mark as made up** on that entry. Under **Fasts without dates**, **Make-up fasts** records how many of the days you entered as fasted were for making up missed days. The totals count dated and undated entries together, and a recorded make-up reduces **To make up** by one. Salah stores the log on your device.
+
+**Dates** has separate sections for upcoming fasts and Eids. Each row gives the dates and whether fasting is obligatory, Sunnah or forbidden. Open a row for the background and links to the Qur’an or hadith.
 
 In **Sounds**, use **Play sound** to start audio for the session. Pick how early the pre-prayer reminder appears from 15, 20, 25 or 30 minutes. The sound level controls the recordings and chimes in Salah. Gentle chime and Clear bell can repeat until stopped. Prayer-time sounds and reminders run while Salah is open.
 

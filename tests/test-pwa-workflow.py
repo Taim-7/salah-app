@@ -193,9 +193,30 @@ try:
         install.close()
 
         page.locator('[data-screen-target="fasting"]').click()
-        assert page.locator('[data-occasion="ramadan"]').is_visible()
-        page.locator('#sunnahFasts summary').click()
-        assert page.locator('[data-occasion="white"]').is_visible()
+        assert abs(page.locator('#undatedFasted').bounding_box()['height'] - page.locator('.fast-day').first.bounding_box()['height']) <= 1
+        assert abs(page.locator('#undatedMadeUp').bounding_box()['height'] - page.locator('.fast-day').first.bounding_box()['height']) <= 1
+        page.locator('[data-screen-target="dates"]').click()
+        assert page.locator('#fastingPanel').is_hidden()
+        assert page.locator('#datesPanel').is_visible()
+        assert page.locator('#upcomingFasts [data-occasion]').count() == 4
+        assert page.locator('#upcomingEids [data-occasion]').count() == 2
+        for group in ['upcomingFasts', 'upcomingEids']:
+            dates = page.locator(f'#{group} time').evaluate_all('times => times.map(t => t.dateTime)')
+            assert dates == sorted(dates)
+        assert page.locator('#upcomingFasts').get_by_text('Obligatory fast', exact=True).count() == 1
+        assert page.locator('#upcomingFasts').get_by_text('Sunnah fast outside Hajj', exact=True).count() == 1
+        assert page.locator('#upcomingEids').get_by_text('Do not fast', exact=True).count() == 2
+        assert page.locator('[data-occasion="monday"], [data-occasion="thursday"]').count() == 0
+        for occasion in page.locator('#datesPanel [data-occasion]').all():
+            assert occasion.locator('.occasion-info').is_hidden()
+            occasion.locator('summary').click()
+            assert occasion.locator('.occasion-info').is_visible()
+            assert occasion.locator('.occasion-sources a').count() >= 2
+            assert occasion.locator('a[href^="https://sunnah.com/"]').first.is_visible()
+            occasion.locator('summary').click()
+        page.reload()
+        assert page.locator('#datesPanel').is_visible()
+        page.locator('[data-screen-target="fasting"]').click()
         page.locator('#undatedFasted').fill('17')
         page.locator('#undatedFasted').press('Tab')
         page.get_by_role('button', name='Add one fasted day').click()
@@ -203,10 +224,18 @@ try:
         page.locator('#undatedMissed').press('Tab')
         page.get_by_role('button', name='Subtract one missed day').click()
         assert page.locator('#undatedFasted').input_value() == '18'
+        assert page.locator('#fastingCompleted').inner_text() == '19'
+        assert page.locator('#calendarFasted').inner_text().startswith('1 fasted this')
         assert page.locator('#fastingDue').inner_text() == '3'
+        page.get_by_role('button', name='Add one make-up fast').click()
+        assert page.locator('#fastingCompleted').inner_text() == '19'
+        assert page.locator('#fastingDue').inner_text() == '2'
         page.reload()
         assert page.locator('#undatedMissed').input_value() == '2'
         assert page.locator('#undatedFasted').input_value() == '18'
+        assert page.locator('#undatedMadeUp').input_value() == '1'
+        page.get_by_role('button', name='Subtract one make-up fast').click()
+        assert page.locator('#fastingDue').inner_text() == '3'
 
         page.locator('[data-screen-target="qibla"]').click()
         assert page.locator('#qiblaView').get_attribute('data-view') == 'guide'
@@ -218,7 +247,12 @@ try:
         page.evaluate("""async () => {
           const config = JSON.parse(localStorage.getItem('salah-config'));
           const model = await import('./vendor/magvar/magvar.mjs');
-          const bearing = Number.parseFloat(document.querySelector('#qiblaBearing').textContent);
+          const radians = Math.PI / 180;
+          const fromLat = config.lat * radians, toLat = 21.422487 * radians;
+          const longitudeGap = (39.826206 - config.lng) * radians;
+          const bearing = 360 + Math.atan2(
+            Math.sin(longitudeGap), Math.cos(fromLat) * Math.tan(toLat) - Math.sin(fromLat) * Math.cos(longitudeGap)
+          ) / radians;
           const correction = model.magvar(config.lat, config.lng, 0, new Date());
           window.pointPhone = (offset, accuracy) => {
             const heading = (bearing + offset - correction + 360) % 360;
@@ -244,18 +278,36 @@ try:
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'near'
         page.evaluate('pointPhone(2, 10)')
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'aligned'
-        assert page.locator('#qiblaTurnLabel').inner_text() == 'Qibla'
+        assert page.locator('#qiblaTurnAngle').inner_text() == '2°'
+        assert page.locator('#qiblaCue').inner_text() == 'Heading aligned · 2° off'
+        assert page.locator('#qiblaTurnLabel').inner_text() == 'From Qibla'
         assert page.locator('#qiblaPrecision').inner_text() == '±10°'
         assert page.locator('#qiblaMarker rect').evaluate('marker => getComputedStyle(marker).stroke') == 'rgb(114, 220, 163)'
         assert page.evaluate('compassTones.slice(-2)') == [740, 990]
-        page.evaluate('pointPhone(7, 10)')
+        page.evaluate('pointPhone(-3, 10)')
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'aligned'
-        page.evaluate('pointPhone(9, 10)')
+        assert page.locator('#qiblaTurnAngle').inner_text() == '3°'
+        page.evaluate('pointPhone(3.01, 10)')
+        assert page.locator('#qiblaAligned').get_attribute('data-state') == 'near'
+        assert page.locator('#qiblaTurnAngle').inner_text() == '3.1°'
+        page.evaluate('pointPhone(3, 10)')
+        assert page.locator('#qiblaAligned').get_attribute('data-state') == 'aligned'
+        assert page.evaluate('compassTones.length') == 2
+        page.evaluate('pointPhone(7, 10)')
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'near'
         page.evaluate('pointPhone(0, 35)')
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'weak'
         assert page.locator('#qiblaDial').evaluate('dial => !dial.classList.contains("live")')
         page.evaluate('pointPhone(0, -1)')
+        assert page.locator('#qiblaAligned').get_attribute('data-state') == 'weak'
+        assert page.locator('#qiblaPrecision').inner_text() == 'Uncalibrated'
+        page.evaluate('pointPhone(0, 10)')
+        assert page.locator('#qiblaAligned').get_attribute('data-state') == 'aligned'
+        page.evaluate("""() => {
+          const invalid = new Event('deviceorientation');
+          Object.defineProperties(invalid, { webkitCompassHeading: { value: -1 }, webkitCompassAccuracy: { value: 10 } });
+          window.dispatchEvent(invalid);
+        }""")
         assert page.locator('#qiblaAligned').get_attribute('data-state') == 'weak'
         page.locator('#startCompass').click()
         page.evaluate("""() => {

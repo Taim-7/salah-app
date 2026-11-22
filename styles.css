@@ -105,7 +105,7 @@ svg { display: block; }
 .location-live-status { font-size: 12px; color: var(--accent); overflow-wrap: anywhere; }
 .location-live-status:not(:empty) { margin: 0 0 10px; }
 .dashboard { display: grid; gap: var(--gap); }
-.hero-card, .times-panel, .qibla-panel, .fasting-panel, .sound-panel, .settings-screen {
+.hero-card, .times-panel, .qibla-panel, .fasting-panel, .dates-panel, .sound-panel, .settings-screen {
   min-width: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow);
 }
 .hero-card { padding: clamp(14px, 3vw, 27px); background: radial-gradient(ellipse at 88% -30%, var(--wash), transparent 83%), linear-gradient(125deg, var(--panel), var(--hero-end)); }
@@ -114,19 +114,19 @@ svg { display: block; }
 }
 .hero-top { margin-bottom: 12px; flex-wrap: wrap; }
 .hero-overline { color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .085em; text-transform: uppercase; }
-.hero-method, .tiny-pill { color: var(--accent); background: var(--accent-deep); border-radius: 20px; font-size: 11px; padding: 4px 8px; font-weight: 650; }
+.tiny-pill { color: var(--accent); background: var(--accent-deep); border-radius: 20px; font-size: 11px; padding: 4px 8px; font-weight: 650; }
 .hero-prayer, .hero-digits { min-width: 0; }
 .hero-arabic { color: var(--secondary); direction: rtl; text-align: start; width: fit-content; min-height: 18px; font-size: 15px; }
 .hero-name { font-size: clamp(31px, 7vw, 53px); letter-spacing: -.055em; line-height: 1.08; font-weight: 730; }
-.hero-digits { text-align: right; }
-.hero-time { color: var(--ink); font-size: clamp(20px, 5vw, 35px); font-variant-numeric: tabular-nums; letter-spacing: -.051em; font-weight: 750; line-height: 1.2; }
-.hero-countdown { color: var(--accent); font-variant-numeric: tabular-nums; font-size: 12px; margin-top: 4px; }
-.hero-countdown.is-counting { font-size: clamp(16px, 4.6vw, 24px); font-weight: 720; line-height: 1.2; }
+.hero-digits { display: grid; gap: 3px; text-align: right; }
+.hero-time { color: var(--ink); font-size: clamp(19px, 5.4vw, 28px); font-variant-numeric: tabular-nums; font-weight: 720; line-height: 1.2; }
+.hero-countdown { color: var(--accent); font-variant-numeric: tabular-nums; font-size: 12px; }
+.hero-countdown.is-counting { font-size: clamp(15px, 4.4vw, 23px); font-weight: 680; line-height: 1.2; }
 .hero-bottom { align-items: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); flex-wrap: wrap; }
 .hero-live-message { font-size: 12px; font-weight: 700; color: var(--accent); }
 .hero-live-message[data-level="caution"] { color: var(--warm); }
 .hero-live-time { color: var(--muted); font-size: 12px; }
-.times-panel, .qibla-panel, .fasting-panel, .sound-panel { padding: clamp(13px, 3.3vw, 24px); }
+.times-panel, .qibla-panel, .fasting-panel, .dates-panel, .sound-panel { padding: clamp(13px, 3.3vw, 24px); }
 .panel-head, .panel-heading, .qibla-heading { margin-bottom: 14px; }
 .panel-head h2 { font-size: 18px; }
 .times-list { display: grid; gap: 5px; position: relative; }
@@ -288,28 +288,50 @@ input[type="file"]::file-selector-button { background: var(--raised); color: var
 .compass-stats dt { color: var(--muted); font-size: 11px; line-height: 1.2; }
 .compass-stats dd { margin: 4px 0 0; color: var(--ink); font-size: clamp(14px, 4.25vw, 20px); font-weight: 720; letter-spacing: -.035em; }
 .compass-stats small { color: var(--accent); font-size: 10px; vertical-align: .15em; white-space: nowrap; }
-.fasting-content { display: grid; gap: 12px; }
-.fasting-detail, .fasting-calendar, .fasting-totals, .fasting-upcoming, .sound-card, .reminder-card {
+.fasting-panel { --fasting-day-height: 44px; }
+.fasting-log-view, .fasting-content { display: grid; gap: 12px; }
+.fasting-detail, .fasting-calendar, .fasting-totals, .occasion-groups > section, .sound-card, .reminder-card {
   min-width: 0; padding: 12px; background: var(--shade); border: 1px solid var(--line); border-radius: var(--inset-radius);
 }
-.fasting-totals { margin-bottom: 12px; }
 .fasting-total-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 8px; }
 .fasting-total label { display: block; font-size: 12px; font-weight: 650; margin-bottom: 4px; color: var(--muted); }
 .count-stepper { display: grid; grid-template-columns: 34px minmax(0, 1fr) 34px; gap: 4px; }
-.count-stepper button { min-height: 44px; padding-inline: 0; font-size: 17px; }
-.count-stepper input { min-width: 0; padding-inline: 2px; text-align: center; font-variant-numeric: tabular-nums; appearance: textfield; }
+.count-stepper button { min-height: var(--fasting-day-height); padding-inline: 0; font-size: 17px; }
+.count-stepper input { min-width: 0; min-height: var(--fasting-day-height); padding-inline: 2px; text-align: center; font-variant-numeric: tabular-nums; appearance: textfield; }
 .count-stepper input::-webkit-inner-spin-button, .count-stepper input::-webkit-outer-spin-button { appearance: none; margin: 0; }
+.fasting-makeup-count { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: center; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.fasting-makeup-count label { color: var(--ink); }
+.fasting-makeup-count p { color: var(--muted); font-size: 11px; line-height: 1.3; }
 #fastingCountStatus:empty { margin: 0; }
-.fasting-upcoming { margin-top: 12px; }
-.upcoming-list > div { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 10px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
-.upcoming-list dd { margin: 0; color: var(--accent); font-variant-numeric: tabular-nums; }
-.fasting-detail { padding: clamp(13px, 3.5vw, 20px); }
+.dates-heading { margin-bottom: 14px; }
+.occasion-groups { display: grid; gap: 12px; }
+.occasion-groups h3 { margin-bottom: 9px; }
+.upcoming-list { display: grid; gap: 7px; list-style: none; padding: 0; margin: 0; }
+.occasion { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.occasion summary { display: grid; grid-template-columns: minmax(76px, 26%) minmax(0, 1fr) 13px; gap: 9px; align-items: center; min-height: 62px; padding: 7px; cursor: pointer; list-style: none; }
+.occasion summary::-webkit-details-marker { display: none; }
+.occasion summary:focus-visible { outline-offset: 1px; border-radius: 8px; }
+.occasion[open] { border-color: var(--accent); }
+.occasion time { display: grid; align-content: center; min-height: 43px; padding: 5px; border-radius: 7px; background: var(--accent-deep); color: var(--accent); font-size: 12px; font-weight: 700; line-height: 1.24; text-align: center; font-variant-numeric: tabular-nums; }
+.occasion strong { display: block; font-size: 14px; line-height: 1.2; }
+.occasion-hijri { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; line-height: 1.25; }
+.occasion-ruling { display: inline-block; margin-top: 4px; padding: 2px 6px; border-radius: 5px; background: var(--raised); color: var(--ok); font-size: 11px; font-weight: 700; line-height: 1.25; }
+.occasion-ruling[data-kind="required"] { color: var(--warm); }
+.occasion-ruling[data-kind="forbidden"] { color: var(--danger); }
+.occasion-chevron { width: 8px; height: 8px; border: solid var(--muted); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg) translateY(-2px); }
+.occasion[open] .occasion-chevron { transform: rotate(225deg) translate(-2px, -1px); }
+.occasion-info { display: grid; gap: 8px; margin: 1px 9px 0; padding: 9px 1px 11px; border-top: 1px solid var(--line); color: var(--ink); font-size: 13px; }
+.occasion-sources { display: flex; flex-wrap: wrap; gap: 3px 11px; }
+.occasion-sources a { display: inline-flex; align-items: center; min-height: 30px; font-size: 12px; }
+#datesUnavailable { color: var(--muted); font-size: 13px; }
+.fasting-calendar-controls { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 9px; }
+#calendarFasted { color: var(--muted); font-size: 12px; line-height: 1.25; }
 .fasting-detail-top { display: flex; align-items: flex-start; gap: 5px 9px; justify-content: space-between; }
 .fasting-detail-top h3 { font-size: clamp(17px, 4.8vw, 24px); }
 #fastingRelative { color: var(--accent); font-size: 11px; font-weight: 690; }
 #fastingRelative:not(:empty) { margin-bottom: 3px; }
 .fasting-mark { background: var(--raised); color: var(--warm); padding: 4px 7px; border-radius: 7px; font-size: 11px; font-weight: 690; white-space: nowrap; }
-.fasting-mark[data-status="fasted"] { color: var(--ok); }
+.fasting-mark:is([data-status="fasted"], [data-status="make-up"]) { color: var(--ok); }
 .fasting-mark[data-status="made-up"] { color: var(--accent); }
 .fasting-times { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 10px 0 4px; }
 .fasting-times > div {
@@ -329,6 +351,7 @@ input[type="file"]::file-selector-button { background: var(--raised); color: var
 .fasting-answer-buttons { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
 .fasting-answer-buttons button, #fastingMadeUp { min-height: 44px; }
 #fastingMadeUp { width: 100%; }
+#logFastingMakeUp { min-height: 44px; padding-inline: 0; }
 #clearFastingEntry { display: block; padding-inline: 0; }
 .month-nav { justify-content: space-between; margin-bottom: 10px; }
 .fasting-period { text-align: center; min-width: 0; }
@@ -337,7 +360,7 @@ input[type="file"]::file-selector-button { background: var(--raised); color: var
 .fasting-weekdays, .fasting-days { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 3px; }
 .fasting-weekdays { color: var(--muted); font-size: 11px; text-align: center; margin-bottom: 4px; }
 .fast-day {
-  display: grid; place-content: center; justify-items: center; min-width: 0; min-height: 43px;
+  display: grid; place-content: center; justify-items: center; min-width: 0; min-height: var(--fasting-day-height);
   padding: 3px 1px; background: var(--panel); color: var(--ink); border: 1px solid transparent;
   border-radius: 8px; line-height: 1; font-variant-numeric: tabular-nums; font-size: 13px; font-weight: 630;
 }
@@ -348,7 +371,7 @@ input[type="file"]::file-selector-button { background: var(--raised); color: var
 .fasting-content[data-view="week"] .fast-day[aria-pressed="true"] small { color: var(--bg); }
 .fast-day[aria-current="date"] > span { text-decoration: underline; text-underline-offset: 3px; }
 .fast-day small { height: .9em; margin-top: 3px; font-size: 10px; color: var(--mark-colour); }
-.fast-day[data-mark="fasted"] { --mark-colour: var(--ok); }
+.fast-day:is([data-mark="fasted"], [data-mark="make-up"]) { --mark-colour: var(--ok); }
 .fast-day[data-mark="due"] { --mark-colour: var(--warm); }
 .fast-day[data-mark="made-up"] { --mark-colour: var(--night); }
 .fasting-summary { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: 8px; }
@@ -403,7 +426,7 @@ input[type="file"]::file-selector-button { background: var(--raised); color: var
 .app-dock {
   z-index: 100; position: fixed; bottom: calc(6px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%);
   width: min(calc(100% - 20px), 574px); background: var(--panel); border: 1px solid var(--line); border-radius: 19px;
-  display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 2px; padding: 4px; box-shadow: 0 7px 35px #0007;
+  display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 2px; padding: 4px; box-shadow: 0 7px 35px #0007;
 }
 .app-dock button { min-width: 0; min-height: 49px; display: grid; justify-items: center; align-content: center; gap: 3px; border: 1px solid transparent; background: transparent; border-radius: 12px; color: var(--muted); font-weight: 650; font-size: 10px; padding: 3px 0; }
 .app-dock svg { width: 20px; height: 20px; color: var(--accent); }
@@ -464,7 +487,6 @@ body[data-layout="horizon"] .hero-content { order: 3; margin-top: 12px; padding-
 body:is([data-layout="timeline"], [data-layout="horizon"]) .horizon-prayer-label { display: block; color: var(--muted); font-size: 11px; }
 body[data-layout="horizon"] .hero-arabic { display: none; }
 body[data-layout="horizon"] .hero-name { font-size: clamp(19px, 4.8vw, 27px); }
-body[data-layout="horizon"] .hero-time { font-size: clamp(17px, 4.3vw, 24px); }
 .horizon-date-slot { padding-bottom: 11px; margin-bottom: 11px; border-bottom: 1px solid var(--line); }
 .horizon-date-slot .date-nav { justify-content: center; max-width: 360px; margin-inline: auto; }
 .horizon-date-slot .day-picker-button { flex: 1; }
@@ -483,7 +505,7 @@ body[data-layout="horizon"] .hero-time { font-size: clamp(17px, 4.3vw, 24px); }
 body[data-layout="horizon"] .time-row.prayer-entry { border-radius: 0; border: 0; border-bottom: 1px solid var(--line); background: transparent; }
 body[data-layout="horizon"] .time-row:is(.current-prayer,.is-next).prayer-entry { border-radius: 11px; border: 1px solid var(--accent); background: var(--accent-deep); }
 body[data-layout="horizon"] .fasting-detail { background: radial-gradient(ellipse at 10% 0%, var(--glow), transparent 75%), var(--bg); }
-body[data-layout="horizon"] :is(.fasting-panel,.sound-panel,.settings-screen) { background: radial-gradient(ellipse at 100% 0%, var(--wash), transparent 60%), var(--panel); }
+body[data-layout="horizon"] :is(.fasting-panel,.dates-panel,.sound-panel,.settings-screen) { background: radial-gradient(ellipse at 100% 0%, var(--wash), transparent 60%), var(--panel); }
 
 .icon-choices {
   display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 6px; margin: 0 0 10px;
@@ -518,7 +540,7 @@ body[data-layout="horizon"] :is(.fasting-panel,.sound-panel,.settings-screen) { 
   body[data-layout="horizon"] .dashboard { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
   .qibla-content { grid-template-columns: minmax(0,1.1fr) minmax(0,1fr); gap: 23px; align-items: center; }
   .fasting-content { grid-template-columns: minmax(0,1fr) minmax(0,1fr); align-items: start; }
-  .fasting-summary { grid-column: 1 / -1; }
+  .occasion-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
   .alert-grid { grid-template-columns: minmax(0,1.15fr) minmax(0,1fr); align-items: start; }
   .option-group { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
@@ -532,7 +554,6 @@ body[data-layout="horizon"] :is(.fasting-panel,.sound-panel,.settings-screen) { 
   .phase-pill { display: none; }
   .source-picker { grid-template-columns: 1fr; }
   .source-choice { min-height: 41px; }
-  .hero-time { font-size: 20px; }
   .app-dock button { font-size: 9px; }
 }
 @media (prefers-reduced-motion: no-preference) {

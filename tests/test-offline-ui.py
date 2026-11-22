@@ -12,15 +12,22 @@ with sync_playwright() as p:
   page.add_style_tag(path=str(root/'styles.css'))
   page.evaluate('''() => {Object.defineProperty(navigator,'onLine',{configurable:true,get:()=>false});window.fetch=()=>{throw Error('Offline fetch was attempted')};}''')
   for f in ['region.js','solar.js','providers.js','timetable.js','audio.js','hijri.js','app.js']:page.add_script_tag(path=str(root/f))
-  assert page.locator('#heroMethod').inner_text().startswith('15° / 13°')
+  assert page.locator('#heroMethod').count() == 0
+  assert page.locator('#nextPrayerTime').bounding_box()['y'] < page.locator('#countdown').bounding_box()['y']
+  assert page.locator('#countdown').evaluate('node => parseFloat(getComputedStyle(node).fontSize) < parseFloat(getComputedStyle(document.querySelector("#nextPrayerTime")).fontSize)')
   assert page.locator('#prayerList .prayer-entry').count()==6,(width,page.locator('#prayerList .prayer-entry').count())
   assert page.locator('#prayerList .avoid-entry').count()==3
   assert page.locator('#offlineIndicator').is_visible()
   assert page.locator('#settingsTheme').count()==0
   assert page.locator('body').get_attribute('data-layout')=='compact'
-  for tab in ['qibla','fasting','sounds','settings','today']:
+  for tab in ['qibla','fasting','dates','sounds','settings','today']:
    page.locator(f'[data-screen-target="{tab}"]').click()
+   assert page.locator(f'[data-screen-target="{tab}"]').bounding_box()['width'] >= 44, (width,tab)
    assert page.evaluate('document.documentElement.scrollWidth-document.documentElement.clientWidth')<3,(width,tab)
+   if tab=='dates':
+    page.locator('[data-occasion="white"] summary').press('Enter')
+    assert page.locator('[data-occasion="white"] .occasion-info').is_visible()
+    assert page.evaluate('document.documentElement.scrollWidth-document.documentElement.clientWidth')<3,(width,'date details')
   page.locator('[data-screen-target="settings"]').click()
   page.locator('#comparisonPanel > summary').click()
   page.locator('#comparisonBody tr').last.wait_for()
@@ -40,6 +47,7 @@ with sync_playwright() as p:
     assert page.locator('#sunChart').is_visible() == (layout=='horizon')
     date_parent = 'horizonDateSlot' if layout=='horizon' else 'prayerHeading'
     assert page.locator('#prayerDateControls').evaluate('(el) => el.parentNode.id') == date_parent
+    assert page.locator('#nextPrayerTime').bounding_box()['y'] < page.locator('#countdown').bounding_box()['y']
     page.locator('[data-screen-target="qibla"]').click()
     assert page.locator('#qiblaBearing').inner_text().startswith('114.4')
     page.locator('[data-screen-target="today"]').click()
@@ -47,5 +55,5 @@ with sync_playwright() as p:
     assert page.evaluate('document.documentElement.scrollWidth-document.documentElement.clientWidth')<3, layout
   assert not errors,(width,errors)
   cases+=1;context.close()
- print('PASS',cases,'offline simulated UI widths: local prayer list, 5 tabs, 3 layouts, sound controls, no overflow, no JS exceptions')
+ print('PASS',cases,'offline simulated UI widths: local prayer list, 6 tabs, 3 layouts, sound controls, date details, no overflow, no JS exceptions')
  b.close()

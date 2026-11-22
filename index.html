@@ -28,7 +28,6 @@
 <section aria-label="Upcoming prayer" class="hero-card">
   <div class="hero-top">
     <span class="hero-overline" id="heroHeading">Next prayer</span>
-    <span class="hero-method" id="heroMethod">15° / 13°</span>
   </div>
   <div class="hero-content">
     <div class="hero-prayer">
@@ -125,92 +124,113 @@
 </section>
 
 <section aria-labelledby="fastingTitle" class="fasting-panel app-screen" data-screen="fasting" id="fastingPanel" hidden>
-  <header class="panel-heading">
-    <h2 id="fastingTitle">Fasting</h2>
-    <div class="view-options" id="fastingLayouts" role="group" aria-label="Fasting view">
-      <button type="button" data-fasting-view="week" aria-pressed="true">Week</button>
-      <button type="button" data-fasting-view="month" aria-pressed="false">Month</button>
-    </div>
-  </header>
-  <section class="fasting-totals" aria-labelledby="undatedFastingTitle" id="fastingTotals">
-    <h3 id="undatedFastingTitle">Fasts without dates</h3>
-    <div class="fasting-total-fields">
-      <div class="fasting-total">
-        <label for="undatedFasted">Fasted</label>
-        <div class="count-stepper">
-          <button class="secondary-button" type="button" data-count="fasted" data-step="-1" aria-label="Subtract one fasted day">−</button>
-          <input id="undatedFasted" data-count="fasted" type="number" min="0" step="1" value="0" inputmode="numeric"/>
-          <button class="secondary-button" type="button" data-count="fasted" data-step="1" aria-label="Add one fasted day">+</button>
-        </div>
-      </div>
-      <div class="fasting-total">
-        <label for="undatedMissed">Missed</label>
-        <div class="count-stepper">
-          <button class="secondary-button" type="button" data-count="missed" data-step="-1" aria-label="Subtract one missed day">−</button>
-          <input id="undatedMissed" data-count="missed" type="number" min="0" step="1" value="0" inputmode="numeric"/>
-          <button class="secondary-button" type="button" data-count="missed" data-step="1" aria-label="Add one missed day">+</button>
-        </div>
-      </div>
-    </div>
-    <p id="fastingCountStatus" class="form-note" role="status"></p>
-  </section>
-  <div class="fasting-content" id="fastingView" data-view="week">
-    <section class="fasting-calendar" aria-labelledby="fastingMonth">
-      <div class="month-nav">
-        <button class="day-arrow" id="fastingPrevious" type="button" aria-label="Previous week">‹</button>
-        <div class="fasting-period"><h3 id="fastingMonth"></h3><button type="button" class="text-button" id="fastingToday" hidden>Back to today</button></div>
-        <button class="day-arrow" id="fastingNext" type="button" aria-label="Next week">›</button>
-      </div>
-      <div class="fasting-weekdays" aria-hidden="true"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
-      <div id="fastingDays" class="fasting-days" role="group" aria-labelledby="fastingMonth"></div>
-    </section>
-    <section class="fasting-detail" id="fastingDetail" aria-labelledby="fastingDate">
-      <div class="fasting-detail-top">
-        <div><p id="fastingRelative"></p><h3 id="fastingDate" tabindex="-1"></h3></div>
-        <span id="fastingMark" class="fasting-mark" hidden></span>
-      </div>
-      <dl class="fasting-times">
-        <div>
-          <dt>Fajr <span id="fastingEstimated" hidden>Est.</span></dt>
-          <dd id="fastingFajr">—</dd>
-        </div>
-        <div>
-          <dt>Iftar</dt>
-          <dd id="fastingIftar">—</dd>
-        </div>
-      </dl>
-      <p class="fasting-span"><span id="fastingDuration">—</span><span id="fastingLengthLabel"> fasting</span></p>
-      <p class="setting-hint" id="fastingEstimate"></p>
-      <div class="fasting-actions" role="group" aria-label="Log the selected day">
-        <div id="fastingQuestion">
-          <p>Did you fast?</p>
-          <div class="fasting-answer-buttons">
-            <button id="fastingQuickAction" class="primary-button" type="button" data-fast-status="fasted">Yes, I fasted</button>
-            <button class="secondary-button" type="button" data-fast-status="due">I missed it</button>
-          </div>
-        </div>
-        <button class="primary-button" id="fastingMadeUp" type="button" data-fast-status="made-up" hidden>Mark as made up</button>
-        <button class="text-button" id="clearFastingEntry" type="button" data-fast-status="" hidden>Clear entry</button>
-      </div>
-      <p id="fastingStatus" class="form-note" role="status"></p>
-    </section>
+  <header class="panel-heading"><h2 id="fastingTitle">Fasting</h2></header>
+  <div class="fasting-log-view" id="fastingLogView">
     <div class="fasting-summary" id="fastingSummary">
-      <div class="fasting-count"><strong id="fastingCompleted">0</strong><span id="fastingPeriodLabel">fasted this week</span></div>
+      <div class="fasting-count"><strong id="fastingCompleted">0</strong><span>fasted in total</span></div>
       <details id="fastingToMakeUp" class="fasting-makeup">
         <summary><strong id="fastingDue">0</strong> to make up</summary>
         <div id="fastingDueDates"></div>
       </details>
     </div>
+    <section class="fasting-totals" aria-labelledby="undatedFastingTitle" id="fastingTotals">
+      <h3 id="undatedFastingTitle">Fasts without dates</h3>
+      <div class="fasting-total-fields">
+        <div class="fasting-total">
+          <label for="undatedFasted">Fasted</label>
+          <div class="count-stepper">
+            <button class="secondary-button" type="button" data-count="fasted" data-step="-1" aria-label="Subtract one fasted day">−</button>
+            <input id="undatedFasted" data-count="fasted" type="number" min="0" step="1" value="0" inputmode="numeric"/>
+            <button class="secondary-button" type="button" data-count="fasted" data-step="1" aria-label="Add one fasted day">+</button>
+          </div>
+        </div>
+        <div class="fasting-total">
+          <label for="undatedMissed">Missed originally</label>
+          <div class="count-stepper">
+            <button class="secondary-button" type="button" data-count="missed" data-step="-1" aria-label="Subtract one missed day">−</button>
+            <input id="undatedMissed" data-count="missed" type="number" min="0" step="1" value="0" inputmode="numeric"/>
+            <button class="secondary-button" type="button" data-count="missed" data-step="1" aria-label="Add one missed day">+</button>
+          </div>
+        </div>
+        <div class="fasting-total fasting-makeup-count">
+          <div><label for="undatedMadeUp">Make-up fasts</label><p id="undatedMadeUpHint">Included in the fasted total above</p></div>
+          <div class="count-stepper">
+            <button class="secondary-button" type="button" data-count="madeUp" data-step="-1" aria-label="Subtract one make-up fast">−</button>
+            <input id="undatedMadeUp" data-count="madeUp" aria-describedby="undatedMadeUpHint" type="number" min="0" step="1" value="0" inputmode="numeric"/>
+            <button class="secondary-button" type="button" data-count="madeUp" data-step="1" aria-label="Add one make-up fast">+</button>
+          </div>
+        </div>
+      </div>
+      <p id="fastingCountStatus" class="form-note" role="status"></p>
+    </section>
+    <div class="fasting-content" id="fastingView" data-view="week">
+      <section class="fasting-calendar" aria-labelledby="fastingMonth">
+        <div class="fasting-calendar-controls">
+          <span id="calendarFasted"></span>
+          <div class="view-options" id="fastingLayouts" role="group" aria-label="Fasting view">
+            <button type="button" data-fasting-view="week" aria-pressed="true">Week</button>
+            <button type="button" data-fasting-view="month" aria-pressed="false">Month</button>
+          </div>
+        </div>
+        <div class="month-nav">
+          <button class="day-arrow" id="fastingPrevious" type="button" aria-label="Previous week">‹</button>
+          <div class="fasting-period"><h3 id="fastingMonth"></h3><button type="button" class="text-button" id="fastingToday" hidden>Back to today</button></div>
+          <button class="day-arrow" id="fastingNext" type="button" aria-label="Next week">›</button>
+        </div>
+        <div class="fasting-weekdays" aria-hidden="true"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+        <div id="fastingDays" class="fasting-days" role="group" aria-labelledby="fastingMonth"></div>
+      </section>
+      <section class="fasting-detail" id="fastingDetail" aria-labelledby="fastingDate">
+        <div class="fasting-detail-top">
+          <div><p id="fastingRelative"></p><h3 id="fastingDate" tabindex="-1"></h3></div>
+          <span id="fastingMark" class="fasting-mark" hidden></span>
+        </div>
+        <dl class="fasting-times">
+          <div>
+            <dt>Fajr <span id="fastingEstimated" hidden>Est.</span></dt>
+            <dd id="fastingFajr">—</dd>
+          </div>
+          <div>
+            <dt>Iftar</dt>
+            <dd id="fastingIftar">—</dd>
+          </div>
+        </dl>
+        <p class="fasting-span"><span id="fastingDuration">—</span><span id="fastingLengthLabel"> fasting</span></p>
+        <p class="setting-hint" id="fastingEstimate"></p>
+        <div class="fasting-actions" role="group" aria-label="Log the selected day">
+          <div id="fastingQuestion">
+            <p>Did you fast?</p>
+            <div class="fasting-answer-buttons">
+              <button id="fastingQuickAction" class="primary-button" type="button" data-fast-status="fasted">Yes, I fasted</button>
+              <button class="secondary-button" type="button" data-fast-status="due">I need to make it up</button>
+            </div>
+          </div>
+          <button class="text-button" id="logFastingMakeUp" type="button" data-fast-status="make-up">Log as a make-up fast</button>
+          <button class="primary-button" id="fastingMadeUp" type="button" data-fast-status="made-up" hidden>Mark as made up</button>
+          <button class="text-button" id="clearFastingEntry" type="button" data-fast-status="" hidden>Clear entry</button>
+        </div>
+        <p id="fastingStatus" class="form-note" role="status"></p>
+      </section>
+    </div>
   </div>
-  <section class="fasting-upcoming" id="fastingUpcoming" aria-labelledby="upcomingTitle" hidden>
-    <h3 id="upcomingTitle">Upcoming dates</h3>
-    <p class="setting-hint">Hijri dates are estimates. Follow your local announcement for Ramadan and Eid.</p>
-    <dl class="upcoming-list" id="hijriOccasions"></dl>
-    <details class="study-links" id="sunnahFasts">
-      <summary>Sunnah fasts</summary>
-      <dl class="upcoming-list" id="sunnahDates"></dl>
-    </details>
-  </section>
+</section>
+
+<section aria-labelledby="datesTitle" class="dates-panel app-screen" data-screen="dates" id="datesPanel" hidden>
+  <header class="dates-heading">
+    <h2 id="datesTitle">Islamic dates</h2>
+    <p class="setting-hint">Estimated dates. Check local moon announcements.</p>
+  </header>
+  <p id="datesUnavailable" role="status" hidden>Hijri dates are unavailable on this device.</p>
+  <div class="occasion-groups" id="occasionGroups">
+    <section aria-labelledby="upcomingFastsTitle">
+      <h3 id="upcomingFastsTitle">Upcoming fasts</h3>
+      <ul class="upcoming-list" id="upcomingFasts"></ul>
+    </section>
+    <section aria-labelledby="upcomingEidsTitle">
+      <h3 id="upcomingEidsTitle">Eid dates</h3>
+      <ul class="upcoming-list" id="upcomingEids"></ul>
+    </section>
+  </div>
 </section>
 
 <section aria-labelledby="soundTitle" class="sound-panel app-screen" data-screen="sounds" hidden id="soundPanel">
@@ -351,6 +371,8 @@
 </div><aside id="reminderToast" class="reminder-toast" hidden><p id="reminderMessage" role="status"></p><button type="button" class="text-button" id="dismissReminder" aria-label="Dismiss prayer reminder">×</button></aside>
 <nav aria-label="Main navigation" class="app-dock" role="tablist"><button aria-controls="today" aria-selected="true" class="is-active" data-screen-target="today" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M12 4v3m0 10v3M4 12h3m10 0h3"></path></svg><span>Prayers</span></button><button aria-controls="qiblaPanel" aria-selected="false" class="" data-screen-target="qibla" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="m10 10 7-4-4 7-7 4z"></path></svg><span>Qibla</span></button><button aria-controls="fastingPanel" aria-selected="false" data-screen-target="fasting" role="tab" type="button">
   <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="3"/><path d="M8 3.5v5M16 3.5v5M8.5 14l2.4 2.4 4.6-4.6"/></svg><span>Fasting</span>
+</button><button aria-controls="datesPanel" aria-selected="false" data-screen-target="dates" role="tab" type="button">
+  <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="3"/><path d="M8 3.5v5m8-5v5M4 11h16m-12 4h2m4 0h2"/></svg><span>Dates</span>
 </button><button aria-controls="soundPanel" aria-selected="false" class="" data-screen-target="sounds" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0v5l2 3H4l2-3V9M10 20h4"></path></svg><span>Sounds</span></button><button aria-controls="settingsDialog" aria-selected="false" class="" data-screen-target="settings" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M12 3v3m0 12v3M3 12h3m12 0h3m-3.7-6.7-2.1 2.1m-7.4 7.4-2.1 2.1m0-11.6 2.1 2.1m7.4 7.4 2.1 2.1"></path><circle cx="12" cy="12" r="3"></circle></svg><span>Settings</span></button></nav>
 
 <script src="./region.js"></script><script src="./solar.js"></script><script src="./providers.js"></script><script src="./timetable.js"></script><script src="./hijri.js"></script><script src="./audio.js"></script><script src="./app.js"></script>

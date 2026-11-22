@@ -580,12 +580,7 @@
       ? previous : null;
   }
   function renderHero(t) {
-    const [a, b] = anglePair();
     $('heroHeading').textContent = t.fajr && ishaHasWindow(t) ? 'NEXT PRAYER' : 'NEXT TIMETABLED PRAYER';
-    $('heroMethod').textContent = t.sourceFallback ? a + '° / ' + b + '° · LOCAL FALLBACK' :
-      cfg.activeSource === 'angles' ? a + '° / ' + b + '° · local' :
-      cfg.activeSource === 'moonsighting' ? 'AlAdhan · ' + (t.savedProviderData ? 'saved' : 'online') :
-      methods.find(m => m.id === cfg.activeSource)?.title || 'Prayer times';
 
     const now = new Date();
     if (selectedKey !== todayKey()) {
@@ -641,11 +636,12 @@
     renderHijriDate();
     if (comparisonOpen()) renderComparison();
     if (!$('fastingPanel').hidden) renderFasting();
+    if (!$('datesPanel').hidden) renderIslamicDates(todayKey());
     drawSunChart(dayInfo);
     $('timesTag').textContent = cfg.timeZone === 'Europe/Dublin' ? 'Ireland time' : 'UK time';
     if (!dayInfo.valid) {
       note(dayInfo.reason); setHero(null, new Date()); $('heroHeading').textContent = 'PRAYER TIMES';
-      $('heroMethod').textContent = 'Calculation unavailable'; $('prayerList').innerHTML = '<p class="loading">Times unavailable for this date and location.</p>';
+      $('prayerList').innerHTML = '<p class="loading">Times unavailable for this date and location.</p>';
       $('heroLiveMessage').textContent='Timing unavailable'; $('heroLiveTime').textContent='Check date and location'; loadComparison(); return;
     }
     renderNotice(dayInfo); renderPrayerList(dayInfo); renderHero(dayInfo); renderQibla();
@@ -1006,6 +1002,7 @@
     if (document.hidden) {
       stopTracking();
       if (repeatTimer !== null) stopSound();
+      if (qiblaCompassOn || compassStarting) stopCompass();
     }
     else {
       if (!browsing) selectedKey = todayKey();
@@ -1040,7 +1037,7 @@
       updateSunChart(Date.now());
       if (Date.now() - lastListRefresh >= 30000) renderPrayerList(dayInfo);
     }
-    if (!$('fastingPanel').hidden) renderUpcomingFasts(localDay);
+    if (!$('datesPanel').hidden) renderIslamicDates(localDay);
     checkPrayerSounds();
     if (navigator.onLine && cfg.activeSource === 'moonsighting' &&
         [...failedOnline.values()].some(at => Date.now() - at >= 120000)) loadComparison();
@@ -1335,7 +1332,8 @@
   const compassPoints = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
   const compassLetters = ['compassNorth', 'compassEast', 'compassSouth', 'compassWest'];
   const compassFailureNotes = [[520, 0, .18, .13], [370, .21, .25, .13]];
-  let compassReading = null, magneticVariation = null, lastAlignment = false;
+  const alignmentLimit = 3;
+  let compassReading = null, magneticVariation = null, alignmentChimed = false;
   let qiblaCompassOn = false, compassStarting = false, compassRun = 0;
   let compassAudioReady = null, compassFailure = '', compassProblem = '';
   let variationPromise = null, variationKey = '', variationFailed = false;
@@ -1383,26 +1381,30 @@
     variationKey = '';
     magneticVariation = null;
     variationFailed = false;
-    lastAlignment = false;
+    alignmentChimed = false;
   }
 
   function renderQibla() {
     const bearing = qiblaBearing(cfg.lat, cfg.lng);
-    const delta = magneticVariation;
-    const correction = Number.isFinite(delta) && Math.abs(delta) <= 180;
+    const heading = compassReading?.heading;
     const accuracy = compassReading?.accuracy;
     const knownAccuracy = Number.isFinite(accuracy) && accuracy >= 0;
-    const reliable = knownAccuracy && accuracy <= 20;
     const approximate = compassReading?.kind === 'absolute';
+    const correction = Number.isFinite(magneticVariation);
+    const validHeading = Number.isFinite(heading);
+    const usable = validHeading && (approximate || (knownAccuracy && accuracy <= 20));
     const live = qiblaCompassOn && !!compassReading && !compassReading.tilted &&
-      correction && (reliable || approximate);
-    const rotation = live ? norm360(compassReading.heading + delta) : 0;
+      correction && usable;
+    const rotation = live ? norm360(heading + magneticVariation) : 0;
     const direction = (bearing - rotation + 540) % 360 - 180;
-    const angle = Math.round(Math.abs(direction));
-    const aligned = live && Math.abs(direction) <= (lastAlignment ? 8 : 5);
+    const difference = Math.abs(direction);
+    const near = difference <= 15;
+    // Round close readings up to a tenth so yellow never displays as 3° or less.
+    const angle = near ? Math.ceil((difference - 1e-9) * 10) / 10 : Math.round(difference);
+    const aligned = live && difference <= alignmentLimit + 1e-9;
     const turn = direction < 0 ? 'left' : 'right';
     const problem = qiblaCompassOn && compassReading && !compassReading.tilted
-      ? (!correction && variationFailed ? 'correction' : !reliable && !approximate ? 'accuracy' : '')
+      ? (!usable ? 'accuracy' : !correction && variationFailed ? 'correction' : '')
       : '';
     checkCompassProblem(problem);
 
@@ -1422,9 +1424,9 @@
       help = problem === 'accuracy' ? 'The reading is not accurate enough. Move away from metal.' :
         'Use the true bearing below.';
     } else if (live) {
-      state = aligned ? 'aligned' : angle <= 15 ? 'near' : 'turn';
-      cue = aligned ? (approximate ? 'Heading aligned' : 'Facing the Qibla') :
-        angle <= 15 ? 'A little to the ' + turn : 'Turn ' + turn + ' ' + angle + '°';
+      state = aligned ? 'aligned' : near ? 'near' : 'turn';
+      cue = aligned ? 'Heading aligned · ' + angle + '° off' :
+        near ? 'A little to the ' + turn : 'Turn ' + turn + ' ' + angle + '°';
       mark = aligned ? '✓' : direction < 0 ? '↶' : '↷';
       help = approximate ? 'Approximate heading. Check with a calibrated compass.' : 'Hold your phone flat.';
     } else if (qiblaCompassOn && !correction) {
@@ -1443,12 +1445,13 @@
     $('qiblaAccuracy').hidden = !help;
     $('qiblaBearing').textContent = bearing.toFixed(1) + '°';
     $('qiblaCardinal').textContent = compassPoints[Math.round(bearing / 22.5) % 16];
-    $('qiblaTurnAngle').textContent = aligned ? '✓' : (live ? angle : bearing.toFixed(1)) + '°';
-    $('qiblaTurnLabel').textContent = aligned ? 'Qibla' : live ? 'Turn ' + turn : 'From true north';
+    $('qiblaTurnAngle').textContent = (live ? angle : bearing.toFixed(1)) + '°';
+    $('qiblaTurnLabel').textContent = aligned ? 'From Qibla' : live ? 'Turn ' + turn : 'From true north';
     $('qiblaDistance').textContent = Math.round(kmApart(cfg, KAABA)).toLocaleString('en-GB') + ' km';
     $('qiblaPosition').textContent = cfg.location;
     $('qiblaPrecisionRow').hidden = !compassReading;
-    $('qiblaPrecision').textContent = knownAccuracy ? '±' + Math.round(accuracy) + '°' : 'Unknown';
+    $('qiblaPrecision').textContent = accuracy < 0 ? 'Uncalibrated' : !validHeading ? 'Unavailable' :
+      knownAccuracy ? '±' + Math.round(accuracy) + '°' : 'Unknown';
     $('compassTicks').setAttribute('transform', 'rotate(' + -rotation + ' 160 160)');
     for (const [i, id] of compassLetters.entries()) {
       const [x, y] = compassPoint(i * 90 - rotation, 120);
@@ -1458,11 +1461,14 @@
     const radius = 97;
     const target = pointText(direction, radius);
     $('qiblaMarker').setAttribute('transform', 'translate(' + target + ')');
-    $('qiblaArc').setAttribute('d', angle > 5
+    $('qiblaArc').setAttribute('d', difference > alignmentLimit + 1e-9
       ? 'M160 ' + (160 - radius) + ' A' + radius + ' ' + radius + ' 0 0 ' + (direction < 0 ? 0 : 1) + ' ' + target : '');
 
-    if (aligned && !lastAlignment && !$('qiblaPanel').hidden && !document.hidden) playCompassChime(alignmentNotes);
-    lastAlignment = aligned;
+    if (!live || difference > alignmentLimit + 1) alignmentChimed = false;
+    if (aligned && !alignmentChimed && !$('qiblaPanel').hidden && !document.hidden) {
+      playCompassChime(alignmentNotes);
+      alignmentChimed = true;
+    }
   }
 
   async function loadVariation() {
@@ -1492,17 +1498,17 @@
 
   function orientationHandler(event) {
     if (!qiblaCompassOn || document.hidden || $('qiblaPanel').hidden) return;
-    const magnetic = event.webkitCompassHeading;
-    const webkit = Number.isFinite(magnetic) && magnetic >= 0;
-    const absolute = event.absolute && Number.isFinite(event.alpha);
-    if (!webkit && !absolute) return;
-    if (compassReading?.kind === 'webkit' && !webkit) return;
+    const webkit = 'webkitCompassHeading' in event;
+    const absolute = event.absolute === true || event.type === 'deviceorientationabsolute';
+    if (!webkit && (!absolute || compassReading?.kind === 'webkit')) return;
+    const degrees = webkit ? event.webkitCompassHeading : event.alpha;
+    const validHeading = Number.isFinite(degrees) && degrees >= 0 && degrees <= 360;
     clearTimeout(headingTimer);
     const portrait = !(screen.orientation?.angle ?? window.orientation ?? 0);
     const tilted = Math.abs(event.beta || 0) > 35 || Math.abs(event.gamma || 0) > 35;
     compassReading = {
       kind:webkit ? 'webkit' : 'absolute', portrait, tilted:tilted || !portrait,
-      heading:norm360(webkit ? magnetic : 360 - event.alpha),
+      heading:validHeading ? norm360(webkit ? degrees : -degrees) : null,
       accuracy:webkit && Number.isFinite(event.webkitCompassAccuracy) ? event.webkitCompassAccuracy : null
     };
     renderQibla();
@@ -1516,7 +1522,7 @@
     qiblaCompassOn = false;
     compassStarting = false;
     compassReading = null;
-    lastAlignment = false;
+    alignmentChimed = false;
   }
   function stopCompass() {
     compassRun++;
@@ -1595,13 +1601,14 @@
     if (cfg.qiblaSound) compassAudioReady = audio.unlock();
   });
 
-  const fastingLabels = { fasted:'Fasted', due:'Missed', 'made-up':'Made up' };
-  const fastingSymbols = { fasted:'✓', due:'•', 'made-up':'↺' };
+  const fastingLabels = { fasted:'Fasted', due:'Missed', 'made-up':'Made up', 'make-up':'Make-up fast' };
+  const fastingSymbols = { fasted:'✓', due:'•', 'made-up':'↺', 'make-up':'✓' };
   const fastingStore = 'salah-fasting-log';
-  const countInputs = { fasted:$('undatedFasted'), missed:$('undatedMissed') };
-  const emptyCounts = { fasted:0, missed:0 };
+  const countInputs = { fasted:$('undatedFasted'), missed:$('undatedMissed'), madeUp:$('undatedMadeUp') };
+  const emptyCounts = { fasted:0, missed:0, madeUp:0 };
   const validCount = value => Number.isSafeInteger(value) && value >= 0;
-  const validCounts = value => value && validCount(value.fasted) && validCount(value.missed);
+  const validCounts = value => value && validCount(value.fasted) && validCount(value.missed) &&
+    (value.madeUp === undefined || (validCount(value.madeUp) && value.madeUp <= value.fasted));
   let fastingKey = todayKey();
   let fastingFollowingToday = true;
   let fastingLog = readFastingLog();
@@ -1628,17 +1635,21 @@
 
   function saveFastingCount(key, count) {
     const updated = readFastingLog();
-    const previous = updated.counts || emptyCounts;
-    if (!validCount(count)) {
+    const previous = { ...emptyCounts, ...updated.counts };
+    const exceedsFasted = key === 'madeUp' && count > previous.fasted;
+    if (!validCount(count) || exceedsFasted) {
       countInputs[key].value = previous[key];
-      $('fastingCountStatus').textContent = 'Enter a whole number of days.';
+      $('fastingCountStatus').textContent = exceedsFasted ? 'Make-up fasts cannot exceed the days fasted.' : 'Enter a whole number of days.';
       return;
     }
     try {
-      updated.counts = { ...previous, [key]:count };
+      const next = { ...previous, [key]:count };
+      const adjusted = next.madeUp > next.fasted;
+      const madeUp = Math.min(next.madeUp, next.fasted);
+      updated.counts = { fasted:next.fasted, missed:next.missed, ...(madeUp && { madeUp }) };
       writeFastingLog(updated);
       countInputs[key].value = count;
-      $('fastingCountStatus').textContent = '';
+      $('fastingCountStatus').textContent = adjusted ? 'Make-up count adjusted to ' + madeUp + '.' : '';
     } catch {
       countInputs[key].value = previous[key];
       $('fastingCountStatus').textContent = 'Could not save this count.';
@@ -1648,8 +1659,8 @@
     const button = event.target.closest('button[data-count]');
     if (!button) return;
     const key = button.dataset.count;
-    const counts = readFastingLog().counts || emptyCounts;
-    saveFastingCount(key, counts[key] + Number(button.dataset.step));
+    const count = readFastingLog().counts?.[key] ?? 0;
+    saveFastingCount(key, count + Number(button.dataset.step));
   });
   $('fastingTotals').addEventListener('change', event => {
     const key = event.target.dataset.count;
@@ -1659,26 +1670,60 @@
     if (event.key === 'Enter' && event.target.matches('input[data-count]')) event.target.blur();
   });
 
-  const upcomingNames = { ramadan:'Ramadan (first fast)', fitr:'Eid al-Fitr', adha:'Eid al-Adha', monday:'Monday', thursday:'Thursday',
-    white:'White days', arafah:'Arafah (outside Hajj)', ashura:'Ashura' };
   const upcomingFormat = new Intl.DateTimeFormat('en-GB', { timeZone:'UTC', day:'numeric', month:'short', year:'numeric' });
-  let lastFastingPlan;
-  function renderUpcomingFasts(today) {
+  let lastOccasionDate;
+  function renderIslamicDates(today) {
     const key = hijriDayKey(today, getDay(today), Date.now());
-    if (key === lastFastingPlan) return;
-    lastFastingPlan = key;
+    if (key === lastOccasionDate) return;
+    lastOccasionDate = key;
     const { dates, fasts } = SalahHijri.upcoming(key);
-    const rows = events => Object.entries(events).sort((a, b) => a[1].from.localeCompare(b[1].from)).map(([id, event]) => {
-      const from = dateAtNoonUTC(event.from);
-      const to = event.to && dateAtNoonUTC(event.to);
+    const { ramadan, ...eids } = dates;
+    const available = Object.keys(dates).length > 0;
+    $('datesUnavailable').hidden = available;
+    $('occasionGroups').hidden = !available;
+    renderOccasions('upcomingFasts', { ...fasts, ...(ramadan && { ramadan }) });
+    renderOccasions('upcomingEids', eids);
+  }
+
+  function renderOccasions(elementId, occasions) {
+    const list = $(elementId);
+    const opened = new Set([...list.querySelectorAll('details[open]')].map(detail => detail.parentElement.dataset.occasion));
+    const ordered = Object.entries(occasions).sort((a, b) => a[1].from.localeCompare(b[1].from));
+    list.innerHTML = ordered.map(([id, event]) => {
+      const from = dateAtNoonUTC(event.from), to = event.to && dateAtNoonUTC(event.to);
       const date = !to ? upcomingFormat.format(from) : typeof upcomingFormat.formatRange === 'function' ?
         upcomingFormat.formatRange(from, to) : upcomingFormat.format(from) + ' – ' + upcomingFormat.format(to);
-      const name = id === 'ashura' && to ? 'Ashura and the day before' : upcomingNames[id];
-      return `<div data-occasion="${id}"><dt>${name}</dt><dd><time datetime="${event.from}">${date}</time></dd></div>`;
+      const { name, kind, ruling, notes, sources } = SalahHijri.occasions[id];
+      const title = id === 'ashura' && to ? 'Ashura and the day before' : name;
+      const start = SalahHijri.label(event.from);
+      const hijri = to ? start.split(' ')[0] + '–' + SalahHijri.label(event.to) : start;
+      const links = sources.map(([label, url]) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`).join('');
+      return `<li data-occasion="${id}"><details class="occasion"${opened.has(id) ? ' open' : ''}>
+        <summary><time datetime="${event.from}">${date}</time><span><strong>${title}</strong>
+          <span class="occasion-hijri">${hijri}</span><span class="occasion-ruling" data-kind="${kind}">${ruling}</span>
+        </span><span class="occasion-chevron" aria-hidden="true"></span></summary>
+        <div class="occasion-info">${notes.map(note => `<p>${note}</p>`).join('')}<div class="occasion-sources">${links}</div></div>
+      </details></li>`;
     }).join('');
-    $('hijriOccasions').innerHTML = rows(dates);
-    $('sunnahDates').innerHTML = rows(fasts);
-    $('fastingUpcoming').hidden = !Object.keys(dates).length;
+  }
+
+  function fastingBalance(entries, totals) {
+    const missed = [], fasted = [];
+    let covered = 0, undatedDue = totals.missed;
+    for (const [key, mark] of Object.entries(entries).sort(([a], [b]) => a.localeCompare(b))) {
+      if (mark === 'due') missed.push(key);
+      if (mark === 'fasted' || mark === 'make-up') fasted.push(key);
+      if (mark !== 'make-up') continue;
+      // A dated make-up can cover an earlier dated miss or a missed day without a date.
+      if (covered < missed.length) covered++;
+      else undatedDue = Math.max(0, undatedDue - 1);
+    }
+    const undatedCovered = Math.min(undatedDue, totals.madeUp);
+    covered += totals.madeUp - undatedCovered;
+    return {
+      fasted, due:missed.slice(covered), coveredDates:new Set(missed.slice(0, covered)),
+      undatedDue:undatedDue - undatedCovered
+    };
   }
 
   const fastingWeekFormat = new Intl.DateTimeFormat('en-GB', {
@@ -1687,12 +1732,15 @@
   function renderFasting(restoreFocus = false) {
     const date = dateAtNoonUTC(fastingKey), today = todayKey();
     const { entries:fastingRecords, counts } = fastingLog;
-    const totals = counts || emptyCounts;
+    const totals = { ...emptyCounts, ...counts };
+    const { fasted, due, coveredDates, undatedDue } = fastingBalance(fastingRecords, totals);
+    const markForDate = key => coveredDates.has(key) ? 'made-up' : fastingRecords[key] || '';
     for (const [key, input] of Object.entries(countInputs)) {
       if (input !== document.activeElement) input.value = totals[key];
       $('fastingTotals').querySelector(`button[data-count="${key}"][data-step="-1"]`).disabled = totals[key] === 0;
     }
-    renderUpcomingFasts(today);
+    countInputs.madeUp.max = totals.fasted;
+    $('fastingTotals').querySelector('button[data-count="madeUp"][data-step="1"]').disabled = totals.madeUp >= totals.fasted;
     const dayOfWeek = (date.getUTCDay() + 6) % 7;
     const week = cfg.fastingView === 'week';
     const startKey = week ? dayShift(fastingKey, -dayOfWeek) : fastingKey.slice(0, 7) + '-01';
@@ -1716,7 +1764,7 @@
       date.toLocaleDateString('en-GB', { timeZone:'UTC', month:'long', year:'numeric' });
     grid.innerHTML = '<span aria-hidden="true"></span>'.repeat(blanks) + Array.from({ length:days }, (_, i) => {
       const key = dayShift(startKey, i);
-      const mark = fastingRecords[key] || '';
+      const mark = markForDate(key);
       const selected = key === fastingKey;
       const label = prettyKey(key) + (mark ? ', ' + fastingLabels[mark] : '');
       return '<button type="button" class="fast-day" data-date="' + key + '" data-mark="' + mark +
@@ -1726,14 +1774,13 @@
     }).join('');
     if (restoreFocus || focusInGrid) grid.querySelector('[aria-pressed="true"]').focus();
 
-    const entries = Object.entries(fastingRecords);
-    const due = entries.filter(([, mark]) => mark === 'due').map(([key]) => key).sort();
-    $('fastingCompleted').textContent = entries.filter(([key, mark]) => key >= startKey && key <= endKey && mark === 'fasted').length;
-    $('fastingPeriodLabel').textContent = 'fasted this ' + cfg.fastingView;
-    $('fastingDue').textContent = due.length + totals.missed;
+    const inView = fasted.filter(key => key >= startKey && key <= endKey).length;
+    $('fastingCompleted').textContent = fasted.length + totals.fasted;
+    $('calendarFasted').textContent = inView + ' fasted this ' + cfg.fastingView;
+    $('fastingDue').textContent = due.length + undatedDue;
     $('fastingDueDates').innerHTML = due.map(key =>
       '<button type="button" class="text-button" data-date="' + key + '">' + prettyKey(key) + '</button>').join('') +
-      (totals.missed ? `<p>${totals.missed} without dates</p>` : due.length ? '' : '<p>No missed fasts logged.</p>');
+      (undatedDue ? `<p>${undatedDue} without dates</p>` : due.length ? '' : '<p>No fasts left to make up.</p>');
 
     $('fastingRelative').textContent = fastingKey === today ? 'Today' : '';
     $('fastingDate').textContent = date.toLocaleDateString('en-GB', {
@@ -1751,13 +1798,17 @@
     $('fastingEstimate').textContent = times.sourceFallback ? 'Using local times for this date.' :
       !times.fajr ? 'Fajr is unavailable under the selected method.' : '';
 
-    const mark = fastingRecords[fastingKey] || '';
+    const mark = markForDate(fastingKey);
     const badge = $('fastingMark');
     badge.textContent = fastingLabels[mark] || '';
     badge.dataset.status = mark;
     badge.hidden = !mark;
     $('fastingQuestion').hidden = !!mark;
     $('fastingMadeUp').hidden = mark !== 'due';
+    const makeUpAction = $('logFastingMakeUp');
+    makeUpAction.hidden = mark !== 'make-up' && (fastingKey > today || (!!mark && mark !== 'fasted'));
+    makeUpAction.textContent = mark === 'make-up' ? 'Change to a regular fast' : 'Log as a make-up fast';
+    makeUpAction.dataset.fastStatus = mark === 'make-up' ? 'fasted' : 'make-up';
     $('clearFastingEntry').hidden = !mark;
     if (cfg.activeSource === 'moonsighting' && navigator.onLine) void fetchOnline(cfg.activeSource, fastingKey);
   }
@@ -1822,7 +1873,7 @@
   window.addEventListener('storage', event => {
     if (event.key !== fastingStore && event.key !== null) return;
     fastingLog = readFastingLog();
-    for (const [key, input] of Object.entries(countInputs)) input.value = (fastingLog.counts || emptyCounts)[key];
+    for (const [key, input] of Object.entries(countInputs)) input.value = fastingLog.counts?.[key] ?? 0;
     if (!$('fastingPanel').hidden) renderFasting();
   });
 
@@ -1885,13 +1936,13 @@
     }
   });
 
-  const screenIds = {today:'today', qibla:'qiblaPanel', fasting:'fastingPanel', sounds:'soundPanel', settings:'settingsDialog'};
+  const screenIds = {today:'today', qibla:'qiblaPanel', fasting:'fastingPanel', dates:'datesPanel', sounds:'soundPanel', settings:'settingsDialog'};
   function showScreen(target) {
     if (target === 'compare') {
       target = 'settings';
       $('comparisonPanel').open = true;
     }
-    if (!screenIds[target]) target = 'today';
+    if (!Object.hasOwn(screenIds, target)) target = 'today';
     for (const [name,id] of Object.entries(screenIds)) {
       $(id).hidden = name !== target;
     }
@@ -1907,6 +1958,7 @@
       if (comparisonOpen()) renderComparison();
     }
     if (target === 'fasting') renderFasting();
+    if (target === 'dates') renderIslamicDates(todayKey());
     if (target === 'qibla') {
       renderQibla();
       if (qiblaCompassOn) void loadVariation().then(renderQibla);

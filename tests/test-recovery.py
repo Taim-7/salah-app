@@ -14,10 +14,10 @@ with sync_playwright() as p:
  page.evaluate("""Object.defineProperty(window,'localStorage',{configurable:true,value:{getItem(k){return k==='salah-config'?JSON.stringify({version4:true,version5:true,version6:true,version7:true,audioDefaultV13:true,soundChoice:'adhan-abu-bakr',method:'15-13',activeSource:'moonsighting',onlineCompare:false,timeZone:'Europe/London',lat:54.9966,lng:-7.3086}):null},setItem(){},removeItem(){}}})""")
  for f in ['region.js','solar.js','providers.js','timetable.js','audio.js','hijri.js','app.js']:page.add_script_tag(path=str(root/f))
  page.wait_for_function('window.mockCalls.length>=3',timeout=5000)
- assert 'fallback' in page.locator('#heroMethod').inner_text().lower()
+ assert 'AlAdhan is unavailable' in page.locator('#notice').inner_text()
  page.evaluate('window.recovered=true;window.dispatchEvent(new Event("online"))')
  page.wait_for_function('window.mockCalls.length>=6',timeout=5000)
- page.wait_for_function("document.querySelector('#heroMethod').textContent.startsWith('AlAdhan')",timeout=5000)
+ page.wait_for_function("document.querySelector('#notice').textContent.startsWith('AlAdhan supplies Fajr and Isha')",timeout=5000)
  assert page.locator('#heroLiveMessage').inner_text()=='Night'
  assert not errs, errs
  print('PASS: online API resumes after network recovery; correct 3 date requests; after-midnight state updated')

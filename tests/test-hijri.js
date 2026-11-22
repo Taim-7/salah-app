@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const { label, upcoming } = require('../hijri.js');
+const { label, upcoming, occasions } = require('../hijri.js');
 
 const winter = upcoming('2026-11-22');
 assert.match(label('2026-11-22'), /^\d+ Jumada al-Akhirah 1448 AH$/);
@@ -21,7 +21,15 @@ for (const fast of Object.values(eid.fasts)) {
 }
 
 const duringRamadan = upcoming(winter.dates.ramadan.from);
-assert(duringRamadan.fasts.monday.from > winter.dates.fitr.from);
-assert(duringRamadan.fasts.thursday.from > winter.dates.fitr.from);
+assert(duringRamadan.fasts.white.from > winter.dates.fitr.from);
+assert.deepEqual(Object.keys(winter.fasts).sort(), ['arafah', 'ashura', 'white']);
 assert.equal(label('invalid'), '');
-console.log('PASS: Hijri labels, Ramadan and Eid dates, Sunnah fasts and exclusions.');
+assert.deepEqual(Object.fromEntries(Object.entries(occasions).map(([name, occasion]) => [name, occasion.kind])), {
+  ramadan:'required', white:'sunnah', arafah:'sunnah', ashura:'sunnah', fitr:'forbidden', adha:'forbidden'
+});
+for (const { notes, sources } of Object.values(occasions)) {
+  assert(notes.every(note => note.length > 30));
+  assert(sources.some(([title, url]) => /sahih/i.test(title) && url.startsWith('https://sunnah.com/')));
+  assert(sources.every(([, url]) => ['quran.com', 'sunnah.com'].includes(new URL(url).hostname)));
+}
+console.log('PASS: Hijri labels, Ramadan and Eid dates, Sunnah fasts, exclusions and sources.');
