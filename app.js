@@ -3,9 +3,9 @@
   const $ = id => document.getElementById(id);
   const defaults = {
     useDeviceLocation: true, permissionSetupDone: false, method: '15-13', fajrAngle: 15, ishaAngle: 13,
-    ishaPreference: 'around-third', ishaLimit: 'half', highLatRule: 'seventh',
+    ishaLimit: 'half', highLatRule: 'seventh',
     activeSource: 'angles', soundChoice: 'adhan-abu-bakr', soundVolume: 40,
-    reminderLead: 15, reminderEnabled: true, soundRepeat: false, qiblaSound: true,
+    reminderLead: 15, reminderEnabled: true, firstThirdReminder: true, soundRepeat: false, qiblaSound: true,
     fastingView: 'week', timeFormat: '12', layout: 'compact', accent: 'forest', iconChoice: 'crescent'
   };
   const names = [
@@ -74,7 +74,7 @@
       c.audioDefaultV13 = true;
       c.version7 = true; c.version6 = true; c.version5 = true; c.version4 = true;
       if (!['12-12', '15-13', '18-17', 'custom'].includes(c.method)) c.method = defaults.method;
-      if (!['around-third', 'after-third'].includes(c.ishaPreference)) c.ishaPreference = defaults.ishaPreference;
+      delete c.ishaPreference;
       if (!['half', 'third', 'half-necessity'].includes(c.ishaLimit)) c.ishaLimit = defaults.ishaLimit;
       delete c.asrShadow;
       delete c.showBuffers;
@@ -90,6 +90,7 @@
       const lead = Number(raw.reminderLead ?? raw.calendarLead);
       c.reminderLead = reminderLeads.includes(lead) ? lead : defaults.reminderLead;
       c.reminderEnabled = c.reminderEnabled !== false;
+      c.firstThirdReminder = c.firstThirdReminder !== false;
       delete c.qiblaHaptic;
       c.qiblaSound = c.qiblaSound !== false;
       delete c.qiblaLegacyPulse;
@@ -426,10 +427,7 @@
       return { level:'preferred', label:t.isha ? 'Maghrib time' : 'After sunset', desc:t.isha ? 'Until ' + fmt(t.isha) : 'Isha time unavailable' };
     const deadline = ishaDeadline(t);
     if (ishaHasWindow(t) && isBetween(instant, t.isha, deadline)) {
-      const preferred = cfg.ishaLimit !== 'third' && cfg.ishaPreference === 'after-third' && instant >= t.firstThird;
-      const target = cfg.ishaLimit !== 'third' && t.isha < t.firstThird && instant < t.firstThird &&
-        cfg.ishaPreference === 'around-third' ? 'Aim towards ' + fmt(t.firstThird) : 'Until ' + fmt(deadline);
-      return { level:preferred ? 'preferred' : 'calm', label:preferred ? 'Preferred Isha period' : 'Isha time', desc:target };
+      return { level:'calm', label:'Isha time', desc:'Until ' + fmt(deadline) };
     }
     if (t.isha && !t.ishaOverlapsFajr && t.isha <= instant && isBetween(instant, t.midnight, t.nextFajr) && cfg.ishaLimit === 'half-necessity')
       return { level:'caution', label:'Isha · necessity period', desc:'Until ' + fmt(t.nextFajr) };
@@ -453,13 +451,12 @@
       kind:'prayer', name:n, estimated:isEstimated(t, n.key)
     }));
     const selectedThird = cfg.ishaLimit === 'third';
-    const lateIsha = t.ishaBeyondFirstThird;
-    const thirdTitle = selectedThird ? 'Isha cutoff · first third' : !t.isha ? 'First third of the night' :
-      lateIsha ? 'First third passed before Isha' :
-      cfg.ishaPreference === 'after-third' ? 'Preferred Isha from here' : 'Preferred Isha target';
+    const lateIsha = t.ishaBeyondFirstThird && t.isha > t.firstThird;
+    const thirdTitle = selectedThird ? 'Isha cutoff · first third' :
+      lateIsha ? 'First third passed before Isha' : 'First third of the night ends';
     const halfTitle = selectedThird ? 'Halfway through the night' : 'Ordinary Isha cutoff';
     const thirds = { at:t.firstThird, title:thirdTitle,
-      desc:lateIsha ? 'Calculated Isha begins after this point' : 'First third of the night',
+      desc:lateIsha ? 'Calculated Isha begins at or after this point' : '',
       kind:'night', icon:'third', estimated:t.nightEstimated };
     const half = { at:t.midnight, title:halfTitle, desc:'Half of the night', kind:'night', icon:'half', estimated:t.nightEstimated };
 
@@ -652,6 +649,7 @@
     $('offlineIndicator').hidden=navigator.onLine !== false;
     renderDate();
     dayInfo = getDay(selectedKey);
+    checkPrayerReminders();
     renderHijriDate();
     if (comparisonOpen()) renderComparison();
     if (!$('fastingPanel').hidden) renderFasting();
@@ -675,8 +673,6 @@
     $('settingsStatus').textContent = '';
     const method = document.querySelector(`input[name="method"][value="${cfg.method}"]`);
     if (method) method.checked = true;
-    const end = document.querySelector(`input[name="ishaPreference"][value="${cfg.ishaPreference}"]`);
-    if (end) end.checked = true;
     renderLocationState();
     updateCustomVisibility();
   }
@@ -688,12 +684,11 @@
   function save() {
     const report = message => { $('settingsStatus').textContent = message; };
     const method = document.querySelector('input[name="method"]:checked')?.value || defaults.method;
-    const ishaPreference = document.querySelector('input[name="ishaPreference"]:checked')?.value || defaults.ishaPreference;
     const fa = Number($('fajrAngleInput').value), ia = Number($('ishaAngleInput').value);
     const anglesValid = [fa, ia].every(a => Number.isFinite(a) && a >= 6 && a <= 22);
     if (method === 'custom' && !anglesValid) { report('Enter Fajr and Isha angles from 6° to 22°.'); return; }
     cfg = {
-      ...cfg, method, ishaPreference,
+      ...cfg, method,
       fajrAngle:anglesValid ? fa : cfg.fajrAngle, ishaAngle:anglesValid ? ia : cfg.ishaAngle,
       ishaLimit:$('ishaLimit').value,
       highLatRule:$('highLatSelect').value
@@ -765,7 +760,6 @@
     const minimumMove = Math.max(0.15, (accuracy || 0) / 1000);
     if (timeZone === currentPlace?.timeZone && kmApart(currentPlace, { lat, lng }) < minimumMove) return;
     setCurrentPlace({ lat, lng, timeZone, location:locationName(lat, lng, timeZone) });
-    checkPrayerSounds();
   }
   function stopTracking() {
     geoRun++;
@@ -905,6 +899,7 @@
     if (/^\d{4}-\d\d-\d\d$/.test(key) && Number.isFinite(+dateAtNoonUTC(key))) showDate(key);
   });
   function pauseLocationAndCompass() {
+    clearTimeout(reminderTimer);
     if (qiblaCompassOn || compassStarting) stopCompass();
     stopTracking();
     if (repeatTimer !== null) stopSound();
@@ -919,7 +914,7 @@
       render();
       startTracking();
       cacheAdhansAutomatically();
-      checkPrayerSounds();
+      renderNotificationControl();
     }
   });
   setInterval(() => {
@@ -947,7 +942,7 @@
       if (Date.now() - lastListRefresh >= 30000) renderPrayerList(dayInfo);
     }
     if (!$('datesPanel').hidden) renderIslamicDates(localDay);
-    checkPrayerSounds();
+    checkPrayerReminders();
     if (navigator.onLine && cfg.activeSource === 'moonsighting' &&
         [...failedOnline.values()].some(at => Date.now() - at >= 120000)) loadComparison();
   }, 15000);
@@ -1161,11 +1156,70 @@
   $('stopSound').addEventListener('click', () => { stopSound(); $('soundStatus').textContent = 'Sound stopped.'; });
   void loadCustomSound();
 
-  let soundSeen = new Set();
-  try { soundSeen = new Set(JSON.parse(sessionStorage.getItem('salah-reminders') || '[]')); } catch {}
-  function rememberSound(id) {
-    soundSeen.add(id);
-    try { sessionStorage.setItem('salah-reminders', JSON.stringify([...soundSeen])); } catch {}
+  const minute = 60000;
+  const deliveredAlertsKey = 'salah-delivered-prayer-alerts';
+  let reminderTimer = null, testingNotification = false;
+  let deliveredAlerts = new Set();
+  try { deliveredAlerts = new Set(JSON.parse(sessionStorage.getItem('salah-reminders') || '[]')); } catch {}
+
+  function notificationPermission() {
+    if (!window.isSecureContext || (isIOS && !isStandalone()) || !navigator.serviceWorker ||
+        typeof window.Notification?.requestPermission !== 'function' ||
+        typeof window.ServiceWorkerRegistration?.prototype.showNotification !== 'function') return 'unavailable';
+    return Notification.permission;
+  }
+  function renderNotificationControl(result = '') {
+    const permission = notificationPermission();
+    const button = $('testNotification');
+    button.hidden = permission === 'unavailable' || permission === 'denied';
+    button.disabled = testingNotification;
+    button.textContent = permission === 'granted' ? 'Send test notification' : 'Allow notifications';
+    const text = permission === 'denied' ? 'Allow Salah notifications in your device settings.' :
+      permission !== 'unavailable' ? result :
+      isIOS && !isStandalone() ? 'Open Salah from your Home Screen to allow notifications.' :
+        'This browser can show reminders inside Salah.';
+    $('notificationStatus').textContent = text;
+    $('notificationStatus').hidden = !text;
+  }
+  async function showPhoneNotification(title, body, tag, silent, stillDue = () => true) {
+    if (notificationPermission() !== 'granted') return false;
+    try {
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (!registration?.active || !stillDue()) return false;
+      await registration.showNotification(title, { body, tag, silent, icon:$('tabIcon').href });
+      return true;
+    } catch { return false; }
+  }
+  $('testNotification').addEventListener('click', async () => {
+    if (testingNotification) return;
+    testingNotification = true;
+    renderNotificationControl();
+    let result = '';
+    try {
+      const permission = notificationPermission();
+      const allowed = permission === 'default' ? await Notification.requestPermission() : permission;
+      if (allowed === 'granted') {
+        const sent = await showPhoneNotification('Salah test notification',
+          'Prayer notifications can appear while Salah is open.', 'salah-test', cfg.soundVolume === 0);
+        result = sent ? 'Test notification sent.' : 'Could not show the test. Reload Salah and try again.';
+      }
+    } catch {
+      result = 'Could not ask for notification access.';
+    } finally {
+      testingNotification = false;
+      renderNotificationControl(result);
+    }
+  });
+
+  function refreshDeliveredAlerts(days) {
+    try {
+      for (const id of JSON.parse(localStorage.getItem(deliveredAlertsKey) || '[]')) deliveredAlerts.add(id);
+    } catch {}
+    deliveredAlerts = new Set([...deliveredAlerts].filter(id => typeof id === 'string' && days.includes(id.slice(0, 10))));
+  }
+  function markDelivered(alerts) {
+    for (const alert of alerts) deliveredAlerts.add(alert.id);
+    try { localStorage.setItem(deliveredAlertsKey, JSON.stringify([...deliveredAlerts])); } catch {}
   }
   function showReminder(message) {
     const toast = $('reminderToast');
@@ -1178,58 +1232,105 @@
     $('reminderToast').hidden = true;
     if (repeatTimer !== null) stopSound();
   });
-  function reminderEvents() {
-    const today = todayKey();
-    const events = [];
-    for (const key of [dayShift(today, -1), today, dayShift(today, 1)]) {
+  function collectPrayerAlerts(days) {
+    const alerts = [];
+    for (const key of days) {
       const day = getDay(key);
-      if (!day.valid || day.sourceFallback) continue;
+      if (!day.valid) continue;
+      if (day.sourceFallback && navigator.onLine && !failedOnline.has(cacheId('moonsighting', key))) continue;
       for (const p of prayers) {
         if (p.key === 'isha' && !day.nextFajr) continue;
         const event = prayerEvent(day, p);
-        if (event) events.push({ ...event, date:key });
+        if (!event) continue;
+        const id = key + ':' + p.key;
+        const target = +event.at;
+        const cutoff = p.key === 'isha' ? ishaDeadline(day) : null;
+        alerts.push({ id, kind:'start', event, day, target, at:target, until:Math.min(cutoff ?? Infinity, target + 2 * minute) });
+        if (cfg.reminderEnabled) alerts.push({
+          id:id + ':before', kind:'before', event, day, target, at:target - cfg.reminderLead * minute, until:target
+        });
+      }
+      if (cfg.firstThirdReminder && day.firstThird) {
+        const target = +day.firstThird;
+        alerts.push({ id:key + ':first-third', kind:'third', day, target, at:target - 5 * minute, until:target });
       }
     }
-    return events;
+    return alerts;
+  }
+  function describePrayerAlert(alert, now) {
+    const { kind, event, target, day } = alert;
+    const estimated = kind === 'third' ? day.nightEstimated : event.estimated;
+    const time = fmt(new Date(target)) + (estimated ? ' (estimate)' : '') + (day.sourceFallback ? ' · local calculation' : '');
+    const ahead = Math.ceil((target - now) / minute);
+    const minutes = ahead + (ahead === 1 ? ' minute' : ' minutes');
+    if (kind === 'third') {
+      const context = !day.isha ? 'Isha time unavailable.' :
+        +day.isha > now ? 'Calculated Isha is at ' + fmt(day.isha) + '.' :
+        cfg.ishaLimit === 'third' ? 'Your selected Isha cutoff.' : '';
+      const title = 'First third ends in ' + minutes;
+      const body = context ? time + ' · ' + context : time;
+      return { title, body, message:title + ' · ' + body };
+    }
+    return kind === 'before' ?
+      { title:event.en + ' in ' + minutes, body:time, message:event.en + ' at ' + time + ' · ' + minutes + ' away' } :
+      { title:event.en + ' begins', body:time, message:event.en + ' · ' + time };
+  }
+  function deliverPrayerAlerts(alerts, now) {
+    markDelivered(alerts);
+    const messages = alerts.map(alert => describePrayerAlert(alert, now));
+    showReminder(messages.map(message => message.message).join('\n'));
+    const place = currentPlace;
+    const start = alerts.find(alert => alert.kind === 'start');
+    const playPrayerSound = start && cfg.soundChoice !== 'off' && cfg.soundVolume > 0;
+    const prayerAudioReady = playPrayerSound && audio.ready();
+    if (playPrayerSound) {
+      const choice = cfg.soundChoice === 'adhan-abu-bakr' && start.event.key !== 'fajr' ? 'adhan-fajr-abu-bakr' : cfg.soundChoice;
+      void playSound(choice);
+    }
+    const stillDue = alert => !document.hidden && currentPlace === place && Date.now() >= alert.at && Date.now() < alert.until;
+    const notifications = alerts.map((alert, i) => {
+      const { title, body } = messages[i];
+      const silent = cfg.soundVolume === 0 || (alert.kind === 'start' && (cfg.soundChoice === 'off' || prayerAudioReady));
+      return showPhoneNotification(title, body, 'salah-reminder:' + alert.id, silent, () => stillDue(alert));
+    });
+    void Promise.all(notifications).then(shown => {
+      if (!prayerAudioReady && alerts.some((alert, i) => alert.kind !== 'start' && !shown[i] && stillDue(alert)))
+        audio.chime(reminderNotes);
+    });
   }
   $('reminderLead').value = String(cfg.reminderLead);
   $('reminderLead').disabled = !cfg.reminderEnabled;
   $('reminderEnabled').checked = cfg.reminderEnabled;
+  $('firstThirdReminder').checked = cfg.firstThirdReminder;
   $('reminderLead').addEventListener('change', () => {
     cfg.reminderLead = Number($('reminderLead').value);
     store();
+    checkPrayerReminders();
   });
   $('reminderEnabled').addEventListener('change', () => {
     cfg.reminderEnabled = $('reminderEnabled').checked;
     $('reminderLead').disabled = !cfg.reminderEnabled;
     store();
+    checkPrayerReminders();
+  });
+  $('firstThirdReminder').addEventListener('change', () => {
+    cfg.firstThirdReminder = $('firstThirdReminder').checked;
+    store();
+    checkPrayerReminders();
   });
 
-  function checkPrayerSounds() {
+  function checkPrayerReminders() {
+    clearTimeout(reminderTimer);
     if (document.hidden || !currentPlace) return;
     const now = Date.now(), today = todayKey();
     const days = [dayShift(today, -1), today, dayShift(today, 1)];
-    const events = reminderEvents();
-    soundSeen = new Set([...soundSeen].filter(id => days.includes(id.slice(0, 10))));
-    for (const event of events) {
-      const at = event.at.getTime();
-      const id = event.date + ':' + event.key;
-      const pre = id + ':before';
-      const reminder = at - cfg.reminderLead * 60000;
-      const estimate = event.estimated ? ' (estimate)' : '';
-      if (cfg.reminderEnabled && now >= reminder && now < reminder + 45000 && !soundSeen.has(pre)) {
-        rememberSound(pre);
-        audio.chime(reminderNotes);
-        showReminder(event.en + ' at ' + fmt(event.at) + estimate + ' · ' + cfg.reminderLead + ' minutes away');
-      }
-      if (now >= at && now < at + 45000 && !soundSeen.has(id)) {
-        rememberSound(id);
-        if (cfg.soundChoice === 'off') continue;
-        const choice = cfg.soundChoice === 'adhan-abu-bakr' && event.key !== 'fajr' ? 'adhan-fajr-abu-bakr' : cfg.soundChoice;
-        showReminder(event.en + ' · ' + fmt(event.at) + estimate);
-        void playSound(choice);
-      }
-    }
+    refreshDeliveredAlerts(days);
+    const alerts = collectPrayerAlerts(days).filter(alert => alert.until > now && !deliveredAlerts.has(alert.id))
+      .sort((a, b) => a.at - b.at);
+    const due = alerts.filter(alert => alert.at <= now);
+    if (due.length) deliverPrayerAlerts(due, now);
+    const next = alerts.find(alert => alert.at > now);
+    if (next) reminderTimer = setTimeout(checkPrayerReminders, next.at - Date.now());
   }
 
   const KAABA={lat:21.422487,lng:39.826206};
@@ -1988,6 +2089,7 @@
       showSettings();
       if (comparisonOpen()) renderComparison();
     }
+    if (target === 'sounds') renderNotificationControl();
     if (target === 'fasting') renderFasting();
     if (target === 'dates') renderIslamicDates(todayKey());
     if (target === 'qibla') {
@@ -2029,7 +2131,7 @@
     permissionSetup.close();
     renderLocationState();
     if (!useDevice) return;
-    if (cfg.qiblaSound || cfg.reminderEnabled || cfg.soundChoice !== 'off') void audio.unlock();
+    if (cfg.qiblaSound || cfg.reminderEnabled || cfg.firstThirdReminder || cfg.soundChoice !== 'off') void audio.unlock();
     try {
       if (requestingLaunchMotion) await requestCompassAccess();
     } catch {
@@ -2057,7 +2159,7 @@
 
   renderQibla();
   if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});
-  render(); startTracking(); checkPrayerSounds();
+  render(); startTracking();
   if (!cfg.permissionSetupDone && (canUseLocation || canAskForMotion) && typeof permissionSetup.showModal === 'function') {
     $('permissionLocation').hidden = !canUseLocation;
     $('permissionMotion').hidden = !canAskForMotion;

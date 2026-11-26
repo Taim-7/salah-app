@@ -292,7 +292,17 @@
         <option value="15">15 minutes before</option><option value="20">20 minutes before</option>
         <option value="25">25 minutes before</option><option value="30">30 minutes before</option>
       </select>
-
+      <label class="tracking-toggle first-third-reminder">
+        <input id="firstThirdReminder" type="checkbox" aria-describedby="firstThirdHint"/>
+        <strong>First-third warning</strong>
+      </label>
+      <p class="form-note" id="firstThirdHint">5 minutes before the first third of the night ends.</p>
+      <div class="phone-notification-controls">
+        <h3>Phone notifications</h3>
+        <p class="form-note">Keep Salah on screen for these alerts.</p>
+        <button class="secondary-button" id="testNotification" type="button" hidden>Allow notifications</button>
+        <p class="form-note" id="notificationStatus" role="status" hidden></p>
+      </div>
     </div>
   </div>
 </section>
@@ -372,11 +382,6 @@
     <option value="half-necessity">Half · show necessity period to Fajr</option>
   </select>
   <p class="setting-hint">The night runs from sunset to the next Fajr.</p>
-  <p class="block-label">Preferred delay within the ordinary window</p>
-  <div aria-label="Preferred Isha timing" class="option-group" role="radiogroup">
-    <label class="option-card"><input name="ishaPreference" type="radio" value="around-third"/><span><strong>Aim towards the first third</strong><small>Only applies after Isha enters and when that marker is inside the window</small></span></label>
-    <label class="option-card"><input name="ishaPreference" type="radio" value="after-third"/><span><strong>Prefer between the first third and halfway</strong><small>Applies when this period is available and halfway is the ordinary cutoff</small></span></label>
-  </div>
 </section>
 <section class="settings-group">
   <h3>When your angle has no crossing</h3>

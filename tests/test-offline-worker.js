@@ -10,6 +10,7 @@ const listeners={};
 const stores=new Map();
 let unsubscribed=false;
 let useNetwork=false, requests=0;
+let windows=[], opened=null, dismissed=false, focused=false;
 const key=req=>new URL(typeof req==='string'?req:req.url,base).href;
 const cache={
   async addAll(paths){
@@ -34,7 +35,11 @@ const caches={
 const scope={
   self:{location:{origin},registration:{scope:base,pushManager:{getSubscription:async()=>({unsubscribe:async()=>{unsubscribed=true}})}},
     addEventListener:(name,fn)=>listeners[name]=fn,skipWaiting:async()=>{},
-    clients:{claim:async()=>{}}},
+    clients:{
+      claim:async()=>{},
+      matchAll:async()=>windows,
+      openWindow:async url=>{opened=url}
+    }},
   caches,URL,Request,Response,Promise,
   fetch:async()=>{requests++;if(!useNetwork)throw new Error('Offline');return new Response('Network response',{status:200})}
 };
@@ -50,7 +55,7 @@ const tick=async(type,request,fields={})=>{
  await caches.open('salah-static:/salah-app/:v15');
  await caches.open('salah-static:/other-app/:v15');
  await tick('install');
- assert.equal(stores.has('salah-static:/salah-app/:v33'),true);
+ assert.equal(stores.has('salah-static:/salah-app/:v34'),true);
  await tick('activate');
  assert.equal(stores.has('salah-static:/salah-app/:v15'),false);
  assert.equal(stores.has('salah-static:/other-app/:v15'),true);
@@ -82,5 +87,13 @@ const tick=async(type,request,fields={})=>{
  assert.equal(requests,2);
  assert.equal(unsubscribed,true);
  assert.equal(listeners.push,undefined);
+ const notification={close(){dismissed=true}};
+ windows=[{url:origin+'/other-app/'}, {url:base+'?palette=forest#sounds',focus:async()=>{focused=true}}];
+ await tick('notificationclick',undefined,{notification});
+ assert(dismissed && focused);
+ assert.equal(opened,null);
+ windows=[{url:origin+'/other-app/'}];
+ await tick('notificationclick',undefined,{notification});
+ assert.equal(opened,base);
  console.log(`PASS: ${urls.length} precached URLs; offline shell, icon pages and scripts; navigation fallback; missing script 503; cross-origin bypass`);
 })().catch(e=>{console.error(e);process.exitCode=1});

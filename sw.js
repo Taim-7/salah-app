@@ -1,6 +1,6 @@
 const BASE = new URL(self.registration.scope);
 const PREFIX = 'salah-static:' + BASE.pathname + ':';
-const CACHE_NAME = PREFIX + 'v33';
+const CACHE_NAME = PREFIX + 'v34';
 const legacyIcons = ['ocean', 'midnight', 'sand', 'slate', 'mihrab', 'minaret', 'compass', 'mat'];
 const palettes = ['forest', 'ocean', 'midnight', 'sand', 'slate'];
 const iconDesigns = ['crescent', 'mihrab', 'minaret', 'compass', 'mat'];
@@ -52,5 +52,15 @@ self.addEventListener('fetch', event => {
       }
       return new Response('Unavailable offline', { status: 503, statusText: 'Offline' });
     }
+  }));
+});
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(self.clients.matchAll({ type:'window', includeUncontrolled:true }).then(clients => {
+    const salah = clients.find(client => {
+      const url = new URL(client.url);
+      return url.origin === BASE.origin && [BASE.pathname, index.pathname].includes(url.pathname);
+    });
+    return salah ? salah.focus() : self.clients.openWindow(BASE.href);
   }));
 });
