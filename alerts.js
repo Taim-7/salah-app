@@ -37,11 +37,16 @@
       id, date, kind, prayer:event?.key || null, target, at, until,
       estimated:!!(kind === 'third' ? day.nightEstimated : event.estimated),
       source:day.sourceFallback ? 'local-fallback' : config.activeSource,
-      isha:kind === 'third' && day.isha ? +day.isha : null,
+      isha:kind === 'third' && day.isha && !day.ishaOverlapsFajr ? +day.isha : null,
       muted:config.soundVolume === 0 || (kind === 'start' && config.soundChoice === 'off')
     };
   }
 
-  root.SalahAlerts = { collect, androidEvent, minute };
+  function isIshaReminderDuringPrayer(alert, now) {
+    return alert.kind === 'third' && !!alert.day.isha && !alert.day.ishaOverlapsFajr &&
+      +alert.day.isha <= now && now < alert.target;
+  }
+
+  root.SalahAlerts = { collect, androidEvent, isIshaReminderDuringPrayer, minute };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.SalahAlerts;
 })(typeof window !== 'undefined' ? window : globalThis);

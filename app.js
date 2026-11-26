@@ -85,7 +85,7 @@
       if (!['angles', 'tayba', 'moonsighting'].includes(c.activeSource)) c.activeSource = 'angles';
       if (raw.fajrSoundChoice === 'adhan-fajr-abu-bakr' && c.soundChoice === 'soft') c.soundChoice = 'adhan-fajr-abu-bakr';
       if (c.soundChoice === 'adhan-thabet') c.soundChoice = defaults.soundChoice;
-      if (!['soft','bell','custom','off','adhan-abu-bakr','adhan-fajr-abu-bakr'].includes(c.soundChoice)) c.soundChoice = 'soft';
+      if (!['soft','bell','custom','off','adhan-abu-bakr','adhan-fajr-abu-bakr','adhan-damascus'].includes(c.soundChoice)) c.soundChoice = 'soft';
       c.soundRepeat = c.soundRepeat === true;
       delete c.fajrSoundChoice;
       c.soundVolume = Number.isFinite(+c.soundVolume) ? Math.max(0, Math.min(100, +c.soundVolume)) : defaults.soundVolume;
@@ -1049,7 +1049,8 @@
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
   const ADHAN_RECORDINGS = Object.freeze({
     'adhan-abu-bakr':'https://raw.githubusercontent.com/alsuleiman-lab/athkar-audio/main/fajr-adhan/fajr-abu-bakr.mp3',
-    'adhan-fajr-abu-bakr':'https://raw.githubusercontent.com/alsuleiman-lab/athkar-audio/main/fajr-adhan/abu-bakr.mp3'
+    'adhan-fajr-abu-bakr':'https://raw.githubusercontent.com/alsuleiman-lab/athkar-audio/main/fajr-adhan/abu-bakr.mp3',
+    'adhan-damascus':'./media/damascus.mp3'
   });
   const adhanSelected = () => cfg.soundVolume > 0 && Object.hasOwn(ADHAN_RECORDINGS, cfg.soundChoice);
   const recordings = new Map(), pendingRecordings = new Map();
@@ -1099,13 +1100,13 @@
     const task = (async () => {
       let blob;
       try { blob = await audioData('read', null, choice); } catch {}
-      if (!blob && native) {
+      if (!blob && native && choice !== 'adhan-damascus') {
         try {
           const cached = await fetch('./adhan/' + choice + '.mp3');
           if (cached.ok) blob = await cached.blob();
         } catch {}
       }
-      if (!blob && navigator.onLine) {
+      if (!blob && (navigator.onLine || choice === 'adhan-damascus')) {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 15000);
         try {
@@ -1141,15 +1142,15 @@
     audio.stop();
   }
 
-  async function playSound(choice = cfg.soundChoice, fromTap = false) {
+  async function playSound(choice = cfg.soundChoice, fromTap = false, canStart = () => true) {
     stopSound();
     const request = soundRequest;
     locationSound = !fromTap;
     const status = $('soundStatus');
     if (choice === 'off' || chimeChoice(choice)) {
-      const ready = fromTap ? await audio.unlock() : audio.ready();
-      if (request !== soundRequest) return;
-      if (choice === 'off') { status.textContent = ready ? 'Prayer-time sound is silent. Reminder audio is ready.' : 'Prayer-time sound is silent.'; return; }
+      const ready = await (fromTap ? audio.unlock() : audio.resume());
+      if (request !== soundRequest || !canStart()) return false;
+      if (choice === 'off') { status.textContent = ready ? 'Prayer-time sound is silent. Reminder audio is ready.' : 'Prayer-time sound is silent.'; return false; }
       const notes = choice === 'bell' ? bellNotes : softNotes;
       const playing = ready && !document.hidden && audio.chime(notes);
       if (playing && cfg.soundRepeat) {
@@ -1162,21 +1163,23 @@
       }
       status.textContent = playing ? (cfg.soundRepeat ? 'Repeating. Tap Stop to end.' : 'Playing chime.') :
         'Tap Play sound to start audio for this session.';
-      return;
+      return playing;
     }
 
     const blob = choice === 'custom' ? Promise.resolve(savedSound) : readRecording(choice);
-    const url = navigator.onLine ? ADHAN_RECORDINGS[choice] : null;
+    const url = navigator.onLine || choice === 'adhan-damascus' ? ADHAN_RECORDINGS[choice] : null;
     status.textContent = 'Loading sound…';
     try {
       if (choice === 'custom' && !savedSound) throw Error('Import an audio file first.');
-      const mode = await audio.play(blob, url, fromTap, () => { status.textContent = 'Audio finished.'; });
-      if (!mode || request !== soundRequest) return;
+      const mode = await audio.play(blob, url, fromTap, () => { status.textContent = 'Audio finished.'; }, canStart);
+      if (!mode || request !== soundRequest) return false;
       status.textContent = mode === 'device' && isIOS ? 'Playing. Use the iPhone’s volume buttons for this recording.' :
         choice === 'custom' ? 'Playing your sound.' : 'Playing adhan.';
+      return true;
     } catch (error) {
-      if (request !== soundRequest) return;
+      if (request !== soundRequest) return false;
       status.textContent = error instanceof DOMException ? 'Audio playback was blocked. Tap Play sound with Salah open.' : error.message;
+      return false;
     }
   }
 
@@ -1263,6 +1266,7 @@
   let reminderTimer = null, testingNotification = false;
   let nativeStatus, lastPlanSignature = '', lastForegroundAudio;
   const channelButtons = [...document.querySelectorAll('[data-alert-settings]')];
+  const wakeModes = [...document.querySelectorAll('[name="wakeVolumeMode"]')];
   let deliveredAlerts = new Set();
   try { deliveredAlerts = new Set(JSON.parse(sessionStorage.getItem('salah-reminders') || '[]')); } catch {}
 
@@ -1275,8 +1279,8 @@
   function renderNotificationControl(result = '') {
     if (native) {
       const wantsAdhan = adhanSelected();
-      const audioReady = nativeStatus?.regularAdhanReady &&
-        (cfg.soundChoice !== 'adhan-abu-bakr' || nativeStatus.fajrAdhanReady);
+      const audioReady = cfg.soundChoice === 'adhan-damascus' || (nativeStatus?.regularAdhanReady &&
+        (cfg.soundChoice !== 'adhan-abu-bakr' || nativeStatus.fajrAdhanReady));
       const testPending = nativeStatus?.testAt > Date.now() && !nativeStatus.error;
       const canNotify = nativeStatus?.notifications;
       const issues = [];
@@ -1304,7 +1308,7 @@
       $('androidAlertHelp').hidden = !issues.length;
       $('testNotification').hidden = !canNotify || !nativeStatus?.exact || nativeStatus?.prayerAlerts === false;
       $('testNotification').textContent = wantsAdhan && audioReady ? 'Test adhan in 30 seconds' : 'Test alert in 30 seconds';
-      $('testNotification').disabled = testPending;
+      $('testNotification').disabled = testPending || !!nativeStatus?.wake?.playback;
       $('notificationStatus').textContent = result || androidAlertStatus();
       $('notificationStatus').hidden = false;
       const lastTest = $('androidTestStatus');
@@ -1313,9 +1317,11 @@
         const time = new Date(nativeStatus.lastTestAt).toLocaleTimeString('en-GB', {
           hour:'numeric', minute:'2-digit', hour12:cfg.timeFormat === '12'
         });
-        lastTest.textContent = nativeStatus.lastTestRan ? 'Android ran the last test at ' + time + '.' :
+        const playback = nativeStatus.lastTestAdhan ? ' ' + nativeStatus.lastTestAdhan : '';
+        lastTest.textContent = nativeStatus.lastTestRan ? 'Android ran the last test at ' + time + '.' + playback :
           'Android missed the test scheduled for ' + time + '. Check permissions and battery settings, then try again.';
       }
+      renderWakeControl();
       return;
     }
     const permission = notificationPermission();
@@ -1369,6 +1375,55 @@
   $('openAndroidBattery').addEventListener('click', () => native?.send('openBatterySettings'));
   for (const button of channelButtons)
     button.addEventListener('click', () => native?.send('alertSettings', { alert:button.dataset.alertSettings }));
+
+  function renderWakeControl() {
+    const wake = nativeStatus?.wake;
+    $('wakeCard').hidden = !wake;
+    if (!wake) return;
+    $('wakeFajr').checked = wake.fajr;
+    $('wakeIsha').checked = wake.isha;
+    $('wakeSound').value = wake.sound;
+    $('wakeVolume').value = wake.volume;
+    $('wakeVolumeLabel').textContent = wake.volume + '%';
+    $('wakeVolumeControl').hidden = wake.progressive;
+    for (const input of wakeModes) input.checked = (input.value === 'progressive') === wake.progressive;
+    const clock = new Intl.DateTimeFormat('en-GB', {
+      timeZone:nativeStatus.place?.timeZone, weekday:'short', hour:'numeric',
+      minute:'2-digit', hour12:cfg.timeFormat === '12'
+    });
+    $('wakeFajrTime').textContent = wake.nextFajr ? 'At Fajr · ' + clock.format(wake.nextFajr) : 'At Fajr prayer time.';
+    const ishaDetail = '10 minutes before the first third of the night ends.';
+    $('wakeIshaTime').textContent = wake.nextIsha ? clock.format(wake.nextIsha) + ' · ' + ishaDetail : ishaDetail;
+    const canTest = nativeStatus.notifications && nativeStatus.exact && wake.notifications;
+    const pending = nativeStatus.testAt > Date.now() && !nativeStatus.error;
+    $('testWake').disabled = !canTest || pending || !!wake.playback;
+    $('pauseWake').hidden = wake.playback !== 'ringing';
+    $('stopWake').hidden = !wake.playback;
+    const status = $('wakeStatus');
+    if (wake.playback === 'paused') status.textContent = 'Paused for 30 seconds.';
+    else if (wake.playback) status.textContent = wake.playback === 'ringing' ? 'Wake alarm is ringing.' : 'Starting wake alarm…';
+    else if (pending && wake.testPending) status.textContent = 'Wake alarm test scheduled. You can lock your phone.';
+    else if (!nativeStatus.notifications || !nativeStatus.exact) status.textContent = 'Allow notifications and exact alarms above.';
+    else if (!wake.notifications) status.textContent = 'Turn on Wake me notifications in Android.';
+    else if (!nativeStatus.alarmVolumeOn) status.textContent = 'Turn up Alarms in Android’s volume controls.';
+    else if (!wake.nextFajr && !wake.nextIsha && (wake.fajr || wake.isha)) status.textContent = 'Waiting for prayer times for your location.';
+    else status.textContent = '';
+    $('wakeNotificationSettings').hidden = !nativeStatus.notifications || wake.notifications;
+  }
+
+  function saveWakeSettings() {
+    native?.send('saveWakeSettings', {
+      fajr:$('wakeFajr').checked, isha:$('wakeIsha').checked, sound:$('wakeSound').value,
+      progressive:wakeModes[0].checked, volume:Number($('wakeVolume').value)
+    });
+  }
+  for (const input of [$('wakeFajr'), $('wakeIsha'), $('wakeSound'), $('wakeVolume'), ...wakeModes])
+    input.addEventListener('change', saveWakeSettings);
+  $('wakeVolume').addEventListener('input', () => { $('wakeVolumeLabel').textContent = $('wakeVolume').value + '%'; });
+  $('testWake').addEventListener('click', () => native?.send('testWake'));
+  $('pauseWake').addEventListener('click', () => native?.send('pauseWake'));
+  $('stopWake').addEventListener('click', () => native?.send('stopWake'));
+  $('wakeNotificationSettings').addEventListener('click', () => native?.send('alertSettings', { alert:'wake' }));
 
   function androidAlertStatus() {
     if (!nativeStatus) return 'Checking notification access…';
@@ -1445,43 +1500,52 @@
     const ahead = Math.ceil((target - now) / minute);
     const minutes = ahead + (ahead === 1 ? ' minute' : ' minutes');
     if (kind === 'third') {
-      const context = !day.isha ? 'Isha time unavailable.' :
-        +day.isha > now ? 'Calculated Isha is at ' + fmt(day.isha) + '.' :
-        cfg.ishaLimit === 'third' ? 'Your selected Isha cutoff.' : '';
-      const title = 'First third ends in ' + minutes;
-      const body = context ? time + ' · ' + context : time;
+      let title, body;
+      if (!day.isha || day.ishaOverlapsFajr) {
+        title = 'Isha time unavailable';
+        body = 'Check your prayer timetable for tonight.';
+      } else if (cfg.ishaLimit === 'third') {
+        title = 'Isha cutoff in ' + minutes;
+        body = +day.isha >= target ? 'Calculated Isha is at ' + fmt(day.isha) + ' · cutoff at ' + time + '.' :
+          'Your selected cutoff is at ' + time + '.';
+      } else if (+day.isha > target) {
+        title = 'Isha begins later tonight';
+        body = 'Calculated Isha is at ' + fmt(day.isha) + ' · night marker at ' + time + '.';
+      } else {
+        title = 'Preferred time for Isha in ' + minutes;
+        body = 'From ' + time + ' if you’re able to delay Isha.';
+      }
       return { title, body, message:title + ' · ' + body };
     }
     return kind === 'before' ?
       { title:event.en + ' in ' + minutes, body:time, message:event.en + ' at ' + time + ' · ' + minutes + ' away' } :
       { title:event.en + ' begins', body:time, message:event.en + ' · ' + time };
   }
-  function deliverPrayerAlerts(alerts, now) {
+  async function deliverPrayerAlerts(alerts, now) {
     markDelivered(alerts);
     const messages = alerts.map(alert => describePrayerAlert(alert, now));
     showReminder(messages.map(message => message.message).join('\n'));
     const place = currentPlace;
-    const start = alerts.find(alert => alert.kind === 'start');
-    const playPrayerSound = start && cfg.soundChoice !== 'off' && cfg.soundVolume > 0;
-    const prayerAudioReady = playPrayerSound && audio.ready();
-    if (playPrayerSound) {
-      void playSound(prayerSound(start.event.key));
-    }
+    const stillDue = alert => !document.hidden && currentPlace === place && Date.now() >= alert.at && Date.now() < alert.until;
+    const soundAlert = alerts.find(alert => alert.kind === 'start') ||
+      alerts.find(alert => SalahAlerts.isIshaReminderDuringPrayer(alert, now));
     if (native) {
       native.send('markAlerts', { ids:alerts.map(alert => alert.id) });
-      if (!prayerAudioReady && alerts.some(alert => alert.kind !== 'start')) audio.chime(reminderNotes);
+    }
+    const played = soundAlert && cfg.soundChoice !== 'off' && cfg.soundVolume > 0 &&
+      await playSound(prayerSound(soundAlert.event?.key || 'isha'), false, () => stillDue(soundAlert));
+    if (native) {
+      if (!played && cfg.soundVolume > 0 && alerts.some(alert => alert.kind !== 'start' && stillDue(alert)))
+        audio.chime(reminderNotes);
       return;
     }
-    const stillDue = alert => !document.hidden && currentPlace === place && Date.now() >= alert.at && Date.now() < alert.until;
-    const notifications = alerts.map((alert, i) => {
+    const shown = await Promise.all(alerts.map((alert, i) => {
       const { title, body } = messages[i];
-      const silent = cfg.soundVolume === 0 || (alert.kind === 'start' && (cfg.soundChoice === 'off' || prayerAudioReady));
+      const silent = cfg.soundVolume === 0 || !!played || (alert.kind === 'start' && cfg.soundChoice === 'off');
       return showPhoneNotification(title, body, 'salah-reminder:' + alert.id, silent, () => stillDue(alert));
-    });
-    void Promise.all(notifications).then(shown => {
-      if (!prayerAudioReady && alerts.some((alert, i) => alert.kind !== 'start' && !shown[i] && stillDue(alert)))
-        audio.chime(reminderNotes);
-    });
+    }));
+    if (!played && cfg.soundVolume > 0 && alerts.some((alert, i) => alert.kind !== 'start' && !shown[i] && stillDue(alert)))
+      audio.chime(reminderNotes);
   }
   function prayerSound(prayer) {
     return cfg.soundChoice === 'adhan-abu-bakr' && prayer !== 'fajr' ? 'adhan-fajr-abu-bakr' : cfg.soundChoice;
@@ -1528,7 +1592,7 @@
     const alerts = collectPrayerAlerts(days).filter(alert => alert.until > now && !deliveredAlerts.has(alert.id))
       .sort((a, b) => a.at - b.at);
     const due = alerts.filter(alert => alert.at <= now);
-    if (due.length) deliverPrayerAlerts(due, now);
+    if (due.length) void deliverPrayerAlerts(due, now);
     const next = alerts.find(alert => alert.at > now);
     if (next) reminderTimer = setTimeout(checkPrayerReminders, next.at - Date.now());
   }
@@ -2326,7 +2390,8 @@
     }
   });
 
-  const screenIds = {today:'today', qibla:'qiblaPanel', fasting:'fastingPanel', dates:'datesPanel', sounds:'soundPanel', settings:'settingsDialog'};
+  const screenIds = {today:'today', qibla:'qiblaPanel', fasting:'fastingPanel', dates:'datesPanel', learn:'learnPanel',
+    sounds:'soundPanel', settings:'settingsDialog'};
   function showScreen(target) {
     if (target === 'compare') {
       target = 'settings';
@@ -2471,6 +2536,7 @@
     native.on('location', trackAndroidPosition);
     native.on('compass', readAndroidCompass);
     native.on('scheduleStatus', status => {
+      if (status.wake?.playback && !nativeStatus?.wake?.playback) stopSound();
       nativeStatus = status;
       if (scheduledPlace === undefined && status.place) {
         const place = status.place;
@@ -2505,6 +2571,7 @@
       if (permissionSetup.open) void finishPermissionSetup(false);
       else if (accessDialog.open) dismissAccessRecovery();
       else if (occasionDialog.open) occasionDialog.close();
+      else if (!$('learnPanel').hidden && SalahLearn.close()) return;
       else if ($('today').hidden) showScreen('today');
       else native.send('background');
     });

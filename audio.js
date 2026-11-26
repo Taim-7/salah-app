@@ -40,6 +40,10 @@
       try { media.volume = volume; } catch {}
     }
 
+    function resume() {
+      return context ? unlock() : Promise.resolve(false);
+    }
+
     function setLevel(level) {
       volume = Math.max(0, Math.min(1, level / 100));
       if (master) {
@@ -67,16 +71,17 @@
       return data;
     }
 
-    async function play(blobPromise, url, fromTap, onEnd) {
+    async function play(blobPromise, url, fromTap, onEnd, canStart) {
       stop();
       const request = revision;
-      const ready = fromTap ? unlock() : Promise.resolve(context?.state === 'running');
+      const usable = await (fromTap ? unlock() : resume());
+      if (request !== revision || document.hidden || !canStart()) return null;
+      if (!fromTap && !usable) throw Error('Tap Play sound to start audio for this session.');
       const blob = await blobPromise.catch(() => null);
-      const usable = await ready;
-      if (request !== revision || document.hidden) return null;
+      if (request !== revision || document.hidden || !canStart()) return null;
       if (usable && blob) {
         const buffer = await decode(blob).catch(() => null);
-        if (request !== revision || document.hidden) return null;
+        if (request !== revision || document.hidden || !canStart()) return null;
         if (buffer && context.state === 'running') {
           recording = context.createBufferSource();
           recording.buffer = buffer;
@@ -91,7 +96,6 @@
           return 'gain';
         }
       }
-      if (!fromTap && !usable) throw Error('Tap Play sound to start audio for this session.');
       if (!blob && !url) throw Error('This recording is unavailable. Open Salah online to save it.');
       if (blob) fallbackBlobURL = URL.createObjectURL(blob);
       const player = new Audio(fallbackBlobURL || url);
@@ -123,7 +127,7 @@
       return true;
     }
 
-    return { unlock, setLevel, play, stop, chime, ready:() => context?.state === 'running' };
+    return { unlock, resume, setLevel, play, stop, chime, ready:() => context?.state === 'running' };
   }
 
   root.SalahAudio = { create };

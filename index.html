@@ -258,6 +258,32 @@
   </dialog>
 </section>
 
+<section aria-labelledby="learnTitle" class="app-screen learn-panel" data-screen="learn" id="learnPanel" hidden>
+  <div id="learnIndex">
+    <header class="panel-heading"><h2 id="learnTitle" tabindex="-1">Learn</h2></header>
+    <div class="learn-topics" id="learnTopics"></div>
+    <details class="learn-planned">
+      <summary>Topics to add later</summary>
+      <ul>
+        <li>Ghusl</li>
+        <li>The prostration of forgetfulness</li>
+        <li>Prayer in congregation and joining late</li>
+        <li>Praying while ill or unable to stand</li>
+      </ul>
+    </details>
+  </div>
+  <article id="learnArticle" class="learn-article" data-language="both" hidden>
+    <button class="secondary-button" id="backToLearn" type="button">‹ All topics</button>
+    <h2 id="lessonTitle" tabindex="-1"></h2>
+    <div class="learn-languages" aria-label="Reading language" role="group">
+      <button class="text-button" data-lesson-language="both" type="button" aria-pressed="true">Both</button>
+      <button class="text-button" data-lesson-language="en" type="button" aria-pressed="false">English</button>
+      <button class="text-button" data-lesson-language="ar" type="button" aria-pressed="false" lang="ar">العربية</button>
+    </div>
+    <div id="lessonContent"></div>
+  </article>
+</section>
+
 <section aria-labelledby="soundTitle" class="sound-panel app-screen" data-screen="sounds" hidden id="soundPanel">
   <header class="panel-heading"><h2 id="soundTitle">Sounds &amp; reminders</h2></header>
   <div class="alert-grid">
@@ -266,6 +292,7 @@
       <select id="soundChoice">
         <option value="adhan-abu-bakr">Abu Bakr</option>
         <option value="adhan-fajr-abu-bakr">Echo</option>
+        <option value="adhan-damascus">Damascus</option>
         <option value="soft">Gentle chime</option>
         <option value="bell">Clear bell</option>
         <option value="off">Silent</option>
@@ -294,10 +321,10 @@
         <option value="15">15 minutes before</option><option value="20">20 minutes before</option>
         <option value="25">25 minutes before</option><option value="30">30 minutes before</option>
       </select>
-      <p class="setting-hint">The Isha reminder comes 10 minutes before the first third of the night ends.</p>
+      <p class="setting-hint">The Isha reminder gives you 10 minutes’ notice before the preferred time. If you use the first third as your cutoff, it reminds you of that cutoff.</p>
       <div class="phone-notification-controls">
         <h3>Phone notifications</h3>
-        <p class="form-note" id="browserNotificationHelp">Keep Salah on screen for these alerts.</p>
+        <p class="form-note" id="browserNotificationHelp">Keep Salah on screen for these alerts. Tap Play sound to allow audio for this session.</p>
         <button class="secondary-button" id="allowAndroidNotifications" type="button" hidden>Allow notifications</button>
         <button class="secondary-button" id="allowAndroidAlarms" type="button" hidden>Allow exact alarms</button>
         <button class="secondary-button" data-alert-settings="prayers" type="button" hidden>Prayer times settings</button>
@@ -310,6 +337,40 @@
         <p class="setting-hint" id="androidTestStatus" role="status" hidden></p>
       </div>
     </div>
+    <section class="reminder-card wake-card" id="wakeCard" aria-labelledby="wakeTitle" hidden>
+      <h3 id="wakeTitle">Wake me</h3>
+      <div class="wake-prayers">
+        <label class="tracking-toggle"><input type="checkbox" id="wakeFajr"/><span>Fajr</span></label>
+        <p class="setting-hint" id="wakeFajrTime">At Fajr prayer time.</p>
+        <label class="tracking-toggle"><input type="checkbox" id="wakeIsha"/><span>Isha</span></label>
+        <p class="setting-hint" id="wakeIshaTime">10 minutes before the first third of the night ends.</p>
+      </div>
+      <label class="block-label" for="wakeSound">Fajr alarm sound</label>
+      <select id="wakeSound">
+        <option value="tone">Alarm tone</option>
+        <option value="ali">Ali · Fajr announcement</option>
+        <option value="muslim">Muslim · Fajr announcement</option>
+      </select>
+      <p class="setting-hint">Isha uses the alarm tone.</p>
+      <fieldset class="wake-volume">
+        <legend>Wake alarm volume</legend>
+        <label class="tracking-toggle"><input type="radio" name="wakeVolumeMode" value="progressive" checked/><span>Progressive</span></label>
+        <p class="setting-hint" id="wakeProgressiveHint">Plays for a minute, pauses for 30 seconds, then goes up to the next level. The levels are 30%, 45%, 60%, 75%, 85% and 95%.</p>
+        <label class="tracking-toggle"><input type="radio" name="wakeVolumeMode" value="manual"/><span>Manual</span></label>
+        <div id="wakeVolumeControl" class="volume-controls" hidden>
+          <input aria-label="Manual wake alarm volume" id="wakeVolume" type="range" min="30" max="100" value="65"/>
+          <output for="wakeVolume" id="wakeVolumeLabel">65%</output>
+        </div>
+      </fieldset>
+      <p class="setting-hint">The alarm repeats until you tap Stop. Your phone’s Alarms volume applies.</p>
+      <div class="alert-actions">
+        <button class="secondary-button" id="testWake" type="button">Test alarm in 30 seconds</button>
+        <button class="secondary-button" id="pauseWake" type="button" hidden>Pause 30 seconds</button>
+        <button class="secondary-button" id="stopWake" type="button" hidden>Stop wake alarm</button>
+        <button class="secondary-button" id="wakeNotificationSettings" type="button" hidden>Wake me notification settings</button>
+      </div>
+      <p class="alert-status" id="wakeStatus" role="status"></p>
+    </section>
   </div>
 </section>
 <section aria-labelledby="settingsTitle" class="app-screen settings-screen" data-screen="settings" hidden="" id="settingsDialog"><form class="settings-sheet"><header class="dialog-heading"><div><h2 id="settingsTitle">Settings</h2></div></header><div class="dialog-scroll">
@@ -414,7 +475,8 @@
   <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="3"/><path d="M8 3.5v5M16 3.5v5M8.5 14l2.4 2.4 4.6-4.6"/></svg><span>Fasting</span>
 </button><button aria-controls="datesPanel" aria-selected="false" data-screen-target="dates" role="tab" type="button">
   <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="3"/><path d="M8 3.5v5m8-5v5M4 11h16m-12 4h2m4 0h2"/></svg><span>Dates</span>
-</button><button aria-controls="soundPanel" aria-selected="false" class="" data-screen-target="sounds" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0v5l2 3H4l2-3V9M10 20h4"></path></svg><span>Sounds</span></button><button aria-controls="settingsDialog" aria-selected="false" class="" data-screen-target="settings" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M12 3v3m0 12v3M3 12h3m12 0h3m-3.7-6.7-2.1 2.1m-7.4 7.4-2.1 2.1m0-11.6 2.1 2.1m7.4 7.4 2.1 2.1"></path><circle cx="12" cy="12" r="3"></circle></svg><span>Settings</span></button></nav>
+</button><button aria-controls="learnPanel" aria-selected="false" data-screen-target="learn" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M12 6C9 4 5 4 3 5v14c3-1 6-1 9 1 3-2 6-2 9-1V5c-2-1-6-1-9 1zm0 0v14"></path></svg><span>Learn</span></button>
+<button aria-controls="soundPanel" aria-selected="false" class="" data-screen-target="sounds" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0v5l2 3H4l2-3V9M10 20h4"></path></svg><span>Sounds</span></button><button aria-controls="settingsDialog" aria-selected="false" class="" data-screen-target="settings" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path d="M12 3v3m0 12v3M3 12h3m12 0h3m-3.7-6.7-2.1 2.1m-7.4 7.4-2.1 2.1m0-11.6 2.1 2.1m7.4 7.4 2.1 2.1"></path><circle cx="12" cy="12" r="3"></circle></svg><span>Settings</span></button></nav>
 
 <dialog class="permission-dialog" id="permissionSetup" aria-labelledby="permissionTitle">
   <h2 id="permissionTitle">Set up Salah</h2>
@@ -437,6 +499,7 @@
     <button class="text-button" id="dismissAccessRecovery" type="button">Not now</button>
   </div>
 </dialog>
-<script src="./region.js"></script><script src="./solar.js"></script><script src="./providers.js"></script><script src="./timetable.js"></script><script src="./hijri.js"></script><script src="./audio.js"></script><script src="./compass.js"></script><script src="./alerts.js"></script><script src="./platform.js"></script><script src="./app.js"></script>
+<script src="./region.js"></script><script src="./solar.js"></script><script src="./providers.js"></script><script src="./timetable.js"></script><script src="./hijri.js"></script><script src="./audio.js"></script><script src="./compass.js"></script><script src="./alerts.js"></script><script src="./platform.js"></script>
+<script src="./al-mulk.js"></script><script src="./learn-text.js"></script><script src="./learn.js"></script><script src="./app.js"></script>
 </body>
 </html>
