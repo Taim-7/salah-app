@@ -86,7 +86,8 @@ try:
             }});
             if (localStorage.getItem('salah-config')) return;
             localStorage.setItem('salah-config', JSON.stringify({permissionSetupDone:true,
-              useDeviceLocation:true, ishaPreference:'after-third', ishaLimit:'half', soundChoice:'off'}));
+              useDeviceLocation:true, ishaPreference:'after-third', ishaLimit:'half', soundChoice:'off',
+              firstThirdReminder:false}));
         })()""")
         page.clock.install(time=initial - timedelta(minutes=1))
         page.clock.pause_at(initial)
@@ -96,10 +97,8 @@ try:
         tab(page, 'settings')
         assert page.locator('input[name="ishaPreference"]').count() == 0
         assert page.locator('#ishaLimit').input_value() == 'half'
-        page.locator('#saveSettings').click()
-        assert 'ishaPreference' not in page.evaluate("JSON.parse(localStorage.getItem('salah-config'))")
         tab(page, 'sounds')
-        assert page.locator('#firstThirdReminder').is_checked()
+        assert page.locator('#firstThirdReminder').count() == 0
         page.get_by_role('button', name='Send test notification').click()
         expect(page.locator('#notificationStatus')).to_have_text('Test notification sent.')
         assert wait_for_alert(page, 'salah-test')['title'] == 'Salah test notification'
@@ -131,6 +130,8 @@ try:
         asr = time_for(page, '[data-event="asr"] time')
         tab(page, 'sounds')
         page.locator('#reminderLead').select_option('25')
+        config = page.evaluate("JSON.parse(localStorage.getItem('salah-config'))")
+        assert 'firstThirdReminder' not in config and 'ishaPreference' not in config
         set_hidden(page, True)
         page.clock.set_system_time(asr - timedelta(minutes=3, seconds=30))
         asr_pre = 'salah-reminder:2026-11-27:asr:before'
@@ -156,15 +157,12 @@ try:
         assert_no_alert(page, 'salah-reminder:2026-11-27:maghrib:before')
         assert_no_alert(page, 'salah-reminder:2026-11-27:maghrib')
 
-        # The first-third switch works independently of the standard lead.
+        # The first-third warning still runs when ordinary reminders are off.
         marker = time_for(page, '.night-summary time >> nth=0')
         tab(page, 'sounds')
         page.locator('#reminderEnabled').uncheck()
-        page.locator('#firstThirdReminder').uncheck()
         page.clock.set_system_time(marker - timedelta(minutes=4))
         set_hidden(page, False)
-        assert_no_alert(page, 'salah-reminder:2026-11-27:first-third')
-        page.locator('#firstThirdReminder').check()
         assert wait_for_alert(page, 'salah-reminder:2026-11-27:first-third')['title'] == 'First third ends in 4 minutes'
 
         # A summer warning after civil midnight belongs to the preceding night.

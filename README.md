@@ -20,7 +20,7 @@ In **Fasting**, choose a day to see Fajr and iftar and log a fast. Use **Log as 
 
 **Dates** has separate sections for upcoming fasts and Eids. Each row gives the dates and whether fasting is obligatory, Sunnah or forbidden. Open a row for an explanation of the practice, Arabic excerpts, English meanings and source links. The Shawwal row gives the period in which you can choose your six days.
 
-In **Sounds**, pick a pre-prayer reminder of 15, 20, 25 or 30 minutes. The first-third warning is on by default. It uses a separate five-minute lead and appears when the timetable can calculate that night’s marker. In **Phone notifications**, tap **Allow notifications** and check for the test alert. On iPhone, open Salah from the Home Screen. Keep Salah on screen for scheduled alerts. If you return during a reminder window, Salah can show the time still left.
+In **Sounds**, pick a pre-prayer reminder of 15, 20, 25 or 30 minutes. Salah automatically warns you five minutes before the first third of the night ends when it can calculate that marker. In **Phone notifications**, tap **Allow notifications** and check for the test alert. On iPhone, open Salah from the Home Screen. Keep Salah on screen for scheduled alerts. If you return during a reminder window, Salah can show the time still left.
 
 Use **Play sound** to start audio for the session. The sound level controls the recordings and chimes in Salah. Gentle chime and Clear bell can repeat until stopped.
 

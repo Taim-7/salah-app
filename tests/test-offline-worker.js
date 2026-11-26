@@ -52,12 +52,12 @@ const tick=async(type,request,fields={})=>{
   await Promise.all(pending);
 };
 (async()=>{
- await caches.open('salah-static:/salah-app/:v15');
+ await caches.open('salah-static:/salah-app/:v34');
  await caches.open('salah-static:/other-app/:v15');
  await tick('install');
- assert.equal(stores.has('salah-static:/salah-app/:v34'),true);
+ assert.equal(stores.has('salah-static:/salah-app/:v35'),true);
  await tick('activate');
- assert.equal(stores.has('salah-static:/salah-app/:v15'),false);
+ assert.equal(stores.has('salah-static:/salah-app/:v34'),false);
  assert.equal(stores.has('salah-static:/other-app/:v15'),true);
  const urls=['','index.html','styles.css','region.js','solar.js','providers.js','timetable.js','hijri.js','audio.js','compass.js','app.js','manifest.webmanifest','vendor/magvar/magvar.mjs','vendor/magvar/utils.mjs','vendor/magvar/WMMCOF2025.mjs'];
  const variants = ['ocean','midnight','sand','slate','mihrab','minaret','compass','mat'];

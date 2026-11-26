@@ -5,7 +5,7 @@
     useDeviceLocation: true, permissionSetupDone: false, method: '15-13', fajrAngle: 15, ishaAngle: 13,
     ishaLimit: 'half', highLatRule: 'seventh',
     activeSource: 'angles', soundChoice: 'adhan-abu-bakr', soundVolume: 40,
-    reminderLead: 15, reminderEnabled: true, firstThirdReminder: true, soundRepeat: false, qiblaSound: true,
+    reminderLead: 15, reminderEnabled: true, soundRepeat: false, qiblaSound: true,
     fastingView: 'week', timeFormat: '12', layout: 'compact', accent: 'forest', iconChoice: 'crescent'
   };
   const names = [
@@ -90,7 +90,7 @@
       const lead = Number(raw.reminderLead ?? raw.calendarLead);
       c.reminderLead = reminderLeads.includes(lead) ? lead : defaults.reminderLead;
       c.reminderEnabled = c.reminderEnabled !== false;
-      c.firstThirdReminder = c.firstThirdReminder !== false;
+      delete c.firstThirdReminder;
       delete c.qiblaHaptic;
       c.qiblaSound = c.qiblaSound !== false;
       delete c.qiblaLegacyPulse;
@@ -1250,7 +1250,7 @@
           id:id + ':before', kind:'before', event, day, target, at:target - cfg.reminderLead * minute, until:target
         });
       }
-      if (cfg.firstThirdReminder && day.firstThird) {
+      if (day.firstThird) {
         const target = +day.firstThird;
         alerts.push({ id:key + ':first-third', kind:'third', day, target, at:target - 5 * minute, until:target });
       }
@@ -1301,7 +1301,6 @@
   $('reminderLead').value = String(cfg.reminderLead);
   $('reminderLead').disabled = !cfg.reminderEnabled;
   $('reminderEnabled').checked = cfg.reminderEnabled;
-  $('firstThirdReminder').checked = cfg.firstThirdReminder;
   $('reminderLead').addEventListener('change', () => {
     cfg.reminderLead = Number($('reminderLead').value);
     store();
@@ -1310,11 +1309,6 @@
   $('reminderEnabled').addEventListener('change', () => {
     cfg.reminderEnabled = $('reminderEnabled').checked;
     $('reminderLead').disabled = !cfg.reminderEnabled;
-    store();
-    checkPrayerReminders();
-  });
-  $('firstThirdReminder').addEventListener('change', () => {
-    cfg.firstThirdReminder = $('firstThirdReminder').checked;
     store();
     checkPrayerReminders();
   });
@@ -2131,7 +2125,7 @@
     permissionSetup.close();
     renderLocationState();
     if (!useDevice) return;
-    if (cfg.qiblaSound || cfg.reminderEnabled || cfg.firstThirdReminder || cfg.soundChoice !== 'off') void audio.unlock();
+    void audio.unlock();
     try {
       if (requestingLaunchMotion) await requestCompassAccess();
     } catch {
