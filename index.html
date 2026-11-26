@@ -277,6 +277,8 @@
       <p class="setting-hint" id="iosVolumeNote" hidden>Use the phone’s volume buttons to adjust overall loudness.</p>
       <div class="alert-actions"><button class="primary-button" id="testSound" type="button">Play sound</button><button class="secondary-button" id="stopSound" type="button">Stop</button></div>
       <p class="alert-status" id="soundStatus" role="status">Tap Play sound to start audio for this session.</p>
+      <p class="setting-hint" id="nativeAdhanStatus" hidden></p>
+      <button class="text-button" id="retryAndroidAdhan" type="button" hidden>Download adhan</button>
       <details class="study-links custom-sound-row" id="customSoundPanel">
         <summary>Import a sound</summary>
         <label class="block-label" for="customAudio">Audio file · up to 8 MB</label>
@@ -292,11 +294,20 @@
         <option value="15">15 minutes before</option><option value="20">20 minutes before</option>
         <option value="25">25 minutes before</option><option value="30">30 minutes before</option>
       </select>
+      <p class="setting-hint">The Isha reminder comes 10 minutes before the first third of the night ends.</p>
       <div class="phone-notification-controls">
         <h3>Phone notifications</h3>
-        <p class="form-note">Keep Salah on screen for these alerts.</p>
+        <p class="form-note" id="browserNotificationHelp">Keep Salah on screen for these alerts.</p>
+        <button class="secondary-button" id="allowAndroidNotifications" type="button" hidden>Allow notifications</button>
+        <button class="secondary-button" id="allowAndroidAlarms" type="button" hidden>Allow exact alarms</button>
+        <button class="secondary-button" data-alert-settings="prayers" type="button" hidden>Prayer times settings</button>
+        <button class="secondary-button" data-alert-settings="reminders" type="button" hidden>Prayer reminders settings</button>
+        <button class="secondary-button" data-alert-settings="isha" type="button" hidden>Isha alarm settings</button>
+        <button class="secondary-button" id="openAndroidBattery" type="button" hidden>Open Salah battery settings</button>
         <button class="secondary-button" id="testNotification" type="button" hidden>Allow notifications</button>
         <p class="form-note" id="notificationStatus" role="status" hidden></p>
+        <p class="setting-hint" id="androidAlertHelp" hidden></p>
+        <p class="setting-hint" id="androidTestStatus" role="status" hidden></p>
       </div>
     </div>
   </div>
@@ -414,6 +425,18 @@
     <button class="secondary-button" id="skipPermissions" type="button">Not now</button>
   </div>
 </dialog>
-<script src="./region.js"></script><script src="./solar.js"></script><script src="./providers.js"></script><script src="./timetable.js"></script><script src="./hijri.js"></script><script src="./audio.js"></script><script src="./compass.js"></script><script src="./app.js"></script>
+<dialog class="permission-dialog" id="restoreAndroidAccess" aria-labelledby="restoreAccessTitle">
+  <h2 id="restoreAccessTitle">Restore Salah access</h2>
+  <p id="restoreAccessHelp">Turn access back on to use prayer alerts, prayer times and Qibla.</p>
+  <div class="permission-actions">
+    <button class="secondary-button" data-restore-access="location" type="button" hidden>Allow location</button>
+    <button class="secondary-button" data-restore-access="precise" type="button" hidden>Restore precise location</button>
+    <button class="secondary-button" data-restore-access="deviceLocation" type="button" hidden>Turn on phone location</button>
+    <button class="secondary-button" data-restore-access="notifications" type="button" hidden>Allow notifications</button>
+    <button class="secondary-button" data-restore-access="exactAlarms" type="button" hidden>Allow exact alarms</button>
+    <button class="text-button" id="dismissAccessRecovery" type="button">Not now</button>
+  </div>
+</dialog>
+<script src="./region.js"></script><script src="./solar.js"></script><script src="./providers.js"></script><script src="./timetable.js"></script><script src="./hijri.js"></script><script src="./audio.js"></script><script src="./compass.js"></script><script src="./alerts.js"></script><script src="./platform.js"></script><script src="./app.js"></script>
 </body>
 </html>

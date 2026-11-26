@@ -12,7 +12,7 @@ Use **Settings → Compare prayer times** to choose your main timetable and see 
 
 Choose Focus, Dayline or Horizon in **Settings → Appearance**. All three show the forbidden-time rows. **Home Screen icon** offers Crescent, Mihrab, Minaret, Compass and Prayer mat in each colour preset. Open the icon page in Safari before adding it to the Home Screen. An installed copy offers **Copy Safari link**. Save your fasting log before replacing a shortcut and restore it in the new copy.
 
-In **Qibla**, tap **Start compass** and hold the phone flat in portrait, away from metal and magnetic cases. Follow the coloured arc towards the Qibla marker. The centre shows how far to turn. Green means the reported heading is within 2.5° of the Qibla. Salah shows the phone’s accuracy estimate when available and labels approximate alignment. If the heading jumps and the phone’s motion readings cannot confirm the turn, the dial pauses. Hold the phone steady or tap **Restart compass** to take a fresh reading. The optional chime plays when the reading settles in range or when the compass has a problem.
+In **Qibla**, tap **Start compass** and hold the phone flat in portrait, away from metal and magnetic cases. Follow the coloured arc towards the Qibla marker. The centre shows how far to turn. Green means the reported heading is within 2° of the Qibla. Salah shows the phone’s accuracy estimate when available and labels approximate alignment. If the heading jumps and the phone’s motion readings cannot confirm the turn, the dial pauses. Hold the phone steady or tap **Restart compass** to take a fresh reading. The optional chime plays when the reading settles in range or when the compass has a problem.
 
 The **True bearing** and **Magnetic bearing** give the direction towards the Kaaba from your current location. Use the value that matches the north reference of your compass. Salah uses the World Magnetic Model for its magnetic bearing and to correct the phone’s magnetic heading.
 
@@ -20,9 +20,9 @@ In **Fasting**, choose a day to see Fajr and iftar and log a fast. Use **Log as 
 
 **Dates** has separate sections for upcoming fasts and Eids. Each row gives the dates and whether fasting is obligatory, Sunnah or forbidden. Open a row for an explanation of the practice, Arabic excerpts, English meanings and source links. The Shawwal row gives the period in which you can choose your six days.
 
-In **Sounds**, pick a pre-prayer reminder of 15, 20, 25 or 30 minutes. Salah automatically warns you five minutes before the first third of the night ends when it can calculate that marker. In **Phone notifications**, tap **Allow notifications** and check for the test alert. On iPhone, open Salah from the Home Screen. Keep Salah on screen for scheduled alerts. If you return during a reminder window, Salah can show the time still left.
+In **Sounds**, pick a pre-prayer reminder of 15, 20, 25 or 30 minutes. Salah gives the Isha reminder 10 minutes before the first third of the night ends when it has that time. In **Phone notifications**, tap **Allow notifications** and check for the test alert. On iPhone, open Salah from the Home Screen. Keep Salah on screen for scheduled alerts. If you return during a reminder window, Salah can show the time still left.
 
-Use **Play sound** to start audio for the session. The sound level controls the recordings and chimes in Salah. Gentle chime and Clear bell can repeat until stopped.
+Use **Play sound** to start audio for the session. The website plays the adhan at prayer time while Salah is open and the browser has allowed audio. The sound level controls the recordings and chimes in Salah. Gentle chime and Clear bell can repeat until stopped.
 
 ## Prayer times
 

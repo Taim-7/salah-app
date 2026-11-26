@@ -3,10 +3,55 @@
 
   const signedTurn = (from, to) => (to - from + 540) % 360 - 180;
   const normalise = angle => (angle % 360 + 360) % 360;
+  const KAABA = { lat:21.422487, lng:39.826206 };
+  const flattening = 1 / 298.257223563;
+  const semiMinorAxis = 6378137 * (1 - flattening);
+  const rad = Math.PI / 180;
   const headingWindow = 320;
   const jumpLimit = 30;
 
-  function createHeadingFilter() {
+  function qiblaGeodesic(lat, lng) {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+    // Vincenty's inverse geodesic on WGS84. The UK and Ireland are far from the antipode of the Kaaba.
+    const u1 = Math.atan((1 - flattening) * Math.tan(lat * rad));
+    const u2 = Math.atan((1 - flattening) * Math.tan(KAABA.lat * rad));
+    const sinU1 = Math.sin(u1), cosU1 = Math.cos(u1), sinU2 = Math.sin(u2), cosU2 = Math.cos(u2);
+    const longitudeGap = signedTurn(lng, KAABA.lng) * rad;
+    let lambda = longitudeGap;
+    for (let iteration = 0; iteration < 32; iteration++) {
+      const sinLambda = Math.sin(lambda), cosLambda = Math.cos(lambda);
+      const east = cosU2 * sinLambda;
+      const north = cosU1 * sinU2 - sinU1 * cosU2 * cosLambda;
+      const sinSigma = Math.hypot(east, north);
+      if (sinSigma < 1e-15) return null;
+      const cosSigma = sinU1 * sinU2 + cosU1 * cosU2 * cosLambda;
+      const sigma = Math.atan2(sinSigma, cosSigma);
+      const sinAlpha = cosU1 * east / sinSigma;
+      const cosSqAlpha = Math.max(0, 1 - sinAlpha ** 2);
+      const cos2SigmaMid = cosSqAlpha > 1e-15 ? cosSigma - 2 * sinU1 * sinU2 / cosSqAlpha : 0;
+      const correction = flattening * cosSqAlpha * (4 + flattening * (4 - 3 * cosSqAlpha)) / 16;
+      const next = longitudeGap + (1 - correction) * flattening * sinAlpha *
+        (sigma + correction * sinSigma * (cos2SigmaMid + correction * cosSigma * (2 * cos2SigmaMid ** 2 - 1)));
+      if (Math.abs(next - lambda) < 1e-12) {
+        const uSquared = cosSqAlpha * (1 / (1 - flattening) ** 2 - 1);
+        const a = 1 + uSquared * (4096 + uSquared * (-768 + uSquared * (320 - 175 * uSquared))) / 16384;
+        const b = uSquared * (256 + uSquared * (-128 + uSquared * (74 - 47 * uSquared))) / 1024;
+        const deltaSigma = b * sinSigma * (cos2SigmaMid + b / 4 *
+          (cosSigma * (2 * cos2SigmaMid ** 2 - 1) -
+            b / 6 * cos2SigmaMid * (4 * sinSigma ** 2 - 3) * (4 * cos2SigmaMid ** 2 - 3)));
+        return { bearing:normalise(Math.atan2(east, north) / rad), km:semiMinorAxis * a * (sigma - deltaSigma) / 1000 };
+      }
+      lambda = next;
+    }
+    return null;
+  }
+
+  function fieldLooksDistorted(observed, expected) {
+    return Number.isFinite(observed) && Number.isFinite(expected) && expected > 0 &&
+      Math.abs(observed - expected) > Math.max(10, expected * .25);
+  }
+
+  function createHeadingFilter(steadySpread = 5) {
     const headings = [];
     const rotations = [];
     let accepted = null, candidate = null, previousRate = null;
@@ -62,7 +107,7 @@
       const median = offsets.length % 2 ? offsets[middle] : (offsets[middle - 1] + offsets[middle]) / 2;
       return {
         heading:normalise(heading + median),
-        steady:offsets.length >= 3 && offsets.at(-1) - offsets[0] <= 5,
+        steady:offsets.length >= 3 && offsets.at(-1) - offsets[0] <= steadySpread,
         jumped:false
       };
     }
@@ -70,6 +115,6 @@
     return { read, recordRotation, pause, reset };
   }
 
-  root.SalahCompass = { createHeadingFilter, signedTurn };
+  root.SalahCompass = { createHeadingFilter, signedTurn, qiblaGeodesic, fieldLooksDistorted };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.SalahCompass;
 })(typeof window !== 'undefined' ? window : globalThis);
