@@ -354,7 +354,7 @@
     const message = locationIssue || (finding ? 'Finding your location…' :
       canUseLocation ? 'Allow location access to see your prayer times and Qibla.' :
         'Open Salah over HTTPS on a device with location access.');
-    $('locationLabel').textContent = currentPlace?.location || 'Location needed';
+    $('locationLabel').textContent = displayLocation(currentPlace) || translate('Location needed');
     $('locationDetails').hidden = !currentPlace;
     placeDateControls();
     $('timezoneLabel').textContent = currentPlace ? (currentPlace.timeZone === 'Europe/Dublin' ? 'Ireland time' : 'UK time') : '';
@@ -364,7 +364,7 @@
     $('qiblaView').hidden = !currentPlace;
     $('qiblaLocationPrompt').hidden = !!currentPlace;
     $('qiblaGPSStatus').textContent = message;
-    $('gpsStatus').textContent = currentPlace ? 'Following ' + currentPlace.location : message;
+    $('gpsStatus').textContent = currentPlace ? translate('Following {place}', { place:displayLocation(currentPlace) }) : message;
     $('setGPS').textContent = currentPlace ? 'Refresh location' : 'Use my location';
     $('refreshSources').disabled = !currentPlace;
     for (const button of document.querySelectorAll('[data-find-location]')) button.disabled = finding || !canUseLocation;
@@ -427,10 +427,6 @@
     return `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[kind]||paths.clock}</svg>`;
   };
 
-  const restrictionTitles = {
-    sunrise:'Forbidden · sunrise', noon:'Forbidden · around midday',
-    sunset:'Forbidden · approaching sunset', lowSun:'Forbidden · low Sun'
-  };
   function restrictionStatus(t, instant) {
     if (!t?.valid) return { level:'neutral', label:'Prayer times' };
     if (isBetween(instant, t.fajr, t.sunrise)) return { level:'preferred', label:'Fajr time', desc:'Until ' + fmt(t.sunrise) };
@@ -475,7 +471,7 @@
     const half = { at:t.midnight, title:halfTitle, desc:'Half of the night', kind:'night', icon:'half', estimated:t.nightEstimated };
 
     const limits = SalahSolar.daylightRestrictions(dateAtNoonUTC(selectedKey), currentPlace.lat, currentPlace.lng).map(range => ({
-      at:range.start, end:range.end, title:restrictionTitles[range.key],
+      at:range.start, end:range.end, title:'Forbidden',
       kind:'avoid', icon:'alert', desc:'Avoid optional prayers for about ' +
         Math.max(5, 5 * Math.round((range.end - range.start) / 300000)) + ' minutes'
     }));
@@ -652,7 +648,7 @@
       }
     }
     if (limits) {
-      if (state.label === 'Between prayers') state.label = 'Forbidden time';
+      if (state.label === 'Between prayers') state.label = 'Forbidden';
       state.level = 'caution';
       state.desc = 'Avoid general voluntary prayer until ' + fmt(limits.end);
     }
@@ -743,6 +739,12 @@
       }
     }
     return nearest || 'GPS area ' + lat.toFixed(3) + '°, ' + lng.toFixed(3) + '°';
+  }
+
+  function displayLocation(place) {
+    const location = place?.location || '';
+    if (!isArabic || location.startsWith('GPS area ')) return translate(location);
+    return location.split(', ').map(part => translate(part)).join('، ');
   }
   function setCurrentPlace(place) {
     if (currentPlace === place) { renderLocationState(); return; }
@@ -1063,6 +1065,7 @@
   const compassTickNotes = [[970, 0, .07, .11]];
   const isIOS = !native && (/iPhone|iPad|iPod/.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+  const bundledAdhan = 'adhan-damascus';
   const ADHAN_RECORDINGS = Object.freeze({
     'adhan-abu-bakr':'https://raw.githubusercontent.com/alsuleiman-lab/athkar-audio/main/fajr-adhan/fajr-abu-bakr.mp3',
     'adhan-fajr-abu-bakr':'https://raw.githubusercontent.com/alsuleiman-lab/athkar-audio/main/fajr-adhan/abu-bakr.mp3',
@@ -1110,19 +1113,25 @@
         'No imported audio saved.';
     } catch { $('savedAudioStatus').textContent = 'Custom audio storage is unavailable.'; }
   }
+  async function readStoredRecording(choice) {
+    if (recordings.has(choice)) return recordings.get(choice);
+    let blob;
+    try { blob = await audioData('read', null, choice); } catch {}
+    if (!blob && native && choice !== bundledAdhan) {
+      try {
+        const cached = await fetch('./adhan/' + choice + '.mp3');
+        if (cached.ok) blob = await cached.blob();
+      } catch {}
+    }
+    if (blob) recordings.set(choice, blob);
+    return blob;
+  }
   async function readRecording(choice) {
     if (recordings.has(choice)) return recordings.get(choice);
     if (pendingRecordings.has(choice)) return pendingRecordings.get(choice);
     const task = (async () => {
-      let blob;
-      try { blob = await audioData('read', null, choice); } catch {}
-      if (!blob && native && choice !== 'adhan-damascus') {
-        try {
-          const cached = await fetch('./adhan/' + choice + '.mp3');
-          if (cached.ok) blob = await cached.blob();
-        } catch {}
-      }
-      if (!blob && (navigator.onLine || choice === 'adhan-damascus')) {
+      let blob = await readStoredRecording(choice);
+      if (!blob && (navigator.onLine || choice === bundledAdhan)) {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 15000);
         try {
@@ -1182,14 +1191,26 @@
       return playing;
     }
 
-    const blob = choice === 'custom' ? Promise.resolve(savedSound) : readRecording(choice);
-    const url = navigator.onLine || choice === 'adhan-damascus' ? ADHAN_RECORDINGS[choice] : null;
     status.textContent = 'Loading sound…';
+    const mayUseBackup = !fromTap && choice !== bundledAdhan && Object.hasOwn(ADHAN_RECORDINGS, choice);
+    const active = () => request === soundRequest && canStart();
+    const start = recording => audio.play(recording === 'custom' ? Promise.resolve(savedSound) : readRecording(recording),
+      (fromTap && navigator.onLine) || recording === bundledAdhan ? ADHAN_RECORDINGS[recording] : null,
+      fromTap, () => { status.textContent = 'Audio finished.'; }, active);
     try {
       if (choice === 'custom' && !savedSound) throw Error('Import an audio file first.');
-      const mode = await audio.play(blob, url, fromTap, () => { status.textContent = 'Audio finished.'; }, canStart);
+      let recording = mayUseBackup && !await readStoredRecording(choice) ? bundledAdhan : choice;
+      if (!active()) return false;
+      let mode;
+      try { mode = await start(recording); }
+      catch (error) {
+        if (!mayUseBackup || recording === bundledAdhan || !audio.ready() || !active()) throw error;
+        recording = bundledAdhan;
+        mode = await start(recording);
+      }
       if (!mode || request !== soundRequest) return false;
-      status.textContent = mode === 'device' && isIOS ? 'Playing. Use the iPhone’s volume buttons for this recording.' :
+      status.textContent = recording !== choice ? 'Playing the Dimashqiya backup adhan.' :
+        mode === 'device' && isIOS ? 'Playing. Use the iPhone’s volume buttons for this recording.' :
         choice === 'custom' ? 'Playing your sound.' : 'Playing adhan.';
       return true;
     } catch (error) {
@@ -1301,7 +1322,7 @@
   function renderNotificationControl(result = '') {
     if (native) {
       const wantsAdhan = adhanSelected();
-      const audioReady = cfg.soundChoice === 'adhan-damascus' || (nativeStatus?.regularAdhanReady &&
+      const audioReady = cfg.soundChoice === bundledAdhan || (nativeStatus?.regularAdhanReady &&
         (cfg.soundChoice !== 'adhan-abu-bakr' || nativeStatus.fajrAdhanReady));
       const testPending = nativeStatus?.testAt > Date.now() && !nativeStatus.error;
       const canNotify = nativeStatus?.notifications;
@@ -1309,7 +1330,7 @@
       $('nativeAdhanStatus').hidden = !wantsAdhan;
       $('nativeAdhanStatus').textContent = audioReady ? 'Scheduled adhan is ready offline.' :
         nativeStatus?.downloadingAdhan ? 'Downloading the adhan…' :
-          'Connect to the internet to download the adhan for scheduled playback.';
+          'Dimashqiya is ready as a backup while your selected adhan is unavailable.';
       $('retryAndroidAdhan').hidden = !wantsAdhan || audioReady || nativeStatus?.downloadingAdhan;
       $('browserNotificationHelp').hidden = true;
       $('allowAndroidNotifications').hidden = !nativeStatus || nativeStatus.notifications;
@@ -1329,7 +1350,7 @@
       $('androidAlertHelp').textContent = issues.map(issue => translate(issue)).join(' ');
       $('androidAlertHelp').hidden = !issues.length;
       $('testNotification').hidden = !canNotify || !nativeStatus?.exact || nativeStatus?.prayerAlerts === false;
-      $('testNotification').textContent = wantsAdhan && audioReady ? 'Test adhan in 30 seconds' : 'Test alert in 30 seconds';
+      $('testNotification').textContent = wantsAdhan ? 'Test adhan in 30 seconds' : 'Test alert in 30 seconds';
       $('testNotification').disabled = testPending || !!nativeStatus?.wake?.playback;
       $('notificationStatus').textContent = result || androidAlertStatus();
       $('notificationStatus').hidden = false;
@@ -1342,6 +1363,14 @@
         const playback = nativeStatus.lastTestAdhan ? ' ' + nativeStatus.lastTestAdhan : '';
         lastTest.textContent = nativeStatus.lastTestRan ? 'Android ran the last test at ' + time + '.' + playback :
           'Android missed the test scheduled for ' + time + '. Check permissions and battery settings, then try again.';
+      }
+      const lastAdhanStatus = $('lastAdhanStatus');
+      const lastAdhan = nativeStatus?.lastAdhan;
+      lastAdhanStatus.hidden = !lastAdhan?.at;
+      if (!lastAdhanStatus.hidden) {
+        const time = new Intl.DateTimeFormat(uiLocale, { timeZone:nativeStatus.place?.timeZone,
+          day:'numeric', month:'short', hour:'numeric', minute:'2-digit', hourCycle:'h12' }).format(lastAdhan.at);
+        lastAdhanStatus.textContent = translate('Last adhan · {prayer} · {time}', { prayer:lastAdhan.prayer, time }) + ' · ' + lastAdhan.result;
       }
       renderWakeControl();
       return;
@@ -1472,8 +1501,9 @@
     const day = through && dateAtNoonUTC(through).toLocaleDateString(uiLocale, {
       timeZone:'UTC', day:'numeric', month:'short'
     });
-    return 'Next ' + clock.format(nextAt) + ' · ' + place.location +
-      (day ? ' · through ' + day : '') + (waitingProvider ? ' · waiting for AlAdhan' : '');
+    const next = translate('Next {time} · {place}', { time:clock.format(nextAt), place:displayLocation(place) });
+    return next + (day ? ' · ' + translate('through {date}', { date:day }) : '') +
+      (waitingProvider ? ' · ' + translate('waiting for AlAdhan') : '');
   }
 
   function refreshDeliveredAlerts(days) {
@@ -1729,7 +1759,7 @@
     $('qiblaMagneticBearing').textContent = target && Number.isFinite(magneticVariation)
       ? norm360(target.bearing - magneticVariation).toFixed(1) + '°' : '—';
     $('qiblaDistance').textContent = target ? Math.round(target.km).toLocaleString(uiLocale) + ' km' : '—';
-    $('qiblaPosition').textContent = currentPlace?.location || '';
+    $('qiblaPosition').textContent = displayLocation(currentPlace);
   }
 
   function renderQibla() {
@@ -2167,23 +2197,31 @@
     renderOccasions('upcomingWorship', worship);
   }
 
+  function occasionStart(id, event) {
+    return id === 'tarawih' || id === 'qadr' ? dayShift(event.from, -1) : event.from;
+  }
   function occasionLabels(id, event) {
-    const from = dateAtNoonUTC(event.from), to = event.to && dateAtNoonUTC(event.to);
-    const date = !to ? upcomingFormat.format(from) : typeof upcomingFormat.formatRange === 'function' ?
-      upcomingFormat.formatRange(from, to) : upcomingFormat.format(from) + ' – ' + upcomingFormat.format(to);
+    const start = occasionStart(id, event);
+    const from = dateAtNoonUTC(start), to = event.to && dateAtNoonUTC(event.to);
+    let date = upcomingFormat.format(from);
+    if (to && start !== event.from) {
+      date = translate('Sunset {from} to dawn {to}', { from:date, to:upcomingFormat.format(to) });
+    } else if (to && start !== event.to) {
+      date = typeof upcomingFormat.formatRange === 'function' ? upcomingFormat.formatRange(from, to) :
+        date + ' – ' + upcomingFormat.format(to);
+    }
     const { name, kind, ruling } = SalahHijri.occasion(id, cfg.language);
     const title = id === 'ashura' && to ? translate('Ashura and the day before') : name;
-    const start = SalahHijri.label(event.from, cfg.language);
-    const hijri = to ? start.split(' ')[0] + '–' + SalahHijri.label(event.to, cfg.language) : start;
+    const hijri = SalahHijri.periodLabel(event.from, event.to, cfg.language);
     return { title, kind, ruling, date, hijri };
   }
 
   function renderOccasions(elementId, occasions) {
-    const ordered = Object.entries(occasions).sort((a, b) => a[1].from.localeCompare(b[1].from));
+    const ordered = Object.entries(occasions).sort((a, b) => occasionStart(...a).localeCompare(occasionStart(...b)));
     $(elementId).innerHTML = ordered.map(([id, event]) => {
       const { title, kind, ruling, date, hijri } = occasionLabels(id, event);
       return `<li data-occasion="${id}"><button class="occasion" type="button" aria-haspopup="dialog" aria-controls="occasionDialog">
-        <time datetime="${event.from}">${date}</time><span><strong>${title}</strong>
+        <time datetime="${occasionStart(id, event)}">${date}</time><span><strong>${title}</strong>
           <span class="occasion-hijri">${hijri}</span><span class="occasion-ruling" data-kind="${kind}">${ruling}</span>
         </span><span class="occasion-chevron" aria-hidden="true"></span>
       </button></li>`;
@@ -2202,9 +2240,9 @@
     $('occasionDialogRuling').textContent = ruling;
     $('occasionDialogRuling').dataset.kind = kind;
     $('occasionNotes').innerHTML = notes.map(note => `<p>${note}</p>`).join('');
-    $('occasionEvidence').innerHTML = sources.map(({ name, url, arabic, meaning }) => `
+    $('occasionEvidence').innerHTML = sources.map(({ name, arName, url, arabic, meaning }) => `
       <div class="occasion-source">
-        <a href="${url}" target="_blank" rel="noopener noreferrer">${isArabic ? SalahLocale.arabicReference(name) : name}</a>
+        <a href="${url}" target="_blank" rel="noopener noreferrer">${isArabic ? arName || SalahLocale.arabicReference(name) : name}</a>
         ${arabic ? `<blockquote lang="ar" dir="rtl">${arabic}</blockquote>` : ''}
         ${isArabic ? '' : '<p>' + meaning + '</p>'}
       </div>`).join('') + refs.map(({ name, arName, url }) =>

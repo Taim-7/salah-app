@@ -10,7 +10,7 @@
   window.SalahLessons.push(
     {
       id:'joining-prayer', title:'Joining prayer late', arTitle:'الدخول مع الإمام بعد بدء الصلاة',
-      description:'Catching a rak’ah, completing missed units and arriving late for Friday prayer',
+      description:'How to join the imam and finish any rak’ahs you missed',
       arDescription:'إدراك الركعة، وإتمام ما فات، والدخول المتأخر في صلاة الجمعة',
       sections:[
         {
@@ -69,12 +69,26 @@ Al-Albani also counts the rak’ah. He takes the general evidence on Al-Fatihah 
         },
         {
           title:'Before or after the salaam?', arTitle:'قبل السلام أم بعده؟',
-          en:`Ibn Taymiyyah and Ibn ‘Uthaymin distinguish four cases. For an accidental addition, prostrate after the salaam. For leaving out an obligation such as the first tashahhud, prostrate before it. If you are unsure of the rak’ah count and one number seems more likely, complete the prayer based on that number and prostrate after the salaam. If neither number seems more likely, use the smaller number and prostrate before it. For example, if you cannot tell whether you have prayed three or four, treat it as three and pray one more.
+          en:`Ibn Taymiyyah and Ibn ‘Uthaymin gave these four cases.
+
+1. If you added something by mistake, such as an extra rak’ah, prostrate after the salaam.
+2. If you left out a duty such as the first tashahhud, prostrate before the salaam.
+3. If you are unsure how many rak’ahs you have prayed and one number seems more likely, finish the prayer using that number and prostrate after the salaam.
+4. If you have no idea which number is right, use the smaller number and prostrate before the salaam. If you are stuck between three and four, count three and pray one more.
+
+If you gave the salaam too early, Ibn ‘Uthaymin treats that extra salaam as an addition. If you remember soon afterwards and still have wudu, finish praying and give the salaam. Then prostrate twice and give the salaam again.
 
 Ibn Baz allows the prostrations on either side of the salaam. He prefers before in most cases, including an extra rak’ah, and after when you ended the prayer early and completed it, or when you followed the more likely count. Al-Fawzan gives the example of someone who notices an added rak’ah while still praying and directs them to sit and prostrate before the salaam. In a direct answer he also explains that both timings have evidence, including after the salaam in the case of ending early and then completing the prayer. On doubt about the count, his Al-Mulakhkhas al-Fiqhi instructs the reader to use the lower, certain number and prostrate before the salaam.
 
 The command to work out the most likely count and the command to use certainty are both in authentic reports. Ibn Taymiyyah and Ibn ‘Uthaymin apply them to two different kinds of doubt. The extra-rak’ah report also gives a direct example of prostrations after the salaam, which the scholars differ on treating as the preferred timing in every case of addition.`,
-          ar:`فرّق ابن تيمية وابن عثيمين بين أربع حالات: الزيادة سهواً يُسجد لها بعد السلام، وترك واجب كالتشهد الأول يُسجد له قبله. وفي الشك إذا ترجح أحد العددين أتم الصلاة على ما ترجح وسجد بعد السلام. وإذا لم يترجح أحدهما بنى على الأقل وسجد قبل السلام. فمن تردد بين الثلاث والأربع بلا ترجيح جعلها ثلاثاً وأتى بركعة.
+          ar:`فرّق ابن تيمية وابن عثيمين بين أربع حالات.
+
+1. إذا زدت شيئاً سهواً، كركعة زائدة، فاسجد بعد السلام.
+2. إذا تركت واجباً كالتشهد الأول، فاسجد قبل السلام.
+3. إذا شككت في عدد الركعات ورجّحت أحد العددين، فأتم الصلاة على ما ترجّح واسجد بعد السلام.
+4. إذا لم تترجّح عندك زيادة ولا نقص، فابنِ على العدد الأقل واسجد قبل السلام. فمن تردد بين الثلاث والأربع بلا ترجيح جعلها ثلاثاً وأتى بركعة.
+
+إذا سلّمت قبل تمام الصلاة، عدّ ابن عثيمين هذا السلام زيادة في الصلاة. فإن تذكرت قريباً وأنت على وضوء فأتم صلاتك وسلّم، ثم اسجد سجدتين وسلّم مرة أخرى.
 
 ويجيز ابن باز السجود قبل السلام وبعده. ويفضل تقديمه في أكثر الأحوال، ومنها زيادة ركعة، وتأخيره عند السلام عن نقص ثم إتمام الصلاة، أو عند البناء على غالب الظن. وذكر الفوزان فيمن تنبه أثناء ركعة زائدة أن يجلس ويسجد قبل السلام. وبيّن في جواب له ثبوت السجود في الموضعين، ومن أمثلة تأخيره السلام عن نقص ثم إكمال الصلاة. وفي الشك في العدد ذكر في الملخص الفقهي البناء على الأقل المتيقن والسجود قبل السلام.
 
@@ -94,35 +108,53 @@ The command to work out the most likely count and the command to use certainty a
         },
         {
           title:'When you are following an imam', arTitle:'سجود السهو خلف الإمام',
-          en:`Follow the imam if he prostrates before the salaam, even if you joined late. If you have rak’ahs still to complete and the imam prostrates after his salaam, Ibn ‘Uthaymin says to complete your own prayer first. If you caught the imam’s mistake, then prostrate after your own salaam. If the mistake was before you joined, it does not call for separate prostrations from you after you finish.`,
-          ar:`تابع الإمام في سجود السهو قبل السلام ولو كنت مسبوقاً. وإن سجد الإمام بعد سلامه وعليك ركعات تتمها، فبيّن ابن عثيمين أنك تتم صلاتك أولاً. فإن أدركت سهو الإمام سجدت بعد سلامك، وإن وقع سهوه قبل أن تدخل فلا يلزمك سجود مستقل له بعد تمام صلاتك.`,
+          en:`If you prayed all the rak’ahs with the imam, follow him in the two prostrations, whether he does them before or after the salaam. If you joined late, check when the imam prostrates.
+
+1. Before his salaam. Prostrate with him, then complete the rak’ahs you missed. Ibn ‘Uthaymin says that if the mistake happened while you were praying with the imam, prostrate twice again before your own salaam. If it happened before you joined, following the imam was enough.
+2. After his salaam. Ibn ‘Uthaymin says to finish your own prayer first. If you were with the imam when the mistake happened, prostrate after your own salaam and then give the salaam again. If the mistake happened before you joined, you have no prostrations to do for it.
+
+Ibn Baz gives a different instruction for prostrations after the imam’s salaam. If the imam prostrates while you are still sitting, follow him and then stand to complete your prayer. If you have already stood fully, finish your prayer and make your prostrations at the end.`,
+          ar:`إذا أدركت الصلاة كلها مع الإمام فتابعه في سجود السهو، سواء سجد قبل السلام أو بعده. وإن كنت مسبوقاً وعليك ركعات تتمها، فانظر متى سجد الإمام.
+
+1. قبل سلامه. اسجد معه ثم أتم ما فاتك. وعند ابن عثيمين، إذا وقع سهو الإمام وأنت معه، فأعد سجدتي السهو قبل سلامك. وإن وقع قبل دخولك معه فيكفيك أن تسجد معه.
+2. بعد سلامه. يرى ابن عثيمين أن تتم صلاتك أولاً. فإن وقع سهو الإمام وأنت معه فاسجد بعد سلامك ثم سلّم مرة أخرى. وإن وقع قبل دخولك معه فلا سجود عليك له.
+
+وعند ابن باز، إذا سجد الإمام بعد السلام وأنت لا تزال جالساً، فاسجد معه ثم قم وأتم صلاتك. وإن كنت قد استتممت قائماً، فأتم صلاتك واسجد للسهو في آخرها.`,
           evidence:[evidence('Sahih Muslim 414a','إِنَّمَا جُعِلَ الْإِمَامُ لِيُؤْتَمَّ بِهِ … وَإِذَا سَجَدَ فَاسْجُدُوا', 'The imam is there to be followed … When he prostrates, prostrate.')],
-          refs:[source('Muslim 414a','مسلم ٤١٤','https://sunnah.com/muslim:414a'), source('Ibn ‘Uthaymin · Treatise on sujood al-sahw','ابن عثيمين · رسالة في سجود السهو','https://www.warraq.org/books/rsala-fy-sjwd-alshw-a227')]
+          refs:[source('Muslim 414a','مسلم ٤١٤','https://sunnah.com/muslim:414a'), source('Ibn ‘Uthaymin · Prostrations when you joined late','ابن عثيمين · أحوال المسبوق في سجود السهو',uthaymin+'576'),
+            source('Ibn Baz · Prostrations after the imam’s salaam', 'ابن باز · سجود المسبوق مع الإمام بعد السلام', 'https://binbaz.org.sa/fatwas/8755/حكم-سجود-المسبوق-للسهو-مع-الامام-بعد-السلام')]
         }
       ]
     },
     {
       id:'ghusl', title:'Ghusl', arTitle:'الغُسل',
-      description:'What makes a full ritual wash valid and how to follow the Sunnah',
+      description:'How to do a full wash for prayer',
       arDescription:'الغسل المجزئ وصفة الغسل الكامل',
       sections:[
         {
           title:'The minimum for ghusl', arTitle:'الغسل المجزئ',
-          en:`Make the intention to remove the major state of impurity. Wash the whole body, including the roots of the hair and all the skin. Ibn ‘Uthaymin and Ibn Baz both require rinsing the mouth and nose in ghusl. They distinguish the minimum wash from the fuller Sunnah procedure. Ibn Qudamah records that the Shafi’i school considers these rinses a Sunnah. The view requiring them treats the mouth and nose as part of what is washed and points to the Prophet’s regular practice. Rinsing satisfies either view.
+          en:`Ghusl is a full wash for prayer. Make the intention in your heart, then wash your whole body. Let water reach all your skin and the roots of your hair.
 
-Ibn Taymiyyah held that a valid ghusl for janaabah can cover wudu as well. Ibn Baz says a person who intends both kinds of purification with that ghusl need not make a separate wudu. A wash for cooling down or cleaning alone has a different purpose.`,
-          ar:`انوِ رفع الحدث الأكبر وعمّم البدن بالماء حتى يصل إلى أصول الشعر وجميع البشرة. ويرى ابن عثيمين وابن باز وجوب المضمضة والاستنشاق في الغسل، ويفرقان بين القدر المجزئ والصفة الكاملة. ونقل ابن قدامة عن الشافعية أن المضمضة والاستنشاق سنة وليستا واجبتين. ومن أوجبهما عدّ الفم والأنف مما يدخل في الغسل، واستدل بمواظبة النبي ﷺ عليهما. وفعلهما يوافق القولين.
+Ibn ‘Uthaymin and Ibn Baz both require rinsing your mouth and nose. Ibn Qudamah records that the Shafi‘i school recommends these rinses as Sunnah. Rinsing follows both views.
 
-وبيّن ابن تيمية أن غسل الجنابة الصحيح يجزئ عن الوضوء. وقال ابن باز إن من نوى بغسل الجنابة رفع الحدثين كفاه عن وضوء مستقل. أما الاغتسال للتبرد أو التنظف وحده فله غرض آخر.`,
-          evidence:[evidence('Qur’an 5:6','وَإِنْ كُنْتُمْ جُنُبًا فَاطَّهَّرُوا', 'If you are in a state of janaabah, purify yourselves by washing.')],
+Qur’an 5:6 mentions janabah, a state that calls for ghusl before prayer. Ibn Taymiyyah held that this ghusl can also count as wudu. Ibn Baz said that you can intend both when you do this ghusl. If something breaks your wudu during or after the wash, do wudu again before you pray.`,
+          ar:`الغسل طهارة تشمل البدن كله للصلاة. انوِ الغسل بقلبك، ثم عمّم البدن بالماء حتى يصل إلى جميع البشرة وأصول الشعر.
+
+يرى ابن عثيمين وابن باز وجوب المضمضة والاستنشاق في الغسل. ونقل ابن قدامة عن الشافعية أنهما من السنة. وفعلهما يوافق القولين.
+
+ذكرت سورة المائدة (٦) الجنابة، وهي حالة توجب الغسل للصلاة. وبيّن ابن تيمية أن غسل الجنابة يجزئ عن الوضوء. وقال ابن باز إن من نوى بغسل الجنابة رفع الحدثين كفاه. وإذا حصل ناقض للوضوء أثناء الغسل أو بعده فتوضأ قبل الصلاة.`,
+          evidence:[evidence('Qur’an 5:6','وَإِنْ كُنْتُمْ جُنُبًا فَاطَّهَّرُوا', 'If you are in a state of janabah, purify yourselves by washing.')],
           refs:[source('Al-Ma’idah 5:6','المائدة ٦','https://quran.com/5/6'), source('Ibn ‘Uthaymin · Minimum and complete washing','ابن عثيمين · الصفة المجزئة والكاملة',uthaymin+'821'),
             source('Ibn Baz · Rinsing the mouth and nose','ابن باز · المضمضة والاستنشاق في الغسل','https://binbaz.org.sa/fatwas/16611/%D8%AD%D9%83%D9%85-%D8%A7%D9%84%D9%85%D8%B6%D9%85%D8%B6%D8%A9-%D9%88%D8%A7%D9%84%D8%A7%D8%B3%D8%AA%D9%86%D8%B4%D8%A7%D9%82-%D8%A7%D8%AB%D9%86%D8%A7%D8%A1-%D8%A7%D9%84%D8%BA%D8%B3%D9%84'),
             source('Ibn Qudamah · Al-Mughni, whether rinsing is required','ابن قدامة · المغني، المضمضة والاستنشاق','https://gcp.islamweb.net/ar/library/content/15/132/%D9%85%D8%B3%D8%A3%D9%84%D8%A9-%D8%A7%D9%84%D9%81%D9%85-%D9%88%D8%A7%D9%84%D8%A3%D9%86%D9%81-%D9%85%D9%86-%D8%A7%D9%84%D9%88%D8%AC%D9%87'),
+            source('Ibn Baz · When ghusl counts as wudu','ابن باز · متى يجزئ الغسل عن الوضوء؟','https://binbaz.org.sa/fatwas/3807/الغسل-من-الجنابة-وغيرها-هل-يجزى-عن-الوضوء'),
             source('Ibn Taymiyyah · Majmu‘ al-Fatawa 21:299, ghusl and wudu','ابن تيمية · مجموع الفتاوى ٢١:٢٩٩','https://www.islamweb.net/ar/library/content/22/2297/%D9%85%D8%B3%D8%A3%D9%84%D8%A9-%D8%A7%D8%BA%D8%AA%D8%B3%D9%84-%D9%88%D9%84%D9%85-%D9%8A%D8%AA%D9%88%D8%B6%D8%A3-%D9%81%D9%87%D9%84-%D9%8A%D8%AC%D8%B2%D9%8A%D9%87-%D8%B0%D9%84%D9%83')]
         },
         {
           title:'The fuller Sunnah wash', arTitle:'صفة الغسل الكامل',
-          en:`Wash your hands and clean the private parts. Perform wudu as for prayer. Work water into the roots of the hair, pour water over your head three times, then wash the rest of the body, right side before left. Reports describe washing the feet at the end in some circumstances. Al-Fawzan and Ibn Baz use the accounts of the Prophet’s ﷺ ghusl to explain this fuller procedure. A shower can accomplish ghusl if you intend it and the water reaches the required areas.`,
+          en:`Wash your hands and clean yourself where needed. Do wudu as you would for prayer. Wet the roots of your hair, pour water over your head three times and wash the rest of your body, starting with the right side. Some reports mention washing the feet at the end. Ibn Baz and Al-Fawzan explain these steps from reports about the Prophet ﷺ.
+
+You can use a shower for ghusl. Make the intention and let the water reach your whole body.`,
           ar:`اغسل كفيك ونظّف موضع الأذى، ثم توضأ وضوء الصلاة. خلّل أصول الشعر بالماء، وصب على رأسك الماء ثلاث مرات، ثم اغسل بقية بدنك مبتدئاً بالجانب الأيمن. وجاء تأخير غسل القدمين إلى آخر الغسل في بعض الروايات. ويشرح الفوزان وابن باز هذه الصفة بما ثبت من غسل النبي ﷺ. ويصح الغسل تحت الدش بالنية ووصول الماء إلى المواضع المطلوبة.`,
           evidence:[evidence('Sahih al-Bukhari 248','ثُمَّ يَتَوَضَّأُ كَمَا يَتَوَضَّأُ لِلصَّلَاةِ … ثُمَّ يُفِيضُ الْمَاءَ عَلَى جِلْدِهِ كُلِّهِ', 'He then performed wudu as he did for prayer … then poured water over all his skin.')],
           refs:[source('Al-Bukhari 248','البخاري ٢٤٨','https://sunnah.com/bukhari:248'), source('Ibn Baz · How to perform ghusl','ابن باز · صفة الغسل من الجنابة','https://binbaz.org.sa/fatwas/13710/%D8%B5%D9%81%D8%A9-%D8%A7%D9%84%D8%BA%D8%B3%D9%84-%D9%85%D9%86-%D8%A7%D9%84%D8%AC%D9%86%D8%A7%D8%A8%D8%A9'),
@@ -150,10 +182,10 @@ Ibn ‘Uthaymin mentions sitting cross-legged for the standing portion when prac
         },
         {
           title:'Bowing, prostrating and keeping the time', arTitle:'الركوع والسجود وأداء الصلاة في وقتها',
-          en:`Bend as far as you can for bowing. If you can prostrate on the ground, do so. If you cannot, incline your head for bowing and incline lower for prostration. Al-Fawzan says to change position as your ability changes during the prayer.
+          en:`Bow and prostrate as far as you are able. If you cannot bow or prostrate, tilt your head for the movement you cannot do. Tilt your head lower for prostration than for a bow. Al-Fawzan says to change position if what you can do changes during the prayer.
 
-Use water for purification if you can do so without harm. See Dry ablution and Without purification materials for what to do when that is beyond your ability. Ibn Taymiyyah applies the rule of praying according to your ability to a severely incapacitated person. Try to pray on time. Illness that causes hardship may allow you to combine Dhuhr with Asr or Maghrib with Isha, keeping the full rak’ah counts if you are a resident.`,
-          ar:`انحنِ للركوع بقدر استطاعتك واسجد على الأرض إن قدرت. فإن عجزت أومئ برأسك للركوع، واجعل إيماء السجود أخفض. وبيّن الفوزان أن المريض ينتقل إلى الوضع الذي يقدر عليه إذا تغيّرت قدرته أثناء الصلاة.
+Use water to prepare for prayer if you can do so safely. See Tayammum and Without purification materials if you cannot. Ibn Taymiyyah explained that even someone with very limited movement prays as much as they are able. Try to pray on time. If illness makes it hard to pray separately, you may combine Dhuhr with Asr or Maghrib with Isha. Pray the full number of rak’ahs when you are at home.`,
+          ar:`اركع واسجد بقدر استطاعتك. إذا عجزت عن الركوع أو السجود فأومئ برأسك للركن الذي تعجز عنه، واجعل إيماء السجود أخفض من الركوع. وبيّن الفوزان أن المريض ينتقل إلى الوضع الذي يقدر عليه إذا تغيّرت قدرته أثناء الصلاة.
 
 تطهّر بالماء إن أمكنك استعماله دون ضرر. وانظر باب التيمم وباب فاقد الطهورين إذا عجزت. وطبّق ابن تيمية قاعدة الصلاة بحسب الاستطاعة على شديد العجز. احرص على أداء الصلاة في وقتها. وإذا شق على المريض التفريق جاز له جمع الظهر مع العصر أو المغرب مع العشاء مع إتمام عدد الركعات للمقيم.`,
           evidence:[evidence('Qur’an 64:16','فَاتَّقُوا اللَّهَ مَا اسْتَطَعْتُمْ', 'Be mindful of Allah to the best of your ability.')],
@@ -169,14 +201,14 @@ Use water for purification if you can do so without harm. See Dry ablution and W
       sections:[
         {
           title:'When to pray Witr', arTitle:'وقت الوتر',
-          en:`Pray night prayer and Witr after praying Isha and before Fajr. Ibn ‘Uthaymin explains that a person who expects to wake late can delay Witr, because the prayer at the end of the night is more virtuous. If you fear you will sleep through it, pray Witr before sleeping. Ibn Taymiyyah describes Witr as one of the most strongly encouraged voluntary prayers.
+          en:`Pray Witr after you have prayed Isha and before true dawn, when the time for Fajr begins. Witr means an odd number of rak’ahs. Ibn ‘Uthaymin recommends praying Witr near the end of the night if you expect to wake up. If you think you may sleep through it, pray Witr before bed. Ibn Taymiyyah describes Witr as one of the most strongly encouraged optional prayers.
 
 The last third begins once two thirds of the interval from Maghrib to the next Fajr have passed. It is a separate marker from the first third used in the Isha reminder.`,
-          ar:`يُصلّى قيام الليل والوتر بعد صلاة العشاء وقبل الفجر. وبيّن ابن عثيمين أن من يرجو القيام آخر الليل فالأفضل أن يؤخر وتره إليه، ومن خشي ألا يقوم أوتر قبل النوم. وذكر ابن تيمية أن الوتر من آكد صلوات التطوع.
+          ar:`صلِّ الوتر بعد صلاة العشاء وقبل طلوع الفجر الصادق، وهو وقت دخول صلاة الفجر. والوتر صلاة بعدد فردي من الركعات. وبيّن ابن عثيمين أن من يرجو القيام آخر الليل فالأفضل أن يؤخر وتره إليه، ومن خشي ألا يقوم أوتر قبل النوم. وذكر ابن تيمية أن الوتر من آكد صلوات التطوع.
 
 يبدأ الثلث الأخير بعد مضي ثلثي المدة من المغرب إلى الفجر التالي. وهو غير وقت الثلث الأول الذي يُحسب منه تذكير العشاء.`,
-          evidence:[evidence('Sahih Muslim 755','مَنْ خَافَ أَنْ لَا يَقُومَ مِنْ آخِرِ اللَّيْلِ فَلْيُوتِرْ أَوَّلَهُ، وَمَنْ طَمِعَ أَنْ يَقُومَ آخِرَهُ فَلْيُوتِرْ آخِرَ اللَّيْلِ', 'Whoever fears they will not get up towards the end of the night should pray Witr early. Whoever expects to get up should pray Witr towards its end.')],
-          refs:[source('Muslim 755','مسلم ٧٥٥','https://sunnah.com/muslim:755'), source('Ibn ‘Uthaymin · Witr early or late','ابن عثيمين · الوتر أول الليل أو آخره',uthaymin+'9765'),
+          evidence:[evidence('Sahih Muslim 755a','مَنْ خَافَ أَنْ لَا يَقُومَ مِنْ آخِرِ اللَّيْلِ فَلْيُوتِرْ أَوَّلَهُ، وَمَنْ طَمِعَ أَنْ يَقُومَ آخِرَهُ فَلْيُوتِرْ آخِرَ اللَّيْلِ', 'Whoever fears they will not get up towards the end of the night should pray Witr early. Whoever expects to get up should pray Witr towards its end.')],
+          refs:[source('Muslim 755a','مسلم ٧٥٥','https://sunnah.com/muslim:755a'), source('Muslim 754b · Witr before dawn','مسلم ٧٥٤ · الوتر قبل الصبح','https://sunnah.com/muslim:754b'), source('Ibn ‘Uthaymin · Witr early or late','ابن عثيمين · الوتر أول الليل أو آخره',uthaymin+'9765'),
             source('Ibn Taymiyyah · Majmu‘ al-Fatawa 23:88–93','ابن تيمية · مجموع الفتاوى ٢٣:٨٨–٩٣','https://quranislam.github.io/fatwa/ibn-taymiyyah/fatwa345.html')]
         },
         {
@@ -207,7 +239,7 @@ Ibn Taymiyyah allows someone who wakes after dawn and has yet to pray Fajr to ma
           evidence:[evidence('Sahih Muslim 746a','وَكَانَ إِذَا غَلَبَهُ نَوْمٌ أَوْ وَجَعٌ عَنْ قِيَامِ اللَّيْلِ صَلَّى مِنَ النَّهَارِ ثِنْتَيْ عَشْرَةَ رَكْعَةً', 'When sleep or illness kept him from the night prayer, he prayed twelve rak’ahs in the daytime.')],
           refs:[source('Muslim 746a','مسلم ٧٤٦','https://sunnah.com/muslim:746a'), source('Ibn Baz · Making up Witr','ابن باز · حكم قضاء الوتر','https://binbaz.org.sa/fatwas/20357/%D8%AD%D9%83%D9%85-%D9%82%D8%B6%D8%A7%D8%A1-%D8%A7%D9%84%D9%88%D8%AA%D8%B1'),
             source('Ibn ‘Uthaymin · Making up Witr in daytime','ابن عثيمين · قضاء صلاة الوتر في النهار',uthaymin+'9229'),
-            source('Ibn Taymiyyah · Majmu‘ al-Fatawa 23:89–91','ابن تيمية · مجموع الفتاوى ٢٣:٨٩–٩١','https://www.islamweb.net/amp/ar/library/content/22/2802/%D9%85%D8%B3%D8%A3%D9%84%D8%A9-%D9%85%D9%86-%D9%86%D8%A7%D9%85-%D8%B9%D9%86-%D8%B5%D9%84%D8%A7%D8%A9-%D8%A7%D9%84%D9%88%D8%AA%D8%B1')]
+            source('Ibn Taymiyyah · Majmu‘ al-Fatawa 23:89–91','ابن تيمية · مجموع الفتاوى ٢٣:٨٩–٩١','https://www.islamweb.com/ar/library/content/22/2802/مسألة-من-نام-عن-صلاة-الوتر')]
         }
       ]
     }

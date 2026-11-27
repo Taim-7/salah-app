@@ -2,87 +2,92 @@
 
 window.SalahLessons = [
   {
-    id: 'wudu', arTitle: 'الوضوء', arDescription: 'وضوء النبي ﷺ وفروض الوضوء ونواقضه', title: 'Wudu', description: 'The Prophet’s ablution, its requirements and what breaks it',
+    id: 'wudu', arTitle: 'الوضوء', arDescription: 'وضوء النبي ﷺ وفروض الوضوء ونواقضه', title: 'Wudu', description: 'How to wash for prayer and when to repeat it',
     sections: [
       {
         title: 'How the Prophet ﷺ performed wudu', arTitle: 'صفة وضوء النبي ﷺ',
-        en: `Humran, the freedman of Uthman ibn Affan (may Allah be pleased with him), reported that Uthman asked for water for wudu. He washed both hands three times, rinsed his mouth, drew water into his nose and blew it out, then washed his face three times. He washed his right arm up to the elbow three times and did the same with his left. He wiped his head, washed his right foot including the ankles three times and did the same with his left. He then said he had seen the Messenger of Allah ﷺ perform wudu in this way. Al-Bukhari and Muslim both narrate it.
+        en: `Wudu means washing for prayer. Uthman ibn Affan showed people how he had seen the Prophet ﷺ do it. He washed his hands, rinsed his mouth and nose, washed his face and arms, wiped his head, then washed his feet. Al-Bukhari and Muslim record this account from Humran.
 
-The steps in order
-
-1. Make the intention in your heart. Actions are judged by intentions, as narrated by Al-Bukhari and Muslim. There is no prescribed wording to say aloud for the intention.
+1. Intend to do wudu in your heart. You do not need to say the intention out loud.
 2. Say Bismillah, meaning ‘In the name of Allah’.
 3. Wash both hands three times.
-4. Rinse the mouth and nose three times. Rinse thoroughly, with care when fasting so water does not go down the throat.
-5. Wash the face three times, from the hairline to the chin and from ear to ear.
-6. Wash each arm including the elbow three times, right before left.
-7. Wipe the head once, moving the hands back and then returning them to the front. Wipe the inside of the ears with the index fingers and the outside with the thumbs.
-8. Wash each foot including the ankles three times, starting with the right. Pass water between the toes.`,
-        ar: `عن حُمران مولى عثمان أن عثمان بن عفان رضي الله عنه دعا بوضوء، فغسل كفيه ثلاث مرات، ثم مضمض واستنشق واستنثر، ثم غسل وجهه ثلاث مرات، ثم غسل يده اليمنى إلى المرفق ثلاث مرات، ثم اليسرى مثل ذلك، ثم مسح برأسه، ثم غسل رجله اليمنى إلى الكعبين ثلاث مرات، ثم اليسرى مثل ذلك، ثم قال: رأيت رسول الله ﷺ توضأ نحو وضوئي هذا. متفق عليه.
+4. Rinse your mouth and nose three times. If you are fasting, be gentle so you do not swallow water.
+5. Wash your face three times, from the hairline to the chin and from ear to ear.
+6. Wash each arm three times, including the elbow. Start with the right.
+7. Wipe your head once, from front to back and then back to the front. Wipe inside the ears with your index fingers and wipe the outside with your thumbs.
+8. Wash each foot three times, including the ankle. Start with the right and get water between the toes.`,
+        ar: `الوضوء طهارة للصلاة. توضأ عثمان بن عفان رضي الله عنه أمام الناس كما رأى النبي ﷺ يتوضأ. غسل كفيه، ثم تمضمض واستنشق، وغسل وجهه وذراعيه، ومسح رأسه، وغسل قدميه. روى البخاري ومسلم هذا الحديث عن حُمران.
 
-الخطوات بالترتيب
-
-1. النية بالقلب، لحديث «إنما الأعمال بالنيات» المتفق عليه، ولا يُشرع التلفظ بها.
-2. التسمية: «بسم الله».
-3. غسل الكفين ثلاثاً.
-4. المضمضة والاستنشاق ثلاثاً، ويبالغ فيهما إلا أن يكون صائماً.
-5. غسل الوجه ثلاثاً، من منابت الشعر إلى الذقن ومن الأذن إلى الأذن.
-6. غسل اليدين مع المرفقين ثلاثاً، يبدأ باليمنى.
-7. مسح الرأس مرة واحدة، يقبل بيديه ويدبر، ويمسح الأذنين بباطن السبابتين وظاهر الإبهامين.
-8. غسل الرجلين مع الكعبين ثلاثاً، يبدأ باليمنى ويخلل الأصابع.`,
+1. انوِ الوضوء بقلبك، ولا تتلفظ بالنية.
+2. قل: بسم الله.
+3. اغسل كفيك ثلاثاً.
+4. تمضمض واستنشق ثلاثاً. إن كنت صائماً فاستنشق برفق حتى لا يصل الماء إلى حلقك.
+5. اغسل وجهك ثلاثاً من منابت الشعر إلى الذقن، ومن الأذن إلى الأذن.
+6. اغسل كل ذراع ثلاثاً مع المرفق، وابدأ باليمنى.
+7. امسح رأسك مرةً من مقدم الرأس إلى مؤخره ثم ارجع إلى المقدمة. امسح باطن الأذنين بالسبابتين وظاهرهما بالإبهامين.
+8. اغسل كل قدم ثلاثاً مع الكعبين، وابدأ باليمنى وأوصل الماء بين الأصابع.`,
         refs: [['Al-Bukhari 159', 'https://sunnah.com/bukhari:159'], ['Muslim 226a', 'https://sunnah.com/muslim:226a'], ['Al-Bukhari 1', 'https://sunnah.com/bukhari:1']]
       },
       {
         title: 'Obligatory parts of wudu', arTitle: 'فروض الوضوء التي لا يصح بدونها',
-        en: `In Al-Ma’idah 5:6, Allah tells believers who rise for prayer to wash their faces and arms up to the elbows, wipe their heads and wash their feet up to the ankles.
+        en: `Al-Ma’idah 5:6 tells believers to wash their faces, arms and feet and to wipe their heads. The steps below follow the approach taught by Ibn Baz and Ibn ‘Uthaymin, with details where scholars differ.
 
-1. Wash the face, including rinsing the mouth and nose.
-2. Wash the arms, including the elbows.
-3. Wipe the whole head, including the ears.
-4. Wash both feet, including the ankles.
-5. Follow the prescribed order.
-6. Keep the acts continuous. Do not delay washing one part until the previous one has dried.
+1. Wash your face. Rinse your mouth and nose as part of this step.
+2. Wash your arms, including your elbows.
+3. Wipe your whole head. Wipe your ears too. Scholars differ on whether wiping the ears is required.
+4. Wash both feet, including your ankles.
+5. Follow this order.
+6. Keep going from one part to the next without a long break.
 
-Washing three times and starting with the right are acts of Sunnah. Doing them earns a reward, and leaving them does not invalidate wudu.`,
-        ar: `دلّت عليها آية المائدة: ﴿يَا أَيُّهَا الَّذِينَ آمَنُوا إِذَا قُمْتُمْ إِلَى الصَّلَاةِ فَاغْسِلُوا وُجُوهَكُمْ وَأَيْدِيَكُمْ إِلَى الْمَرَافِقِ وَامْسَحُوا بِرُءُوسِكُمْ وَأَرْجُلَكُمْ إِلَى الْكَعْبَيْنِ﴾ [المائدة: ٦].
+Washing each part once properly is enough. Washing up to three times and starting with the right arm or foot are Sunnah. Ibn ‘Uthaymin considered saying Bismillah Sunnah. Ibn Baz advised saying it and said your wudu is valid if you forget.`,
+        ar: `أمر الله في المائدة (٦) بغسل الوجه واليدين والرجلين ومسح الرأس. وهذه الخطوات على ما ذكره ابن باز وابن عثيمين، مع بيان بعض مواضع الخلاف.
 
-1. غسل الوجه ومنه المضمضة والاستنشاق.
-2. غسل اليدين إلى المرفقين.
-3. مسح الرأس كله ومنه الأذنان.
-4. غسل الرجلين إلى الكعبين.
-5. الترتيب بين الأعضاء.
-6. الموالاة، فلا يؤخر غسل عضو حتى يجف الذي قبله.
+1. اغسل وجهك وتمضمض واستنشق.
+2. اغسل ذراعيك مع المرفقين.
+3. امسح رأسك كله، وامسح الأذنين أيضاً. وقد اختلف العلماء في وجوب مسحهما.
+4. اغسل قدميك مع الكعبين.
+5. اتبع هذا الترتيب.
+6. انتقل من عضو إلى آخر دون فاصل طويل.
 
-وما زاد على ذلك كالتثليث والتيامن سنن يؤجر فاعلها ولا يبطل الوضوء بتركها.`,
-        refs: [['Al-Ma’idah 5:6', 'https://quran.com/5/6']]
+يكفي غسل كل عضو مرةً إذا وصل الماء إلى جميعه. والتثليث والبدء باليمنى في اليدين والرجلين من السنة. ويرى ابن عثيمين أن التسمية سنة، وأوصى بها ابن باز وبيّن أن من نسيها فوضوؤه صحيح.`,
+        refs: [['Al-Ma’idah 5:6', 'https://quran.com/5/6'],
+          ['Ibn Baz · How to perform wudu', 'https://binbaz.org.sa/fatwas/4022/بيان-كيفية-الوضوء-والصلاة', 'ابن باز · كيفية الوضوء'],
+          ['Ibn Baz · Bismillah at the start', 'https://binbaz.org.sa/fatwas/20196/حكم-التسمية-عند-الوضوء', 'ابن باز · التسمية عند الوضوء'],
+          ['Ibn ‘Uthaymin · Bismillah and wudu', 'https://old.binothaimeen.net/content/11602', 'ابن عثيمين · التسمية عند الوضوء']]
       },
       {
         title: 'Dhikr after wudu', arTitle: 'الذكر بعد الوضوء',
-        en: `The Messenger of Allah ﷺ said that whoever performs wudu thoroughly and then bears witness that none has the right to be worshipped except Allah alone, with no partner, and that Muhammad is His servant and Messenger, will have the eight gates of Paradise opened and may enter through whichever gate they wish. Narrated by Muslim.
+        en: `Dhikr means remembering Allah. After doing wudu well, say the testimony of faith below. The Prophet ﷺ said that all eight gates of Paradise will open for the person who says it after wudu, and they may enter through whichever gate they wish.
 
-Al-Tirmidhi also narrates the addition, ‘O Allah, make me among those who repent and among those who purify themselves.’`,
-        ar: `قال رسول الله ﷺ: «ما منكم من أحد يتوضأ فيسبغ الوضوء ثم يقول: أشهد أن لا إله إلا الله وحده لا شريك له، وأشهد أن محمداً عبده ورسوله، إلا فتحت له أبواب الجنة الثمانية يدخل من أيها شاء». رواه مسلم.
+Ibn Baz also recommended asking Allah to make you among those who repent and keep themselves pure. These words come from Al-Tirmidhi, who noted disagreement about how the report was passed down.`,
+        ar: `الذكر هو تذكّر الله وذكره باللسان. بعد إتمام الوضوء قل الشهادتين الآتيتين. أخبر النبي ﷺ أن من قالهما بعد الوضوء تُفتح له أبواب الجنة الثمانية فيدخل من أيها شاء.
 
-وزاد الترمذي: «اللهم اجعلني من التوابين واجعلني من المتطهرين».`,
-        refs: [['Muslim 234a', 'https://sunnah.com/muslim:234a'], ['Al-Tirmidhi 55', 'https://sunnah.com/tirmidhi:55']]
+وأوصى ابن باز بالدعاء الآتي بسؤال الله أن يجعل المسلم من التوابين والمتطهرين. رواه الترمذي وذكر اختلافاً في إسناده.`,
+        refs: [['Muslim 234a', 'https://sunnah.com/muslim:234a'], ['Muslim 234b', 'https://sunnah.com/muslim:234b'], ['Al-Tirmidhi 55', 'https://sunnah.com/tirmidhi:55'],
+          ['Ibn Baz · What to say after wudu', 'https://binbaz.org.sa/fatwas/2841/ذكر-الادعية-المشروعة-عند-الوضوء', 'ابن باز · ذكر الأدعية المشروعة عند الوضوء']]
       },
       {
         title: 'What breaks wudu', arTitle: 'نواقض الوضوء',
-        en: `1. Urine, stool or wind passing from the two private passages. The Prophet ﷺ said that Allah does not accept the prayer of someone who breaks wudu until they do wudu again. Al-Bukhari and Muslim both narrate it.
-2. Deep sleep in which awareness is lost.
-3. Loss of awareness through fainting or intoxication.
-4. Touching the private parts directly with the hand, with nothing in between. The hadith about someone touching his penis says to perform wudu. The authors of the Sunan narrate it and Ahmad authenticated it.
-5. Eating camel meat. When asked if he should perform wudu after eating it, the Prophet ﷺ answered yes. Muslim narrates it.
+        en: `1. Using the toilet, passing wind or other discharge from the private parts.
+2. Sleeping so deeply that you lose awareness. A light doze where you still notice what is going on around you does not break wudu in Ibn Baz’s explanation.
+3. Losing awareness, as when you faint.
+4. Eating camel meat. Ibn Baz and Ibn ‘Uthaymin follow the hadith in which the Prophet ﷺ told a man to do wudu after eating it.
 
-According to the view given here, touching a woman without desire, blood coming from elsewhere on the body and vomiting do not break wudu. This view holds that reliable evidence requiring wudu for these is lacking.`,
-        ar: `1. الخارج من السبيلين، كالبول والغائط والريح، لقوله ﷺ: «لا يقبل الله صلاة أحدكم إذا أحدث حتى يتوضأ». متفق عليه.
-2. النوم المستغرق الذي يزول معه الإدراك.
-3. زوال العقل بإغماء أو سُكر.
-4. مس الفرج باليد مباشرة بلا حائل، لحديث «من مس ذكره فليتوضأ». رواه أصحاب السنن وصححه أحمد.
-5. أكل لحم الإبل. سئل ﷺ: أنتوضأ من لحوم الإبل؟ قال: «نعم». رواه مسلم.
+Ibn Baz says that touching the private parts directly with your hand breaks wudu. Ibn ‘Uthaymin held that an ordinary touch does not break it. He recommended doing wudu anyway as a precaution, and discussed a stricter ruling if the touch was with desire. Both scholars held that ordinary contact with someone else’s skin does not break wudu by itself.
 
-ومما لا ينقض على هذا القول: لمس المرأة بغير شهوة، وخروج الدم من غير السبيلين، والقيء، لعدم ثبوت الدليل الموجب.`,
-        refs: [['Al-Bukhari 135', 'https://sunnah.com/bukhari:135'], ['Abu Dawud 181', 'https://sunnah.com/abudawud:181'], ['Muslim 360a', 'https://sunnah.com/muslim:360a']]
+Ibn ‘Uthaymin held that a nosebleed, a cut or vomiting does not break wudu. Ibn Baz recommended renewing wudu after heavy bleeding or a large amount of vomiting as a precaution.`,
+        ar: `1. قضاء الحاجة أو خروج الريح أو غير ذلك مما يخرج من موضع قضاء الحاجة.
+2. النوم العميق الذي يذهب معه الإحساس. أما النعاس الخفيف الذي يشعر معه الإنسان بما حوله فلا ينقض الوضوء عند ابن باز.
+3. فقدان الوعي، كالإغماء.
+4. أكل لحم الإبل. أخذ ابن باز وابن عثيمين بالحديث الذي أمر فيه النبي ﷺ بالوضوء بعد أكله.
+
+يرى ابن باز أن مس الفرج باليد مباشرة ينقض الوضوء. ويرى ابن عثيمين أن مجرد المس لا ينقضه، ونصح بالوضوء احتياطاً، وذكر احتمال وجوبه إن كان المس بشهوة. وعند الشيخين لا ينقض الوضوء بمجرد لمس بشرة شخص آخر.
+
+ويرى ابن عثيمين أن الرعاف أو الدم من جرح أو القيء لا ينقض الوضوء. ونصح ابن باز بتجديد الوضوء احتياطاً عند كثرة الدم أو القيء.`,
+        refs: [['Al-Bukhari 135', 'https://sunnah.com/bukhari:135'], ['Al-Nasa’i 444', 'https://dorar.net/h/K5964XbV/osoul'], ['Muslim 360a', 'https://sunnah.com/muslim:360a'],
+          ['Ibn Baz · What breaks wudu', 'https://binbaz.org.sa/fatwas/4022/بيان-كيفية-الوضوء-والصلاة', 'ابن باز · ما ينقض الوضوء'],
+          ['Ibn ‘Uthaymin · Direct touch and wudu', 'https://old.binothaimeen.net/content/7190', 'ابن عثيمين · المس ونقض الوضوء'],
+          ['Ibn Baz · Bleeding and wudu', 'https://binbaz.org.sa/fatwas/8960/حكم-وضوء-من-خرج-منه-دم', 'ابن باز · خروج الدم والوضوء']]
       }
     ]
   },
@@ -91,53 +96,62 @@ According to the view given here, touching a woman without desire, blood coming 
     sections: [
       {
         title: 'The guiding rule', arTitle: 'القاعدة الجامعة',
-        en: `The Messenger of Allah ﷺ said, ‘Pray as you have seen me pray.’ Al-Bukhari narrates it.
-
-The Prophet’s own practice is the basis for how to pray. Al-Bukhari, Muslim and other collections report it. A central account is the hadith of the man who prayed incorrectly. In it the Prophet ﷺ taught him the pillars that make the prayer valid.`,
-        ar: `قال رسول الله ﷺ: «صلوا كما رأيتموني أصلي». رواه البخاري.
-
-فمرجع صفة الصلاة هو فعل النبي ﷺ المنقول في الصحيحين وغيرهما. وأشهر حديث جامع لها حديث «المسيء صلاته» المتفق عليه، الذي علّم فيه النبي ﷺ الأركان التي لا تصح الصلاة إلا بها.`,
+        en: `The Prophet ﷺ said, ‘Pray as you have seen me pray.’ Al-Bukhari records this. In another hadith, the Prophet ﷺ taught a man how to pray properly. Among other things, he taught him to pause in each position until his body was still.`,
+        ar: `قال النبي ﷺ: «صلوا كما رأيتموني أصلي». رواه البخاري. وفي حديث آخر علّم النبي ﷺ رجلاً كيف يصلي، ومن ذلك أن يطمئن في كل ركن حتى يستقر جسمه.`,
         refs: [['Al-Bukhari 631', 'https://sunnah.com/bukhari:631'], ['Al-Bukhari 757', 'https://sunnah.com/bukhari:757']]
       },
       {
         title: 'How to pray, step by step', arTitle: 'صفة الصلاة خطوة بخطوة',
-        en: `1. Face the Qibla with your whole body, with the intention in your heart.
-2. Say ‘Allahu akbar’ to begin, raising your hands to the level of your shoulders or ears.
-3. Place your right hand over your left on your chest and look at the place where you will prostrate.
-4. Say an opening supplication. See Remembrance from the Qur’an and Sunnah.
-5. Seek refuge with Allah, say Bismillah and recite Al-Fatihah. Reciting it is a pillar. Al-Bukhari and Muslim narrate that there is no prayer for the person who does not recite the Opening of the Book. In the first two rak’ahs, follow it with a surah or whatever portion is easy for you.
-6. For bowing, say ‘Allahu akbar’, raise your hands, keep your back level and place your palms on your knees. Say ‘Glory be to my Lord, the Magnificent’ three times. The Sunnah also includes saying, ‘Glory and praise be to You, O Allah, our Lord. O Allah, forgive me.’ Al-Bukhari and Muslim both narrate this supplication.
-7. Rise from bowing, saying ‘Allah hears the one who praises Him.’ Then say ‘Our Lord, to You belongs all praise, abundant, good and blessed praise.’ Stand fully upright and settle.
-8. Say ‘Allahu akbar’ and prostrate on the seven points. The Prophet ﷺ named the forehead while pointing to his nose, both hands, both knees and the toes of both feet. Al-Bukhari and Muslim narrate it. Say ‘Glory be to my Lord, the Most High’ three times and make plenty of supplication. Muslim narrates that a servant is closest to their Lord in prostration, so they should supplicate often there.
-9. Sit between the prostrations in iftirash, sitting on the left foot with the right foot upright. Say ‘My Lord, forgive me. My Lord, forgive me.’
-10. Prostrate a second time as you did the first, then rise for the next rak’ah when there is one.
-11. In a prayer of three or four rak’ahs, sit after the second rak’ah for the first tashahhud. ‘All greetings, prayers and good things are for Allah. Peace be upon you, O Prophet, and the mercy of Allah and His blessings. Peace be upon us and upon Allah’s righteous servants. I bear witness that none has the right to be worshipped except Allah and that Muhammad is His servant and Messenger.’ Al-Bukhari and Muslim narrate it.
-12. In the final tashahhud, add the Ibrahimic prayer. It begins, ‘O Allah, send blessings upon Muhammad and the family of Muhammad as You sent blessings upon Ibrahim and the family of Ibrahim. You are Praiseworthy, Glorious…’ Al-Bukhari and Muslim both narrate it. Then seek refuge from the four trials listed under Remembrance.
-13. End with the salaam, saying ‘Peace and the mercy of Allah be upon you’, turning first to the right and then to the left.`,
-        ar: `1. استقبال القبلة بالبدن كله، والنية بالقلب.
-2. تكبيرة الإحرام «الله أكبر»، رافعاً يديه حذو منكبيه أو أذنيه.
-3. وضع اليد اليمنى على اليسرى على الصدر، والنظر إلى موضع السجود.
-4. دعاء الاستفتاح، انظر قسم الأذكار.
-5. التعوذ والبسملة ثم قراءة الفاتحة، وهي ركن، لحديث «لا صلاة لمن لم يقرأ بفاتحة الكتاب» المتفق عليه. ثم سورة أو ما تيسر في الركعتين الأوليين.
-6. الركوع: يكبّر رافعاً يديه، ويسوي ظهره ويضع كفيه على ركبتيه، ويقول «سبحان ربي العظيم» ثلاثاً. ومن السنة الزيادة «سبحانك اللهم ربنا وبحمدك، اللهم اغفر لي». متفق عليه.
-7. الرفع من الركوع: «سمع الله لمن حمده» ثم «ربنا ولك الحمد، حمداً كثيراً طيباً مباركاً فيه»، مطمئناً قائماً.
-8. السجود مكبّراً على الأعضاء السبعة. قال ﷺ: «أمرت أن أسجد على سبعة أعظم: الجبهة» وأشار إلى أنفه، واليدين والركبتين وأطراف القدمين. متفق عليه. يقول «سبحان ربي الأعلى» ثلاثاً ويكثر من الدعاء، لحديث «أقرب ما يكون العبد من ربه وهو ساجد فأكثروا الدعاء». رواه مسلم.
-9. الجلوس بين السجدتين مفترشاً، ويقول «رب اغفر لي، رب اغفر لي».
-10. السجدة الثانية مثل الأولى، ثم يقوم للركعة التالية إن بقيت ركعة.
-11. التشهد الأوسط بعد الركعتين في الصلاة الثلاثية والرباعية: «التحيات لله والصلوات والطيبات، السلام عليك أيها النبي ورحمة الله وبركاته، السلام علينا وعلى عباد الله الصالحين، أشهد أن لا إله إلا الله وأشهد أن محمداً عبده ورسوله». متفق عليه.
-12. في التشهد الأخير يزيد الصلاة الإبراهيمية: «اللهم صل على محمد وعلى آل محمد كما صليت على إبراهيم وعلى آل إبراهيم إنك حميد مجيد…». متفق عليه. ثم يستعيذ من أربع، انظر الأذكار.
-13. التسليم: «السلام عليكم ورحمة الله»، يميناً ثم شمالاً.`,
-        refs: [['Al-Bukhari 756', 'https://sunnah.com/bukhari:756'], ['Al-Bukhari 812', 'https://sunnah.com/bukhari:812'], ['Al-Bukhari 831', 'https://sunnah.com/bukhari:831'], ['Al-Bukhari 3370', 'https://sunnah.com/bukhari:3370'], ['Muslim 482', 'https://sunnah.com/muslim:482']]
+        en: `These steps describe praying on your own. A rak’ah is one unit of prayer. It includes standing, bowing and two prostrations. A prostration is when you lower yourself with your forehead on the ground. If you join a congregation, follow the imam. See Joining prayer late for more on that.
+
+1. Face the Qibla and intend the prayer in your heart.
+2. Begin by saying ‘Allahu akbar’ while standing if you are able. Raise your hands to the level of your shoulders or ears.
+3. Place your right hand over your left on your chest, as Ibn Baz taught. Look towards where your forehead will rest.
+4. Say an opening du‘a quietly. The Remembrance lesson gives examples.
+5. Seek refuge with Allah, say Bismillah and recite Al-Fatihah. In the first two rak’ahs, follow it with a surah or any other part of the Qur’an you know.
+6. Say ‘Allahu akbar’, raise your hands and bow. Keep your back level and place your palms on your knees. Say ‘Subhana rabbiyal-‘azim’, meaning ‘Glory be to my Lord, the Magnificent’. Ibn Baz recommends saying it three times and says you may say it more.
+7. As you rise from bowing, raise your hands and say ‘Sami‘a Allahu liman hamidah’, meaning ‘Allah hears the one who praises Him’. Stand fully upright, pause and say ‘Rabbana wa lakal-hamd’, meaning ‘Our Lord, to You belongs all praise’. Ibn Baz says the person following an imam says the words of praise as they rise.
+8. Say ‘Allahu akbar’ and prostrate. Rest on your forehead and nose, both hands, both knees and the toes of both feet. Say ‘Subhana rabbiyal-a‘la’, meaning ‘Glory be to my Lord, the Most High’. Three times is recommended. You can also make du‘a.
+9. Say ‘Allahu akbar’ as you sit between the two prostrations. Sit on your left foot and keep the right foot upright if you can. Say ‘Rabbi ighfir li’, meaning ‘My Lord, forgive me’. You can repeat it.
+10. Say ‘Allahu akbar’ and prostrate a second time. When rising from it, say ‘Allahu akbar’ again. Stand for the next rak’ah if one remains, or sit for the tashahhud when it is due.
+11. In a prayer of three or four rak’ahs, sit after the second for the first tashahhud. These words include the testimony of faith. You can read them below. Say ‘Allahu akbar’ and raise your hands as you stand for the third rak’ah.
+12. In the final sitting, say the tashahhud and ask Allah to bless the Prophet ﷺ. Then use the du‘as shown under Before the salaam in the Remembrance lesson.
+13. End the prayer with the salaam. Say ‘As-salamu ‘alaykum wa rahmatullah’, meaning ‘Peace and Allah’s mercy be upon you’, turning first to the right and then to the left.`,
+        ar: `هذه صفة الصلاة لمن يصلي وحده. تتكوّن الركعة من قيام وركوع وسجدتين. والسجود أن تضع جبهتك على الأرض. ومن صلى مع الجماعة فليتابع الإمام، وانظر درس الدخول مع الإمام بعد بدء الصلاة.
+
+1. استقبل القبلة وانوِ الصلاة بقلبك.
+2. قل «الله أكبر» لبدء الصلاة وأنت قائم إن استطعت، وارفع يديك حذو منكبيك أو أذنيك.
+3. ضع اليمنى على اليسرى على صدرك كما ذكر ابن باز، وانظر إلى موضع سجودك.
+4. قل دعاء الاستفتاح سراً، وانظر أمثلته في درس الأذكار.
+5. تعوّذ بالله، وقل بسم الله، واقرأ الفاتحة. اقرأ بعدها في الركعتين الأوليين سورةً أو ما تيسّر من القرآن.
+6. كبّر وارفع يديك ثم اركع، وسوِّ ظهرك وضع كفيك على ركبتيك. قل «سبحان ربي العظيم». وذكر ابن باز أن الثلاث أفضل من الواحدة، وتجوز الزيادة.
+7. ارفع يديك عند الرفع من الركوع وقل «سمع الله لمن حمده»، ثم اعتدل قائماً واطمئن وقل «ربنا ولك الحمد». وذكر ابن باز أن المأموم يقول التحميد عند رفعه من الركوع.
+8. كبّر واسجد على الجبهة والأنف والكفين والركبتين وأطراف القدمين. قل «سبحان ربي الأعلى». ويستحب تكرارها ثلاثاً، ولك أن تدعو.
+9. كبّر واجلس بين السجدتين على قدمك اليسرى وانصب اليمنى إن استطعت. قل «رب اغفر لي»، ولك أن تكررها.
+10. كبّر واسجد سجدة ثانية، وكبّر عند الرفع منها للقيام إلى الركعة التالية أو للجلوس للتشهد في موضعه.
+11. في الصلاة الثلاثية أو الرباعية اجلس بعد الركعة الثانية للتشهد الأول. وستجد نصه أدناه. كبّر وارفع يديك عند القيام للركعة الثالثة.
+12. في الجلسة الأخيرة قل التشهد وصلِّ على النبي ﷺ، ثم اقرأ ما تيسّر من أدعية ما قبل السلام في درس الأذكار.
+13. اختم الصلاة بقول «السلام عليكم ورحمة الله» عن يمينك ثم عن يسارك.`,
+        refs: [['Al-Bukhari 739', 'https://sunnah.com/bukhari:739'], ['Al-Bukhari 756', 'https://sunnah.com/bukhari:756'], ['Al-Bukhari 812', 'https://sunnah.com/bukhari:812'], ['Al-Bukhari 831', 'https://sunnah.com/bukhari:831'], ['Al-Bukhari 3370', 'https://sunnah.com/bukhari:3370'], ['Muslim 482', 'https://sunnah.com/muslim:482'],
+          ['Ibn Baz · What to say when rising from bowing', 'https://binbaz.org.sa/fatwas/14869/الذكر-الوارد-عند-الرفع-من-الركوع', 'ابن باز · الذكر عند الرفع من الركوع']]
       },
       {
         title: 'Pillars of the prayer', arTitle: 'أركان لا تصح الصلاة بدونها',
-        en: `Stand in an obligatory prayer if you are able. Say the opening takbeer, recite Al-Fatihah, bow, rise from bowing, prostrate on the seven points and sit between the two prostrations. Remain settled and still at each pillar. The Prophet ﷺ told the man who prayed incorrectly to bow until he was at ease in that position. The final tashahhud and sitting for it, the salaam and keeping the pillars in order also belong to this list.
+        en: `A pillar is a part of the prayer that you cannot leave out. Stand in an obligatory prayer if you can. Say the opening takbeer, recite Al-Fatihah when praying alone or leading, bow, stand upright, prostrate twice and sit between the two prostrations. Follow this order and take time to settle in every position. The final tashahhud, sitting for it and ending with the salaam are also part of this list.
 
-People often rush the stillness in each position. Leaving it out invalidates the prayer. The Prophet ﷺ told the man to go back and pray because he had not actually prayed.`,
-        ar: `القيام في الفريضة للقادر، تكبيرة الإحرام، قراءة الفاتحة، الركوع، الرفع منه، السجود على الأعضاء السبعة، الجلسة بين السجدتين، الطمأنينة في كل ركن، لقوله ﷺ للمسيء صلاته «ثم اركع حتى تطمئن راكعاً»، والتشهد الأخير وجلسته، والتسليم، والترتيب بين الأركان.
+The list explained by Ibn Baz also counts asking Allah to bless the Prophet ﷺ in the final sitting and giving both salaams. Scholars differ on how to classify those parts.
 
-فمن أخل بالطمأنينة، وهي أكثر ما يفرط الناس فيه، لم تصح صلاته، لقوله ﷺ للرجل: «ارجع فصلّ فإنك لم تصلّ».`,
-        refs: [['Al-Bukhari 757', 'https://sunnah.com/bukhari:757']]
+Ibn Baz held that a follower should recite Al-Fatihah quietly, even when the imam reads aloud. Use a pause if the imam pauses. If you joined late and do not have time to finish Al-Fatihah, bow with the imam and count the rak’ah if you catch the bow. Ibn Taymiyyah said to listen while you can hear the imam reciting and to recite yourself when you cannot hear him.`,
+        ar: `الركن جزء من الصلاة لا يصح تركه. قم في الفريضة إن استطعت، وكبّر تكبيرة الإحرام واقرأ الفاتحة إن كنت إماماً أو منفرداً. اركع ثم اعتدل قائماً، واسجد سجدتين واجلس بينهما. اتبع الترتيب واطمئن في كل ركن. ومن الأركان أيضاً التشهد الأخير والجلوس له والتسليم.
+
+وتشمل القائمة التي شرحها ابن باز الصلاة على النبي ﷺ في التشهد الأخير والتسليمتين، وفي حكم هذين التفصيلين خلاف.
+
+يرى ابن باز أن المأموم يقرأ الفاتحة سراً حتى في الصلاة الجهرية. يقرؤها في سكتة الإمام إن سكت. فإن كنت مسبوقاً ولم يمهلك الإمام لإتمام الفاتحة فاركع معه، وتُحسب لك الركعة إن أدركت الركوع. ويرى ابن تيمية أن المأموم ينصت إذا سمع قراءة الإمام، ويقرأ لنفسه إذا لم يسمعها.`,
+        refs: [['Al-Bukhari 757', 'https://sunnah.com/bukhari:757'],
+          ['Ibn Baz · Pillars and duties of prayer', 'https://binbaz.org.sa/audios/3006/كتاب-شروط-الصلاة-وواجباتها-واركانها-تعليق-الشيخ-عبدالعزيز-بن-باز-رحمه-الله', 'ابن باز · شروط الصلاة وواجباتها وأركانها'],
+          ['Ibn Baz · Al-Fatihah behind the imam', 'https://binbaz.org.sa/fatwas/9070/قراءة-الماموم-للفاتحة-في-الصلاة-الجهرية', 'ابن باز · قراءة المأموم للفاتحة في الجهرية'],
+          ['Ibn Baz · When the imam bows before you finish', 'https://binbaz.org.sa/fatwas/8835/حكم-ركوع-الامام-قبل-اتمام-المسبوق-للفاتحة', 'ابن باز · ركوع الإمام قبل إتمام المسبوق للفاتحة'],
+          ['Ibn Taymiyyah · Reciting behind the imam', 'https://www.islamweb.net/ar/library/content/22/2892/فصل-القراءة-إذا-لم-يسمع-قراءة-الإمام', 'ابن تيمية · القراءة خلف الإمام']]
       }
     ]
   },
@@ -146,131 +160,131 @@ People often rush the stillness in each position. Leaving it out invalidates the
     sections: [
       {
         title: 'Shortening prayers and its evidence', arTitle: 'القصر: الأصل ودليله',
-        en: `While travelling, pray the four-rak’ah prayers, Dhuhr, Asr and Isha, as two rak’ahs. Fajr and Maghrib are never shortened.
+        en: `When you travel, you may pray Dhuhr, Asr and Isha as two rak’ahs instead of four. This is called qasr. Fajr stays at two and Maghrib stays at three. If you pray behind an imam who is praying four, pray the full four with him, as Ibn Baz explains.
 
-An-Nisa 4:101 says there is no blame for shortening prayer when travelling through the land. Ya’la ibn Umayyah asked Umar ibn Al-Khattab about this when people were already safe. Umar said he had wondered the same and asked the Messenger of Allah ﷺ, who described it as a gift from Allah and told them to accept it. Muslim narrates it.
+In An-Nisa 4:101, Allah allows travellers to shorten prayers. Umar asked the Prophet ﷺ about shortening when travel was safe. The Prophet ﷺ called it a gift from Allah and told people to accept it. Ibn Umar saw the Prophet ﷺ shorten the four-rak’ah prayers when travelling. Abu Bakr, Umar and Uthman did the same.`,
+        ar: `يجوز للمسافر أن يصلي الظهر والعصر والعشاء ركعتين بدل أربع. وهذا هو القصر. أما الفجر فتبقى ركعتين والمغرب ثلاثاً. وإذا صليت خلف إمام يتم الصلاة فصلِّ أربعاً، كما بيّن ابن باز.
 
-Ibn Umar said he accompanied the Prophet ﷺ while travelling and saw him pray no more than two rak’ahs for the prayers that could be shortened. Abu Bakr, Umar and Uthman did the same. Al-Bukhari and Muslim both narrate it.`,
-        ar: `القصر أداء الصلاة الرباعية، الظهر والعصر والعشاء، ركعتين في السفر. أما الفجر والمغرب فلا تُقصران.
-
-الدليل: ﴿وَإِذَا ضَرَبْتُمْ فِي الْأَرْضِ فَلَيْسَ عَلَيْكُمْ جُنَاحٌ أَنْ تَقْصُرُوا مِنَ الصَّلَاةِ﴾ [النساء: ١٠١]. وسأل يعلى بن أمية عمر بن الخطاب: قد أمن الناس! فقال عمر: عجبت مما عجبت منه، فسألت رسول الله ﷺ فقال: «صدقة تصدق الله بها عليكم فاقبلوا صدقته». رواه مسلم.
-
-وكان ﷺ لا يزيد في السفر على ركعتين في الرباعية، حتى قال ابن عمر: «صحبت النبي ﷺ فكان لا يزيد في السفر على ركعتين، وأبا بكر وعمر وعثمان كذلك». متفق عليه.`,
-        refs: [['An-Nisa 4:101', 'https://quran.com/4/101'], ['Muslim 686a', 'https://sunnah.com/muslim:686a'], ['Al-Bukhari 1102', 'https://sunnah.com/bukhari:1102']]
+أذن الله للمسافر أن يقصر الصلاة في سورة النساء (١٠١). وسأل عمر النبي ﷺ عن القصر في السفر مع الأمن، فبيّن له أنه صدقة من الله، وأمر بقبولها. ورأى ابن عمر النبي ﷺ يقصر الصلاة الرباعية في السفر، وفعل ذلك أبو بكر وعمر وعثمان.`,
+        refs: [['An-Nisa 4:101', 'https://quran.com/4/101'], ['Muslim 686a', 'https://sunnah.com/muslim:686a'], ['Al-Bukhari 1102', 'https://sunnah.com/bukhari:1102'],
+          ['Ibn Baz · Behind a resident imam', 'https://binbaz.org.sa/fatwas/24908/هل-يتم-المسافر-الصلاة-اذا-ائتم-بالمقيم', 'ابن باز · صلاة المسافر خلف المقيم']]
       },
       {
         title: 'How far counts as travel?', arTitle: 'مسافة السفر',
-        en: `1. The majority view, held by the Malikis, Shafi’is and Hanbalis, uses four burud, roughly 80 km, based on reports from Ibn Abbas and Ibn Umar (may Allah be pleased with them).
-2. Ibn Taymiyyah held that Islamic law gives no fixed distance in kilometres. Where people generally regard a trip as travel, a traveller may shorten because the ruling refers to travel in general.
+        en: `Ibn Baz used a distance of about 80 km, or 50 miles. This is close to the distance used by many Maliki, Shafi’i and Hanbali scholars. They drew on reports about Ibn Abbas and Ibn Umar.
 
-The majority’s distance gives a more cautious, measurable rule for modern travel. Following the view based on local custom also has scholarly precedent.`,
-        ar: `1. قول الجمهور من المالكية والشافعية والحنابلة: تُقدّر بأربعة بُرُد، أي نحو ٨٠ كم، لآثار عن ابن عباس وابن عمر رضي الله عنهم.
-2. اختيار شيخ الإسلام ابن تيمية: لا حد للمسافة بالكيلومترات، بل ما سماه الناس سفراً وعُدّ في العرف سفراً قُصرت فيه الصلاة، لأن الشرع علّق الحكم بمطلق السفر ولم يحدّه.
+Ibn Taymiyyah used what people ordinarily count as travelling. He held that the Qur’an and Sunnah did not set a fixed distance. A normal trip across town does not count as travel by this approach.`,
+        ar: `قدّر ابن باز مسافة السفر بنحو ٨٠ كيلومتراً. وهذا يقارب ما نص عليه كثير من المالكية والشافعية والحنابلة، واستدلوا بآثار عن ابن عباس وابن عمر.
 
-والعمل بقول الجمهور أحوط وأضبط للمسافر المعاصر، ومن أخذ بالعرف فله سلف.`
+ويرى ابن تيمية أن المرجع إلى ما يسميه الناس سفراً، إذ لم يرد حد ثابت للمسافة في القرآن أو السنة. والتنقل المعتاد داخل المدينة ليس سفراً بهذا الاعتبار.`,
+        refs: [['Ibn Baz · The distance for shortening', 'https://binbaz.org.sa/fatwas/20688/مسافة-القصر-ما-فوق-الثمانين-كيلو', 'ابن باز · مسافة القصر'],
+          ['Ibn Taymiyyah · Who counts as a traveller', 'https://www.islamweb.net/ar/library/content/22/3026/فصل-تقسيم-الناس-من-حيث-السفر-والإقامة-وحكم-كل-قسم', 'ابن تيمية · السفر والإقامة']]
       },
       {
         title: 'When shortening starts and how long it lasts', arTitle: 'متى يبدأ القصر ومدة الإقامة',
-        en: `Shortening starts after leaving the built-up area of your town or city. The verse refers to setting out through the land, which a person has yet to do while still in their town.
+        en: `Begin shortening after you leave the built-up part of your town or city.
 
-1. The majority of Shafi’i, Maliki and Hanbali scholars have a limit of about four days, though their counting differs. A traveller who plans to stay beyond that limit prays in full. They cite the Prophet ﷺ shortening during his four-day stay in Makkah at the Farewell Hajj.
-2. Ibn Taymiyyah held that a traveller can keep shortening while the stay is temporary, even if it lasts longer, unless they intend to settle or stay without a definite end. Ahmad and Abu Dawud report that the Prophet ﷺ shortened during a twenty-day stay in Tabuk.
+Ibn Baz held that a traveller who plans to stay more than four days should pray in full from arrival. If you are waiting for something to finish and plan to leave as soon as it does, he allows you to keep shortening while the length of the stay remains unknown.
 
-Someone staying for a fixed period for work or study who follows the majority completes their prayers after the applicable four-day limit. This is an area of recognised disagreement.`,
-        ar: `يبدأ المسافر بالقصر إذا فارق بنيان بلده، لقوله تعالى ﴿وَإِذَا ضَرَبْتُمْ فِي الْأَرْضِ﴾، ولا يكون ضارباً في الأرض وهو في بلده.
+Ibn ‘Uthaymin held that there is no fixed four-day limit. The question is whether you are still a traveller or have settled. Ibn Taymiyyah also argued against a fixed limit. In one answer about a planned month-long stay, he called praying in full the more cautious choice. He allowed someone waiting to leave as soon as possible to continue shortening.
 
-1. الجمهور من الشافعية والمالكية والحنابلة يقدّرون المدة بنحو أربعة أيام مع اختلافهم في حسابها. فمن نوى الإقامة فوق الحد أتمّ، واستدلوا بإقامة النبي ﷺ بمكة أربعاً في حجة الوداع وهو يقصر.
-2. اختيار ابن تيمية: يبقى مسافراً يقصر ما لم ينو الاستيطان أو الإقامة المطلقة ولو طالت المدة. وجاء أن النبي ﷺ أقام بتبوك عشرين يوماً يقصر. رواه أحمد وأبو داود.
+The Prophet ﷺ shortened prayers during the days he stayed in Makkah before going to Mina for Hajj. There is also a report about a longer stay in Tabuk. Scholars differed over whether those stays set a limit for all travellers.`,
+        ar: `يبدأ القصر بعد مغادرة عمران مدينتك أو بلدتك.
 
-فمن جلس مدة محددة لعمل أو دراسة وأخذ بقول الجمهور أتم بعد الحد المذكور، ومن قلد القول الآخر فلا حرج، والخلاف سائغ.`,
-        refs: [['Abu Dawud 1235', 'https://sunnah.com/abudawud:1235']]
+يرى ابن باز أن المسافر إذا نوى الإقامة أكثر من أربعة أيام أتم الصلاة من وصوله. ومن بقي ينتظر انتهاء حاجة ليغادر فور انتهائها ولا يدري كم تستغرق، جاز له أن يقصر ما دام على هذه الحال.
+
+ويرى ابن عثيمين أنه لا حد ثابت بأربعة أيام، وأن العبرة ببقاء وصف السفر أو حصول الإقامة. ونفى ابن تيمية أيضاً وجود حد ثابت، وذكر في جواب عن إقامة محددة بنحو شهر أن الإتمام أحوط. وأجاز استمرار القصر لمن ينتظر السفر ولا ينوي الإقامة.
+
+قصر النبي ﷺ الصلاة أيام مقامه بمكة قبل خروجه إلى منى في الحج. وجاء خبر إقامته مدة أطول بتبوك. واختلف العلماء هل تدل هذه الوقائع على حد عام للمسافرين.`,
+        refs: [['Abu Dawud 1235', 'https://sunnah.com/abudawud:1235'],
+          ['Ibn Baz · Length of stay', 'https://binbaz.org.sa/fatwas/5024/مدة-القصر-في-السفر', 'ابن باز · مدة القصر في السفر'],
+          ['Ibn ‘Uthaymin · Staying more than four days', 'https://old.binothaimeen.net/content/6943', 'ابن عثيمين · الإقامة أكثر من أربعة أيام'],
+          ['Ibn Taymiyyah · The planned month-long stay', 'https://www.islamweb.net/ar/library/content/22/3003/مسألة-سافر-وقصد-الاقامة-مدة-شهر-فهل-يتم-الصلاة', 'ابن تيمية · الإقامة شهراً في السفر']]
       },
       {
         title: 'When and how to combine prayers', arTitle: 'الجمع: أسبابه وكيفيته',
-        en: `Pray Dhuhr and Asr together, or Maghrib and Isha together, in the time of either prayer. This can be at the earlier or later time. Fajr has no prayer with which to combine it.
+        en: `Combining, or jam‘, means praying Dhuhr and Asr together, or Maghrib and Isha together, during the time of either prayer in the pair. Pray them in order. Fajr is always prayed on its own.
 
-1. Travel. Muslim narrates that the Prophet ﷺ combined the two pairs on the Tabuk expedition. A traveller who has stopped and settled somewhere should preferably pray each on time. While pressed to move on, the traveller may combine.
-2. Rain and mud that make returning to the mosque difficult for the congregation.
-3. Illness when praying separately would cause hardship.
-4. An occasional need without making a habit of it. Ibn Abbas reported that the Prophet ﷺ combined the two pairs in Madinah without fear or rain. When asked why, Ibn Abbas said it was to spare the community hardship. Muslim narrates it.
+1. A traveller may combine when it helps. The Prophet ﷺ combined the two pairs when travelling to Tabuk. When you have stopped and can pray each on time without hardship, that is better.
+2. Heavy rain or mud can make it hard to return to the mosque. Ibn Baz allowed a congregation to combine either pair in that case. Some scholars limit the rain allowance to Maghrib and Isha.
+3. A person who is ill may combine if praying at separate times would be hard.
+4. Ibn Taymiyyah allowed combining for a genuine need without turning it into a habit. Ibn Abbas said the Prophet ﷺ combined in Madinah to spare people hardship.
 
-Shortening is for travel. Combining has wider grounds, so a resident with an excuse may combine while keeping the full number of rak’ahs.`,
-        ar: `الجمع ضم الظهر إلى العصر، أو المغرب إلى العشاء، في وقت إحداهما تقديماً أو تأخيراً، ولا جمع للفجر مع غيرها.
+A resident with a reason to combine still prays the full number of rak’ahs.`,
+        ar: `الجمع هو أداء الظهر والعصر معاً، أو المغرب والعشاء معاً، في وقت إحداهما وبالترتيب. ولا تُجمع صلاة الفجر مع غيرها.
 
-1. السفر. جمع النبي ﷺ بين الظهر والعصر والمغرب والعشاء في غزوة تبوك، رواه مسلم. والأفضل للنازل المستقر تركه، فإن جدّ به السير جمع.
-2. المطر والوحل الذي يشق معه الرجوع للمسجد، للجماعة في المسجد.
-3. المرض الذي يلحق صاحبه بترك الجمع مشقة.
-4. الحاجة العارضة غير المتخذة عادة. عن ابن عباس أن رسول الله ﷺ جمع بين الظهر والعصر والمغرب والعشاء بالمدينة من غير خوف ولا مطر. قال ابن عباس: أراد ألا يحرج أمته. رواه مسلم.
+1. للمسافر أن يجمع إذا احتاج. وقد جمع النبي ﷺ في غزوة تبوك. وإذا نزل المسافر وتيسّر له أن يصلّي كل صلاة في وقتها فهو أفضل.
+2. المطر الغزير أو الوحل الذي يشق معه الرجوع إلى المسجد عذر للجماعة. وأجاز ابن باز الجمع بين الظهر والعصر أو بين المغرب والعشاء في هذه الحال، وقصر بعض العلماء رخصة المطر على المغرب والعشاء.
+3. للمريض أن يجمع إذا شق عليه أداء كل صلاة في وقتها.
+4. أجاز ابن تيمية الجمع لحاجة عارضة من غير اتخاذه عادة. وذكر ابن عباس أن النبي ﷺ جمع بالمدينة رفعاً للحرج.
 
-القصر خاص بالسفر، أما الجمع فأوسع أسباباً، فقد يجمع المقيم لعذر ولا يقصر.`,
-        refs: [['Muslim 706a', 'https://sunnah.com/muslim:706a'], ['Muslim 705d', 'https://sunnah.com/muslim:705d']]
+المقيم الذي يجمع لعذر يتم عدد الركعات.`,
+        refs: [['Muslim 706a', 'https://sunnah.com/muslim:706a'], ['Muslim 705d', 'https://sunnah.com/muslim:705d'],
+          ['Ibn Baz · Combining in heavy rain', 'https://binbaz.org.sa/fatwas/5076/ضابط-الجمع-بين-الصلاتين-اثناء-المطر', 'ابن باز · الجمع في المطر'],
+          ['Ibn Taymiyyah · Combining to avoid hardship', 'https://www.islamweb.org/ar/library/content/22/2505/فصل-الوقت-في-كتاب-الله-وسنة-رسول-الله-نوعان', 'ابن تيمية · الجمع ورفع الحرج']]
       }
     ]
   },
   {
-    id: 'tayammum', arTitle: 'التيمم', arDescription: 'متى يُشرع التيمم وكيفيته ونواقضه', title: 'Dry ablution', description: 'When tayammum applies, how to do it and what breaks it',
+    id: 'tayammum', arTitle: 'التيمم', arDescription: 'متى يُشرع التيمم وكيفيته ونواقضه', title: 'Tayammum', description: 'How to prepare for prayer when you cannot use water',
     sections: [
       {
         title: 'Evidence for tayammum', arTitle: 'دليل التيمم',
-        en: `Al-Ma’idah 5:6 directs a person who cannot find water to use clean earth and wipe their face and hands with it.
-
-The Prophet ﷺ said the earth was made a place of prayer and a means of purification for him. Al-Bukhari and Muslim both narrate it.`,
-        ar: `﴿فَلَمْ تَجِدُوا مَاءً فَتَيَمَّمُوا صَعِيدًا طَيِّبًا فَامْسَحُوا بِوُجُوهِكُمْ وَأَيْدِيكُمْ مِنْهُ﴾ [المائدة: ٦].
-
-وقال ﷺ: «جُعلت لي الأرض مسجداً وطهوراً». متفق عليه.`,
+        en: `Tayammum is a way to prepare for prayer using clean earth when you cannot use water. Al-Ma’idah 5:6 tells you to wipe your face and hands. The Prophet ﷺ taught that the earth can be a place for prayer and a means of purification.`,
+        ar: `التيمم طهارة للصلاة بالصعيد الطيب عند تعذّر استعمال الماء. وفي سورة المائدة (٦) الأمر بمسح الوجه واليدين. وبيّن النبي ﷺ أن الله جعل له الأرض مكاناً للصلاة ووسيلةً للطهارة.`,
         refs: [['Al-Ma’idah 5:6', 'https://quran.com/5/6'], ['Al-Bukhari 335', 'https://sunnah.com/bukhari:335']]
       },
       {
         title: 'When you can perform tayammum', arTitle: 'الحالات التي يُشرع فيها',
-        en: `1. You cannot find water after looking for it, whether you are travelling or at home.
-2. You cannot use water because it would harm you or delay healing. Abu Dawud narrates the report about a man with a head wound, which mentions that tayammum would have sufficed. The grading of this report is disputed.
-3. There is severe cold, you cannot warm the water and you fear harm. On a cold night Amr ibn Al-As used tayammum for a state requiring ghusl. The Prophet ﷺ accepted what he did. Abu Dawud narrates it.
-4. You need the small supply of water left for drinking or cooking and using it for wudu would leave you thirsty.
+        en: `1. You looked for water and could not find it, at home or while travelling.
+2. Water would harm you or slow your recovery. The Qur’an mentions illness. There is also a report about someone with a head injury, and scholars differ on the strength of that particular report.
+3. The water is dangerously cold, you cannot warm it and you have reason to fear harm. The Prophet ﷺ accepted tayammum after a severely cold night in the account of Amr ibn Al-As.
+4. Using the only water you have would leave you without water you need for drinking or food.
 
-Tayammum takes the place of either wudu or ghusl. It allows the acts for which purification with water would otherwise be required.`,
-        ar: `1. عدم وجود الماء بعد طلبه، في سفر أو حضر.
-2. العجز عن استعماله، كمريض يضره الماء أو يؤخر برأه. وروى أبو داود حديث صاحب الشجة، وفيه «إنما كان يكفيه أن يتيمم». وفي إسناده خلاف.
-3. شدة البرد مع تعذر تسخين الماء وخوف الضرر، كما في قصة عمرو بن العاص حين تيمم من الجنابة في ليلة باردة فأقره النبي ﷺ. رواه أبو داود.
-4. الحاجة إلى الماء القليل للشرب أو الطبخ بحيث لو توضأ به عطش.
+When you have a valid reason, tayammum can stand in for wudu or ghusl so you can pray.`,
+        ar: `1. لم تجد الماء بعد البحث عنه، في السفر أو في بلدك.
+2. تخشى أن يضرّك الماء أو يؤخّر شفاءك. وقد ذكر القرآن المرض. وورد أيضاً خبر الرجل الذي جُرح في رأسه، وفي ثبوت هذا الخبر خلاف.
+3. الماء شديد البرودة، ولا يمكنك تدفئته وتخشى أن تتضرر. وقد أقرّ النبي ﷺ عمرو بن العاص على التيمم في ليلة باردة.
+4. تحتاج الماء القليل الذي عندك للشرب أو إعداد الطعام، ولن يكفيك إذا استعملته للطهارة.
 
-ويقوم التيمم مقام الوضوء والغسل جميعاً، ويُفعل به ما يُفعل بالطهارة المائية.`,
+عند وجود عذر صحيح، يقوم التيمم مقام الوضوء أو الغسل لتصلّي.`,
         refs: [['Abu Dawud 336', 'https://sunnah.com/abudawud:336'], ['Abu Dawud 334', 'https://sunnah.com/abudawud:334']]
       },
       {
         title: 'How to perform tayammum', arTitle: 'كيفية التيمم',
-        en: `In the hadith of Ammar ibn Yasir narrated by Al-Bukhari and Muslim, the Prophet ﷺ showed that a single strike of the ground with both hands sufficed. He passed the left hand over the right and wiped the backs of his hands and his face.
+        en: `The Prophet ﷺ showed Ammar how to perform tayammum with one strike of the ground. Here is how Ibn Baz and Ibn ‘Uthaymin explain it.
 
-1. Make the intention.
-2. Say Bismillah.
-3. Strike clean earth once with both palms. Clean soil, sand or stone can be used according to this view.
-4. Wipe your face.
-5. Wipe your hands with one another.
+1. Intend to do tayammum and say Bismillah.
+2. Touch clean earth once with both palms.
+3. Wipe your whole face with your hands.
+4. Wipe your hands up to the wrists, including the backs of your hands.
 
-According to the view based on Ammar’s hadith, one strike suffices and wiping as far as the elbows is unnecessary.`,
-        ar: `في حديث عمار بن ياسر المتفق عليه أن النبي ﷺ قال له: «إنما كان يكفيك أن تقول بيديك هكذا»، ثم ضرب بيديه الأرض ضربة واحدة، ثم مسح الشمال على اليمين وظاهر كفيه ووجهه.
+Clean soil works under both main views on the material. Ibn ‘Uthaymin also allowed clean sand or stone from the ground without loose dust. Some scholars require soil or dust that can cling to your hands.`,
+        ar: `علّم النبي ﷺ عماراً التيمم بضربة واحدة على الأرض. وهذه الصفة كما شرحها ابن باز وابن عثيمين.
 
-1. النية.
-2. التسمية.
-3. ضرب الأرض الطاهرة، من تراب أو رمل أو حجر، ضربة واحدة بالكفين.
-4. مسح الوجه.
-5. مسح الكفين بعضهما ببعض.
+1. انوِ التيمّم وقل: بسم الله.
+2. اضرب الأرض الطاهرة بكفيك ضربةً واحدة.
+3. امسح وجهك كله بيديك.
+4. امسح كفيك إلى الرسغين، بما في ذلك ظاهر الكفين.
 
-ولا تشترط ضربتان ولا المسح إلى المرفقين على هذا القول، بناء على حديث عمار.`,
-        refs: [['Al-Bukhari 338', 'https://sunnah.com/bukhari:338'], ['Muslim 368a', 'https://sunnah.com/muslim:368a']]
+التراب الطاهر يجزئ على القولين. وأجاز ابن عثيمين التيمم برمل الأرض أو حجرها ولو لم يعلق باليد غبار، واشترط بعض أهل العلم تراباً أو غباراً يعلق باليد.`,
+        refs: [['Al-Bukhari 338', 'https://sunnah.com/bukhari:338'], ['Muslim 368a', 'https://sunnah.com/muslim:368a'],
+          ['Ibn ‘Uthaymin · What you can use for tayammum', 'https://old.binothaimeen.net/content/13921', 'ابن عثيمين · معنى الصعيد الطيب']]
       },
       {
         title: 'What breaks tayammum', arTitle: 'نواقض التيمم',
-        en: `1. Anything that breaks wudu also breaks tayammum.
-2. Finding water after using tayammum because water was unavailable. The Prophet ﷺ taught that clean earth can purify a Muslim even after ten years without water, and that the person should use water on their skin when they find it. Abu Dawud and Al-Tirmidhi narrate it.
-3. The excuse that allowed tayammum comes to an end, as when a sick person recovers.
+        en: `1. If you used tayammum in place of wudu, anything that breaks wudu breaks that tayammum.
+2. If you used tayammum in place of ghusl, Ibn ‘Uthaymin distinguished the two kinds of purification. Something that only breaks wudu means you need wudu or tayammum for wudu before praying. You do not need to repeat purification for ghusl unless something else calls for ghusl.
+3. Tayammum ends when you can use water again. For example, you may find water or recover enough to use it safely. Use water to do wudu or ghusl, whichever you need.
 
-A prayer performed with valid tayammum before finding water is valid and does not need repeating.`,
-        ar: `1. كل ما ينقض الوضوء ينقض التيمم.
-2. وجود الماء لمن تيمم لفقده، لقوله ﷺ «الصعيد الطيب طهور المسلم وإن لم يجد الماء عشر سنين، فإذا وجد الماء فليتق الله وليمسه بشرته». رواه أبو داود والترمذي.
-3. زوال العذر المبيح، كَشفاء المريض.
+Ibn ‘Uthaymin says you can use the same tayammum for another prayer if the reason for it still applies and nothing has broken it. If you finished a prayer with valid tayammum and then found water, Ibn Baz says that prayer counts, even if its time has yet to end.`,
+        ar: `1. إذا تيممت بدلاً من الوضوء بطل تيممك بما ينقض الوضوء.
+2. إذا تيممت بدلاً من الغسل، فرّق ابن عثيمين بين الطهارتين. فإن حدث ما ينقض الوضوء فقط فعليك الوضوء أو التيمم عنه للصلاة. ولا تعيد الطهارة عن الغسل إلا إن حصل موجب جديد للغسل.
+3. يبطل التيمم إذا استطعت استعمال الماء، كأن تجده أو تتعافى بما يكفي لاستعماله بلا ضرر. فتوضأ أو اغتسل بالماء بحسب ما يلزمك.
 
-وما صلاه بالتيمم قبل وجود الماء صحيح ولا إعادة عليه.`,
-        refs: [['Abu Dawud 332', 'https://sunnah.com/abudawud:332'], ['Al-Tirmidhi 124', 'https://sunnah.com/tirmidhi:124'], ['Abu Dawud 338', 'https://sunnah.com/abudawud:338']]
+يقول ابن عثيمين إن لك أن تصلي بتيمم واحد أكثر من صلاة ما دام العذر باقياً ولم يحصل ناقض. وإذا أتممت الصلاة بتيمم صحيح ثم وجدت الماء فلا تعد الصلاة عند ابن باز، ولو بقي وقتها.`,
+        refs: [['Abu Dawud 332', 'https://sunnah.com/abudawud:332'], ['Al-Tirmidhi 124', 'https://sunnah.com/tirmidhi:124'], ['Abu Dawud 338', 'https://sunnah.com/abudawud:338'],
+          ['Ibn ‘Uthaymin · Tayammum in place of ghusl', 'https://old.binothaimeen.net/content/8285', 'ابن عثيمين · التيمم بدل الغسل']]
       }
     ]
   },
@@ -279,22 +293,25 @@ A prayer performed with valid tayammum before finding water is valid and does no
     sections: [
       {
         title: 'Who does this apply to?', arTitle: 'من هو فاقد الطهورين؟',
-        en: `It applies to someone who can find neither water nor clean earth, or cannot use either one. This can include a restrained patient who cannot move and has no one to bring them either material, someone confined in a place without water or clean earth, or a passenger on a plane who cannot use either.`,
-        ar: `هو من لا يجد ماءً ولا تراباً، أو عجز عن استعمالهما معاً، كالمريض المربوط الذي لا يستطيع الحركة ولا يجد من يناوله، والمحبوس في مكان لا ماء فيه ولا صعيد، ومن على متن طائرة لا يمكنه شيء من ذلك.`
+        en: `This is for someone who cannot use water or any suitable material for tayammum. An example is someone in hospital who cannot wash or reach clean earth and has nobody to help them before the prayer time ends.`,
+        ar: `هذا حكم من تعذّر عليه استعمال الماء وما يصح التيمم به. ومثاله مريض في المستشفى لا يستطيع الاغتسال أو الوضوء أو الوصول إلى صعيد طيب، ولا يجد من يساعده قبل خروج وقت الصلاة.`
       },
       {
         title: 'How to pray in this situation', arTitle: 'حكم فاقد الطهورين',
-        en: `Pray within the time as you are, without wudu or tayammum. In one report from Ahmad, a person in this situation does not repeat the prayer. Other scholars preferred this too. The Shafi’i position also calls for praying on time, with the prayer repeated later once purification is possible.
+        en: `Pray on time as best you can. Ibn Baz and Ibn ‘Uthaymin say you do not owe a repeat if you truly could not use water or do tayammum. The Shafi’i school also calls for praying on time, then repeating the prayer once purification becomes possible.
 
-Aishah’s necklace was lost and the people had no water. They prayed without wudu and told the Prophet ﷺ. The report does not record an order to repeat the prayer. The verse on tayammum was then revealed. Al-Bukhari and Muslim narrate the event. Those who do not require a repeat use it as evidence that inability to purify does not remove the duty to pray.
+Some of the Companions prayed without wudu while searching for Aishah’s lost necklace because they had no water. The report does not mention the Prophet ﷺ asking them to repeat the prayer. The verse on tayammum came afterwards.
 
-Allah does not burden a soul beyond its capacity (Al-Baqarah 2:286). The Prophet ﷺ instructed people to do what they are able of what he commands. Al-Bukhari and Muslim both narrate it. A person who cannot fulfil the condition should still pray within the allotted time. Waiting for water should not make them miss the prayer.`,
-        ar: `يصلي في الوقت على حاله بلا وضوء ولا تيمم. وعلى رواية عن أحمد واختيار جماعة من المحققين لا إعادة عليه. ومذهب الشافعي أنه يصلي في الوقت ثم يعيد إذا قدر على الطهارة.
+Allah does not ask a soul to do more than it can bear. Do what you can before the prayer time ends.`,
+        ar: `صلِّ في الوقت بحسب استطاعتك. ويرى ابن باز وابن عثيمين أن من عجز حقيقةً عن الماء والتيمم لا تلزمه إعادة الصلاة. وعند الشافعية يصلي في الوقت ثم يعيد إذا قدر على الطهارة.
 
-والدليل حديث عائشة رضي الله عنها لما فُقد عقدها، وكان الناس بغير ماء، فصلوا بغير وضوء ثم أخبروا النبي ﷺ. ولم يُذكر أنه أمرهم بالإعادة، ونزلت آية التيمم بعدها. متفق عليه. فاستدل به من قال إن الصلاة لا تسقط بالعجز عن الطهارة.
+صلى بعض الصحابة بلا وضوء عندما كانوا يبحثون عن عقد عائشة رضي الله عنها ولم يكن معهم ماء. ولم يُذكر أن النبي ﷺ أمرهم بإعادة الصلاة. ثم نزل حكم التيمم.
 
-وقاعدة الباب: ﴿لَا يُكَلِّفُ اللَّهُ نَفْسًا إِلَّا وُسْعَهَا﴾ [البقرة: ٢٨٦]. وقال ﷺ: «إذا أمرتكم بأمر فأتوا منه ما استطعتم». متفق عليه. فالصلاة في وقتها آكد لمن عجز عن شرطها، ولا يؤخرها حتى يخرج وقتها بحجة انتظار الماء.`,
-        refs: [['Al-Bukhari 336', 'https://sunnah.com/bukhari:336'], ['Al-Baqarah 2:286', 'https://quran.com/2/286'], ['Al-Bukhari 7288', 'https://sunnah.com/bukhari:7288']]
+لا يكلف الله نفساً إلا وسعها. افعل ما تستطيع قبل خروج وقت الصلاة.`,
+        refs: [['Al-Bukhari 336', 'https://sunnah.com/bukhari:336'], ['Al-Baqarah 2:286', 'https://quran.com/2/286'], ['Al-Bukhari 7288', 'https://sunnah.com/bukhari:7288'],
+          ['Ibn Baz · Praying without water or earth', 'https://binbaz.org.sa/fatwas/4909/كيفية-صلاة-فاقد-الطهورين-او-احدهما', 'ابن باز · صلاة فاقد الطهورين'],
+          ['Ibn ‘Uthaymin · Praying without water or earth', 'https://al-fatawa.com/fatwa/1597/مسالة-فاقد-الطهورين-ماذا-يعمل-ابن-عثيمين', 'ابن عثيمين · ما يعمل فاقد الطهورين'],
+          ['Shafi‘i view · Repeating the prayer', 'https://www.aliftaa.jo/Research/278/', 'قول الشافعية · إعادة صلاة فاقد الطهورين']]
       }
     ]
   }
@@ -319,26 +336,27 @@ Say one of these quietly after the opening takbeer and before Al-Fatihah. Varyin
       },
       {
         title: 'While bowing', arTitle: 'في الركوع',
-        en: `Say ‘Glory be to my Lord, the Magnificent’ three times as given in these notes. Muslim narrates the wording, and Al-Tirmidhi records the report about repeating it three times.
+        en: `Say ‘Glory be to my Lord, the Magnificent’. Muslim records these words, and Ibn Baz recommends saying them at least three times.
 
 You can also say ‘Glory and praise be to You, O Allah, our Lord. O Allah, forgive me.’ Al-Bukhari and Muslim both narrate it.
 
 Another wording is ‘Perfectly Glorified, Perfectly Holy, Lord of the angels and the Spirit.’ Muslim narrates it.`,
-        ar: `«سبحان ربي العظيم» ثلاثاً. روى مسلم الذكر، وجاء ذكر الثلاث في الترمذي.
+        ar: `قل «سبحان ربي العظيم». روى مسلم هذا الذكر، وبيّن ابن باز أن الثلاث أدنى الكمال.
 
 «سبحانك اللهم ربنا وبحمدك، اللهم اغفر لي». متفق عليه.
 
 «سُبُّوحٌ قُدُّوسٌ ربُّ الملائكة والروح». رواه مسلم.`,
-        refs: [['Muslim 772', 'https://sunnah.com/muslim:772'], ['Al-Tirmidhi 261', 'https://sunnah.com/tirmidhi:261'], ['Al-Bukhari 794', 'https://sunnah.com/bukhari:794'], ['Muslim 487', 'https://sunnah.com/muslim:487']]
+        refs: [['Muslim 772', 'https://sunnah.com/muslim:772'], ['Al-Bukhari 794', 'https://sunnah.com/bukhari:794'], ['Muslim 487', 'https://sunnah.com/muslim:487'],
+          ['Ibn Baz · Repeating the words in bowing and prostration', 'https://binbaz.org.sa/fatwas/4644/حكم-سجود-التلاوة-والزيادة-على-ثلاث-في-تسبيح-الركوع-والسجود', 'ابن باز · عدد التسبيح في الركوع والسجود']]
       },
       {
         title: 'While prostrating', arTitle: 'في السجود',
-        en: `Say ‘Glory be to my Lord, the Most High’ three times as given here. Muslim narrates the wording.
+        en: `Say ‘Glory be to my Lord, the Most High’. Muslim records these words. Ibn Baz recommends saying them at least three times.
 
 Also say ‘O Allah, forgive all my sins, the small and the great, the first and the last, the open and the hidden.’ Muslim narrates it.
 
 Make plenty of supplication for what you wish. Muslim narrates that a servant is closest to their Lord while prostrating, so they should supplicate often there.`,
-        ar: `«سبحان ربي الأعلى» ثلاثاً. روى مسلم الذكر.
+        ar: `قل «سبحان ربي الأعلى». روى مسلم هذا الذكر، وبيّن ابن باز أن الثلاث أدنى الكمال.
 
 «اللهم اغفر لي ذنبي كله، دقّه وجلّه، وأوله وآخره، وعلانيته وسِرَّه». رواه مسلم.
 
@@ -349,11 +367,17 @@ Make plenty of supplication for what you wish. Muslim narrates that a servant is
         title: 'Before the salaam', arTitle: 'قبل السلام في آخر التشهد',
         en: `After the final tashahhud, the Prophet ﷺ instructed people to seek refuge from four things before giving the salaam. ‘O Allah, I seek refuge with You from the punishment of Hell, the punishment of the grave, the trials of life and death, and the evil of the trial of the False Messiah, Al-Dajjal.’ Al-Bukhari and Muslim both narrate this supplication.
 
-He also taught Abu Bakr (may Allah be pleased with him) to say ‘O Allah, I have wronged myself greatly and none forgives sins except You. Grant me Your forgiveness and have mercy on me. You are the Forgiving, the Merciful.’ Al-Bukhari and Muslim both narrate it.`,
+The Prophet ﷺ also taught Abu Bakr the du‘a for forgiveness shown below.
+
+He told Mu‘adh to ask Allah for help remembering, thanking and worshipping Him at the end of each prayer. Ibn Baz preferred saying it before the salaam and also allowed saying it afterwards.`,
         ar: `«اللهم إني أعوذ بك من عذاب جهنم، ومن عذاب القبر، ومن فتنة المحيا والممات، ومن شر فتنة المسيح الدجال». متفق عليه، وقد أمر ﷺ بها بعد التشهد الأخير.
 
-ودعاء أبي بكر رضي الله عنه، علّمه إياه النبي ﷺ: «اللهم إني ظلمت نفسي ظلماً كثيراً، ولا يغفر الذنوب إلا أنت، فاغفر لي مغفرة من عندك وارحمني، إنك أنت الغفور الرحيم». متفق عليه.`,
-        refs: [['Muslim 588a', 'https://sunnah.com/muslim:588a'], ['Al-Bukhari 834', 'https://sunnah.com/bukhari:834']]
+وعلّم النبي ﷺ أبا بكر رضي الله عنه دعاء المغفرة المكتوب أدناه.
+
+وأوصى النبي ﷺ معاذاً أن يسأل الله العون على ذكره وشكره وحسن عبادته دبر كل صلاة. وفضّل ابن باز أن يقال هذا الدعاء قبل السلام وأجاز قوله بعده.`,
+        refs: [['Muslim 588a', 'https://sunnah.com/muslim:588a'], ['Al-Bukhari 834', 'https://sunnah.com/bukhari:834'],
+          ['Abu Dawud 1522', 'https://sunnah.com/abudawud:1522'],
+          ['Ibn Baz · When to say Mu‘adh’s du‘a', 'https://binbaz.org.sa/fatwas/12914/افضلية-الدعاء-قبل-السلام-في-الصلاة', 'ابن باز · متى يقال دعاء معاذ؟']]
       },
       {
         title: 'After the salaam', arTitle: 'بعد السلام من الصلاة',
@@ -361,37 +385,37 @@ He also taught Abu Bakr (may Allah be pleased with him) to say ‘O Allah, I hav
 2. ‘None has the right to be worshipped except Allah alone, with no partner. The dominion and praise belong to Him, and He has power over all things. O Allah, no one can withhold what You give or give what You withhold. No person’s wealth or standing can benefit them against You.’ Al-Bukhari and Muslim both narrate it.
 3. Say Subhanallah 33 times, Alhamdulillah 33 times and Allahu akbar 33 times. Complete the hundred with ‘None has the right to be worshipped except Allah alone, with no partner. The dominion and praise belong to Him, and He has power over all things.’ Muslim narrates that the person’s sins are forgiven even if as plentiful as the foam of the sea.
 4. Recite Ayat Al-Kursi after each obligatory prayer. The report says only death stands between a person who does so and entering Paradise. Al-Nasa’i recorded it in his larger collection and Al-Albani authenticated it.
-5. Recite Al-Ikhlas, Al-Falaq and An-Nas after prayer. The reports in Abu Dawud and Al-Tirmidhi mention the protecting surahs after prayer. Recite all three three times in the morning and evening, after Fajr and Maghrib in the routine shown here.
-6. ‘O Allah, help me remember You, thank You and worship You well.’ The Prophet ﷺ advised Mu’adh to say it at the end of every prayer. Abu Dawud and Al-Nasa’i narrate it.`,
+5. Recite Al-Ikhlas, Al-Falaq and An-Nas. Abu Dawud and Al-Tirmidhi record reciting the protecting surahs after prayer. The morning and evening routine below uses its own report for repeating these surahs three times each.`,
         ar: `1. «أستغفر الله» ثلاثاً، ثم «اللهم أنت السلام ومنك السلام، تباركت يا ذا الجلال والإكرام». رواه مسلم.
 2. «لا إله إلا الله وحده لا شريك له، له الملك وله الحمد وهو على كل شيء قدير، اللهم لا مانع لما أعطيت ولا معطي لما منعت، ولا ينفع ذا الجَدِّ منك الجَدُّ». متفق عليه.
 3. سبحان الله ٣٣، الحمد لله ٣٣، الله أكبر ٣٣، وتمام المائة «لا إله إلا الله وحده لا شريك له، له الملك وله الحمد وهو على كل شيء قدير». «غُفرت خطاياه وإن كانت مثل زبد البحر». رواه مسلم.
 4. آية الكرسي: «من قرأها دبر كل صلاة مكتوبة لم يمنعه من دخول الجنة إلا أن يموت». رواه النسائي في الكبرى وصححه الألباني.
-5. قراءة الإخلاص والفلق والناس دبر الصلاة. وجاءت قراءة المعوذات دبر الصلاة عند أبي داود والترمذي، وتُثلَّث السور الثلاث في الصباح والمساء، بعد الفجر والمغرب في هذا الترتيب.
-6. «اللهم أعني على ذكرك وشكرك وحسن عبادتك». أوصى بها النبي ﷺ معاذاً دبر كل صلاة. رواه أبو داود والنسائي.`,
-        refs: [['Muslim 591', 'https://sunnah.com/muslim:591'], ['Al-Bukhari 844', 'https://sunnah.com/bukhari:844'], ['Muslim 597a', 'https://sunnah.com/muslim:597a'], ['Ayat Al-Kursi 2:255', 'https://quran.com/2/255'], ['Abu Dawud 1523', 'https://sunnah.com/abudawud:1523'], ['Abu Dawud 5082', 'https://sunnah.com/abudawud:5082'], ['Abu Dawud 1522', 'https://sunnah.com/abudawud:1522']]
+5. اقرأ الإخلاص والفلق والناس. وجاءت قراءة المعوذات دبر الصلاة عند أبي داود والترمذي. ولتكرار السور الثلاث ثلاثاً في الصباح والمساء دليل آخر يأتي أدناه.`,
+        refs: [['Muslim 591', 'https://sunnah.com/muslim:591'], ['Al-Bukhari 844', 'https://sunnah.com/bukhari:844'], ['Muslim 597a', 'https://sunnah.com/muslim:597a'], ['Ayat Al-Kursi 2:255', 'https://quran.com/2/255'], ['Abu Dawud 1523', 'https://sunnah.com/abudawud:1523']]
       },
       {
         title: 'Morning and evening dhikr', arTitle: 'من أذكار الصباح والمساء',
-        en: `1. Sayyid Al-Istighfar. ‘O Allah, You are my Lord. None has the right to be worshipped except You. You created me and I am Your servant. I keep to Your covenant and promise as far as I can. I seek refuge with You from the evil I have done. I acknowledge Your favour to me and I acknowledge my sin. Forgive me, for none forgives sins except You.’ Al-Bukhari narrates that whoever says it with certainty and dies before the next morning or evening will enter Paradise.
+        en: `1. Sayyid Al-Istighfar. ‘O Allah, You are my Lord. None has the right to be worshipped except You. You created me and I am Your servant. I keep to Your covenant and promise as far as I can. I seek refuge with You from the evil I have done. I acknowledge Your favour to me and I acknowledge my sin. Forgive me, for none forgives sins except You.’ Al-Bukhari narrates that a person who says it with certainty during the day and dies before evening, or says it with certainty at night and dies before morning, will be among the people of Paradise.
 2. Ayat Al-Kursi. The report says that reading it in the morning protects a person from the jinn until evening, and reading it in the evening protects them until morning. Al-Hakim recorded it and Al-Albani authenticated it.
 3. Recite Al-Ikhlas, Al-Falaq and An-Nas three times each. They will suffice you against everything. Abu Dawud and Al-Tirmidhi narrate it.
-4. In the morning say ‘We have entered the morning and all dominion belongs to Allah. All praise belongs to Allah. None has the right to be worshipped except Allah alone, with no partner…’ The evening version begins ‘We have entered the evening and all dominion belongs to Allah…’ Muslim narrates it.
-5. ‘O Allah, by You we enter the morning and by You we enter the evening. By You we live and by You we die, and to You is the resurrection.’ Al-Tirmidhi narrates it.
+4. Muslim records a longer du‘a for morning and evening. It begins ‘We have entered the morning and all dominion belongs to Allah…’ or ‘We have entered the evening and all dominion belongs to Allah…’ See Muslim 2723a for the full wording.
+5. Ask Allah in the morning and evening using the two wordings below from Abu Dawud. Both versions end by saying we will rise again and return to Allah.
 6. Say three times ‘In the name of Allah, with whose name nothing on earth or in the heavens can cause harm. He is the All-Hearing, the All-Knowing.’ The report describes protection from harm. Abu Dawud and Al-Tirmidhi narrate it.
-7. Say three times ‘I am content with Allah as my Lord, Islam as my religion and Muhammad ﷺ as my Prophet.’ Abu Dawud records a version of this remembrance.
-8. Say ‘Allah is sufficient for me. None has the right to be worshipped except Him. In Him I put my trust and He is the Lord of the Mighty Throne.’ Abu Dawud records saying it seven times as a report from Abu Al-Darda, whose grading is disputed.
+7. ‘I am content with Allah as my Lord, Islam as my religion and Muhammad ﷺ as my Prophet.’ Ibn Majah records these words. Ibn Baz recommends saying them three times in the morning and evening. Scholars differ about the report for that number.
+8. ‘Allah is enough for me. None has the right to be worshipped except Him. In Him I put my trust. He is the Lord of the Mighty Throne.’ These words are from Qur’an 9:129. Abu Dawud records a report from Abu Al-Darda about saying them seven times. Ibn Baz accepted the chain, and Al-Albani did not accept the version cited here.
 9. Say ‘Glory and praise be to Allah’ one hundred times in the morning and evening. Muslim narrates that no one will come on the Day of Resurrection with anything better than this, except someone who said the same or more.`,
         ar: `1. سيد الاستغفار: «اللهم أنت ربي لا إله إلا أنت، خلقتني وأنا عبدك، وأنا على عهدك ووعدك ما استطعت، أعوذ بك من شر ما صنعت، أبوء لك بنعمتك علي وأبوء بذنبي، فاغفر لي فإنه لا يغفر الذنوب إلا أنت». من قالها موقناً بها فمات من يومه أو ليلته دخل الجنة. رواه البخاري.
 2. آية الكرسي: من قالها حين يصبح أُجير من الجن حتى يمسي، ومن قالها حين يمسي أُجير حتى يصبح. رواه الحاكم وصححه الألباني.
 3. الإخلاص والفلق والناس ثلاثاً: «تكفيك من كل شيء». رواه أبو داود والترمذي.
-4. «أصبحنا وأصبح الملك لله، والحمد لله، لا إله إلا الله وحده لا شريك له…». وفي المساء «أمسينا وأمسى الملك لله…». رواه مسلم.
-5. «اللهم بك أصبحنا وبك أمسينا، وبك نحيا وبك نموت، وإليك النشور». رواه الترمذي.
+4. روى مسلم دعاءً أطول للصباح والمساء، يبدأ في الصباح بـ«أصبحنا وأصبح الملك لله…»، وفي المساء بـ«أمسينا وأمسى الملك لله…». وانظر النص كاملاً في صحيح مسلم (٢٧٢٣).
+5. ادعُ في الصباح والمساء باللفظين الآتيين من رواية أبي داود. وكلٌّ منهما يختم بتذكّر النشور والرجوع إلى الله.
 6. «بسم الله الذي لا يضر مع اسمه شيء في الأرض ولا في السماء وهو السميع العليم» ثلاثاً. جاء أنه لا يضره شيء. رواه أبو داود والترمذي.
-7. «رضيت بالله رباً، وبالإسلام ديناً، وبمحمد ﷺ نبياً» ثلاثاً. روى أبو داود صيغة من هذا الذكر.
-8. «حسبي الله لا إله إلا هو عليه توكلت وهو رب العرش العظيم» سبعاً. رواه أبو داود أثراً عن أبي الدرداء، وفي ثبوته خلاف.
+7. «رضيت بالله رباً، وبالإسلام ديناً، وبمحمد ﷺ نبياً». رواه ابن ماجه. وأوصى ابن باز بقوله ثلاثاً في الصباح والمساء، وقد اختلف أهل العلم في ثبوت رواية هذا العدد.
+8. «حسبي الله لا إله إلا هو عليه توكلت وهو رب العرش العظيم» من سورة التوبة (١٢٩). وروى أبو داود قولها سبعاً عن أبي الدرداء. جوّد ابن باز إسناده ولم يقبل الألباني الرواية المشار إليها هنا.
 9. «سبحان الله وبحمده» مائة مرة حين يصبح وحين يمسي. «لم يأت أحد يوم القيامة بأفضل مما جاء به إلا أحد قال مثل ما قال أو زاد عليه». رواه مسلم.`,
-        refs: [['Al-Bukhari 6306', 'https://sunnah.com/bukhari:6306'], ['Abu Dawud 5082', 'https://sunnah.com/abudawud:5082'], ['Muslim 2723a', 'https://sunnah.com/muslim:2723a'], ['Al-Tirmidhi 3391', 'https://sunnah.com/tirmidhi:3391'], ['Al-Tirmidhi 3388', 'https://sunnah.com/tirmidhi:3388'], ['Abu Dawud 5072', 'https://sunnah.com/abudawud:5072'], ['Abu Dawud 5081', 'https://sunnah.com/abudawud:5081'], ['Muslim 2692', 'https://sunnah.com/muslim:2692']]
+        refs: [['Al-Bukhari 6306', 'https://sunnah.com/bukhari:6306'], ['Abu Dawud 5082', 'https://sunnah.com/abudawud:5082'], ['Muslim 2723a', 'https://sunnah.com/muslim:2723a'], ['Abu Dawud 5068', 'https://sunnah.com/abudawud:5068'], ['Al-Tirmidhi 3388', 'https://sunnah.com/tirmidhi:3388'], ['Ibn Majah 3870', 'https://sunnah.com/ibnmajah:3870'], ['Abu Dawud 5081', 'https://sunnah.com/abudawud:5081'], ['Qur’an 9:129', 'https://quran.com/9/129'], ['Muslim 2692', 'https://sunnah.com/muslim:2692'],
+          ['Ibn Baz · Saying “I am content”', 'https://binbaz.org.sa/fatwas/8195/متى-يقال-رضيت-بالله-ربا-وبالاسلام-دينا-وبمحمد-رسولا', 'ابن باز · متى يقال رضيت بالله رباً؟'],
+          ['Ibn Baz · Report from Abu Al-Darda', 'https://binbaz.org.sa/fatwas/2508/دعـاء-الصبـاح-والمسـاء', 'ابن باز · أثر أبي الدرداء']]
       }
     ]
   },
@@ -404,13 +428,14 @@ He also taught Abu Bakr (may Allah be pleased with him) to say ‘O Allah, I hav
 
 Al-Tirmidhi also records a report from Ibn Abbas (may Allah be pleased with both of them) that describes the surah as a protector and deliverer from punishment in the grave. This particular chain is graded weak in the cited edition.
 
-A report says the Prophet ﷺ would recite As-Sajdah, which opens with Alif Lam Mim Tanzil, and Al-Mulk before sleeping. Al-Tirmidhi narrates it and Al-Albani authenticated it.`,
+A report says the Prophet ﷺ would recite As-Sajdah, which opens with Alif Lam Mim Tanzil, and Al-Mulk before sleeping. Al-Tirmidhi records it and Al-Albani accepted it. Ibn ‘Uthaymin also taught that reading Al-Mulk every night is Sunnah.`,
         ar: `عن أبي هريرة رضي الله عنه عن النبي ﷺ قال: «سورة من القرآن ثلاثون آية شفعت لرجل حتى غُفر له، وهي تبارك الذي بيده الملك». رواه أبو داود والترمذي وقال: حديث حسن.
 
 وعن ابن عباس رضي الله عنهما رواية «هي المانعة، هي المنجية، تنجيه من عذاب القبر». رواها الترمذي، وفي إسناد هذه الرواية ضعف على ما في المرجع.
 
-وكان النبي ﷺ لا ينام حتى يقرأ ﴿الم تنزيل﴾ السجدة، و﴿تبارك الذي بيده الملك﴾. رواه الترمذي وصححه الألباني.`,
-        refs: [['Abu Dawud 1400', 'https://sunnah.com/abudawud:1400'], ['Al-Tirmidhi 2891', 'https://sunnah.com/tirmidhi:2891'], ['Al-Tirmidhi 2890', 'https://sunnah.com/tirmidhi:2890'], ['Al-Tirmidhi 2892', 'https://sunnah.com/tirmidhi:2892']]
+وكان النبي ﷺ لا ينام حتى يقرأ ﴿الم تنزيل﴾ السجدة، و﴿تبارك الذي بيده الملك﴾. رواه الترمذي وصححه الألباني. وذكر ابن عثيمين أن قراءة الملك كل ليلة من السنة.`,
+        refs: [['Abu Dawud 1400', 'https://sunnah.com/abudawud:1400'], ['Al-Tirmidhi 2891', 'https://sunnah.com/tirmidhi:2891'], ['Al-Tirmidhi 2890', 'https://sunnah.com/tirmidhi:2890'], ['Al-Tirmidhi 2892', 'https://sunnah.com/tirmidhi:2892'],
+          ['Ibn ‘Uthaymin · Reciting Al-Mulk at night', 'https://old.binothaimeen.net/content/11758', 'ابن عثيمين · قراءة الملك كل ليلة']]
       },
       {
         title: 'Read Surah Al-Mulk', arTitle: 'قراءة سورة الملك',

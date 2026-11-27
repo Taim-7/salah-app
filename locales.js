@@ -51,6 +51,40 @@ Dayline|خط اليوم
 Did you fast?|هل صمت؟
 Differences from your main timetable|الفروق عن المواقيت الأساسية
 Dimashqiya|الدمشقية
+Derry|ديري
+Londonderry|لندنديري
+Strabane|سترابان
+Limavady|ليمافادي
+Dungiven|دنغيفن
+Coleraine|كوليرين
+Portrush|بورتروش
+Portstewart|بورت ستيوارت
+Omagh|أوماه
+Belfast|بلفاست
+Letterkenny|ليتركيني
+Buncrana|بانكرانا
+Muff|ماف
+Bridgend|بريدجند
+Moville|موفيل
+Carndonagh|كارندونا
+Malin Head|رأس مالين
+Donegal Town|مدينة دونيغال
+Dublin|دبلن
+Cork|كورك
+Galway|غالواي
+Edinburgh|إدنبرة
+Glasgow|غلاسكو
+Lerwick|ليرويك
+London|لندن
+Birmingham|برمنغهام
+Cardiff|كارديف
+Northern Ireland|أيرلندا الشمالية
+County Donegal|مقاطعة دونيغال
+Ireland|أيرلندا
+England|إنجلترا
+Scotland|اسكتلندا
+Shetland|شتلاند
+Wales|ويلز
 Dismiss prayer reminder|إغلاق تذكير الصلاة
 Download adhan|تنزيل الأذان
 E|شرق
@@ -253,6 +287,7 @@ Android ran the last test at {time}.|نفّذ أندرويد آخر اختبار
 Approximate alignment|محاذاة تقريبية
 Approximate guide. Check the bearings below.|الاتجاه تقريبي. راجع الاتجاهات أدناه.
 Ashura and the day before|عاشوراء واليوم الذي قبله
+Sunset {from} to dawn {to}|من مغرب {from} إلى فجر {to}
 Asr|العصر
 Asr time|وقت العصر
 At the time|عند الموعد
@@ -314,11 +349,7 @@ First listed prayer|أول صلاة في الجدول
 First listed prayer · estimate|أول صلاة في الجدول · تقديري
 Fixed interval before sunrise|مدة ثابتة قبل الشروق
 Following {place}|الموقع الحالي: {place}
-Forbidden time|وقت نهي
-Forbidden · approaching sunset|وقت نهي · قبيل الغروب
-Forbidden · around midday|وقت نهي · وقت الاستواء
-Forbidden · low Sun|وقت نهي · انخفاض الشمس
-Forbidden · sunrise|وقت نهي · الشروق
+Forbidden|وقت نهي
 Forest green|أخضر غابي
 From {time} if you’re able to delay Isha.|من {time} لمن استطاع تأخير العشاء.
 From Qibla|عن القبلة
@@ -424,6 +455,9 @@ Salah test notification|إشعار اختبار من تطبيق صلاة
 Saved locally · {size} MB|محفوظ على الجهاز · {size} ميغابايت
 Saved sound removed.|حُذف الصوت المحفوظ.
 Scheduled adhan is ready offline.|الأذان المجدول جاهز دون اتصال.
+Dimashqiya is ready as a backup while your selected adhan is unavailable.|أذان الدمشقية جاهز احتياطياً إذا تعذّر تشغيل الأذان الذي اخترته.
+Playing the Dimashqiya backup adhan.|يعمل الآن أذان الدمشقية الاحتياطي.
+Last adhan · {prayer} · {time}|آخر أذان · {prayer} · {time}
 Seasonal model|الحساب الموسمي
 Selected date|التاريخ المحدد
 Send test notification|إرسال إشعار اختبار
@@ -527,10 +561,7 @@ AlAdhan · Moonsighting red preset|AlAdhan · إعداد الشفق الأحمر
 local calculation|حساب محلي
 estimate|تقديري
 waiting for AlAdhan|بانتظار AlAdhan
-Through {date}|حتى {date}
-Next {time} · {place} · through {date} · waiting for AlAdhan|التالي {time} · {place} · حتى {date} · بانتظار AlAdhan
-Next {time} · {place} · through {date}|التالي {time} · {place} · حتى {date}
-Next {time} · {place} · waiting for AlAdhan|التالي {time} · {place} · بانتظار AlAdhan
+through {date}|حتى {date}
 Next {time} · {place}|التالي {time} · {place}
 `;
 
@@ -629,6 +660,7 @@ This estimate gives no usable {prayer} time for the date.|لا يعطي هذا �
       .replace(/Sahih Muslim|Muslim/g, 'مسلم')
       .replace(/Al-Tirmidhi|Jami‘ al-Tirmidhi/g, 'الترمذي')
       .replace(/Abu Dawud/g, 'أبو داود').replace(/Qur’an/g, 'القرآن')
+      .replace(/Ibn Majah/g, 'ابن ماجه')
       .replace(/Surah Al-Mulk|Al-Mulk/g, 'سورة الملك')
       .replace(/Al-Ma’idah/g, 'المائدة').replace(/An-Nisa/g, 'النساء')
       .replace(/Al-Baqarah/g, 'البقرة').replace(/Ayat Al-Kursi/g, 'آية الكرسي')

@@ -39,7 +39,7 @@
     block.append(language(element('p', quote.ar), 'ar'));
     if (!isArabic) block.append(language(element('p', quote.en), 'en'));
     if (quote.name) {
-      const name = isArabic ? SalahLocale.arabicReference(quote.name) : quote.name;
+      const name = isArabic ? quote.arName || SalahLocale.arabicReference(quote.name) : quote.name;
       block.append(element('cite', name));
     }
     return block;
@@ -63,7 +63,7 @@
       card.append(verses);
     } else {
       card.append(lessonText(isArabic ? section.ar : section.en, isArabic ? 'ar' : 'en'));
-      const quotes = section.evidence || (isArabic ? [] : existingEvidence);
+      const quotes = section.evidence || existingEvidence;
       for (const proof of quotes || []) card.append(renderEvidence(proof, isArabic));
     }
     if (section.refs?.length) {
