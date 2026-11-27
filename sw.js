@@ -1,6 +1,6 @@
 const BASE = new URL(self.registration.scope);
 const PREFIX = 'salah-static:' + BASE.pathname + ':';
-const CACHE_NAME = PREFIX + 'v45';
+const CACHE_NAME = PREFIX + 'v46';
 const legacyIcons = ['ocean', 'midnight', 'sand', 'slate', 'mihrab', 'minaret', 'compass', 'mat'];
 const palettes = ['forest', 'ocean', 'midnight', 'sand', 'slate'];
 const iconDesigns = ['crescent', 'mihrab', 'minaret', 'compass', 'mat'];

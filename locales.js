@@ -211,6 +211,13 @@ Sounds & reminders|الأصوات والتذكيرات
 Start compass|تشغيل البوصلة
 Stop|إيقاف
 Stop wake alarm|إيقاف منبّه الاستيقاظ
+Stop adhan|إيقاف الأذان
+Stop sound|إيقاف الصوت
+Alarm screen|شاشة المنبّه
+Wake alarm is active.|منبّه الاستيقاظ يعمل.
+Adhan is playing.|الأذان قيد التشغيل.
+Adhan playback settings|إعدادات إشعارات تشغيل الأذان
+Allow Adhan playback notifications so you can stop the sound.|اسمح بإشعارات تشغيل الأذان لتتمكن من إيقاف الصوت.
 Subtract one fasted day|اطرح يوماً صمته
 Subtract one make-up fast|اطرح يوماً قضيته
 Subtract one missed day|اطرح يوماً فاتك
@@ -528,7 +535,10 @@ Waiting for prayer times for your location.|بانتظار مواقيت الصل
 Waiting for usable prayer times.|بانتظار مواقيت صلاة صالحة.
 Waiting for your location|بانتظار تحديد موقعك
 Wake alarm is ringing.|منبّه الاستيقاظ يعمل.
-Wake alarm test scheduled. You can lock your phone.|تمت جدولة اختبار المنبه. يمكنك قفل هاتفك.
+Wake alarm test scheduled. Lock your phone to test the full-screen alarm.|تمت جدولة اختبار المنبّه. اقفل هاتفك لاختبار المنبّه بملء الشاشة.
+Wake alarm test scheduled. Look for Stop in the notification.|تمت جدولة اختبار المنبّه. ابحث عن زر الإيقاف في الإشعار.
+Full-screen alarms|منبّهات بملء الشاشة
+Allow full-screen alarms to open Wake me when your phone is locked.|اسمح بالمنبّهات بملء الشاشة لفتح منبّه الاستيقاظ عند قفل الهاتف.
 Your angles|زواياك
 Your {angles}|زواياك {angles}
 Your selected end time is {time}.|نهاية الوقت التي اخترتها عند {time}.

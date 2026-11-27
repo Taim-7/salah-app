@@ -320,6 +320,7 @@
         <button class="secondary-button" data-alert-settings="prayers" type="button" hidden>Prayer times settings</button>
         <button class="secondary-button" data-alert-settings="reminders" type="button" hidden>Prayer reminders settings</button>
         <button class="secondary-button" data-alert-settings="isha" type="button" hidden>Isha alarm settings</button>
+        <button class="secondary-button" data-alert-settings="playback" type="button" hidden>Adhan playback settings</button>
         <button class="secondary-button" id="openAndroidBattery" type="button" hidden>Open Salah battery settings</button>
         <button class="secondary-button" id="testNotification" type="button" hidden>Allow notifications</button>
         <p class="form-note" id="notificationStatus" role="status" hidden></p>
@@ -350,7 +351,6 @@
       <div class="alert-actions">
         <button class="secondary-button" id="testWake" type="button">Test alarm in 30 seconds</button>
         <button class="secondary-button" id="pauseWake" type="button" hidden>Pause 30 seconds</button>
-        <button class="secondary-button" id="stopWake" type="button" hidden>Stop wake alarm</button>
         <button class="secondary-button" id="wakeNotificationSettings" type="button" hidden>Wake me notification settings</button>
         <button class="secondary-button" id="allowWakeScreen" type="button" hidden>Allow full-screen alarms</button>
       </div>
@@ -456,7 +456,17 @@
   </details>
 </section></div>
 <footer class="dialog-actions"><p id="settingsStatus" class="form-note" role="status"></p><button class="primary-button" id="saveSettings" type="button">Save settings</button></footer></form></section></main>
-</div><aside id="reminderToast" class="reminder-toast" hidden><p id="reminderMessage" role="status"></p><button type="button" class="text-button" id="dismissReminder" aria-label="Dismiss prayer reminder">×</button></aside>
+</div>
+<div class="notice-stack">
+  <aside id="reminderToast" class="reminder-toast" hidden><p id="reminderMessage" role="status"></p><button type="button" class="text-button" id="dismissReminder" aria-label="Dismiss prayer reminder">×</button></aside>
+  <aside id="androidPlayback" class="playback-card" hidden>
+    <p id="playbackLabel" role="status"></p>
+    <div>
+      <button class="secondary-button" id="openWake" type="button" hidden>Alarm screen</button>
+      <button class="primary-button" id="stopAndroidSound" type="button">Stop sound</button>
+    </div>
+  </aside>
+</div>
 <nav aria-label="Main navigation" class="app-dock" role="tablist"><button aria-controls="today" aria-selected="true" class="is-active" data-screen-target="today" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M12 4v3m0 10v3M4 12h3m10 0h3"></path></svg><span>Prayers</span></button><button aria-controls="qiblaPanel" aria-selected="false" class="" data-screen-target="qibla" role="tab" type="button"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="m10 10 7-4-4 7-7 4z"></path></svg><span>Qibla</span></button><button aria-controls="fastingPanel" aria-selected="false" data-screen-target="fasting" role="tab" type="button">
   <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="3"/><path d="M8 3.5v5M16 3.5v5M8.5 14l2.4 2.4 4.6-4.6"/></svg><span>Fasting</span>
 </button><button aria-controls="datesPanel" aria-selected="false" data-screen-target="dates" role="tab" type="button">
@@ -482,6 +492,7 @@
     <button class="secondary-button" data-restore-access="deviceLocation" type="button" hidden>Turn on phone location</button>
     <button class="secondary-button" data-restore-access="notifications" type="button" hidden>Allow notifications</button>
     <button class="secondary-button" data-restore-access="exactAlarms" type="button" hidden>Allow exact alarms</button>
+    <button class="secondary-button" data-restore-access="fullScreenAlarms" type="button" hidden>Allow full-screen alarms</button>
     <button class="text-button" id="dismissAccessRecovery" type="button">Not now</button>
   </div>
 </dialog>

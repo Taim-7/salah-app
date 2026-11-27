@@ -44,8 +44,8 @@
         proof('Abu Dawud 874','رَبِّ اغْفِرْ لِي، رَبِّ اغْفِرْ لِي','My Lord, forgive me. My Lord, forgive me.'),
         proof('Al-Bukhari 831','التَّحِيَّاتُ لِلَّهِ وَالصَّلَوَاتُ وَالطَّيِّبَاتُ، السَّلَامُ عَلَيْكَ أَيُّهَا النَّبِيُّ وَرَحْمَةُ اللَّهِ وَبَرَكَاتُهُ، السَّلَامُ عَلَيْنَا وَعَلَى عِبَادِ اللَّهِ الصَّالِحِينَ، أَشْهَدُ أَنْ لَا إِلَهَ إِلَّا اللَّهُ، وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ',
           'All greetings, prayers and good things belong to Allah. Peace, Allah’s mercy and His blessings be upon you, O Prophet. Peace be upon us and upon Allah’s righteous servants. I bear witness that none has the right to be worshipped except Allah and that Muhammad is His servant and Messenger.'),
-        proof('Al-Bukhari 3370','اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ كَمَا صَلَّيْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ إِنَّكَ حَمِيدٌ مَجِيدٌ …',
-          'O Allah, honour Muhammad and the family of Muhammad as You honoured Ibrahim and the family of Ibrahim. You are Praiseworthy, Glorious …')
+        proof('Al-Bukhari 3370','اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ كَمَا صَلَّيْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ إِنَّكَ حَمِيدٌ مَجِيدٌ، اللَّهُمَّ بَارِكْ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ كَمَا بَارَكْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ إِنَّكَ حَمِيدٌ مَجِيدٌ',
+          'O Allah, honour Muhammad and the family of Muhammad as You honoured Ibrahim and the family of Ibrahim. You are Praiseworthy, Glorious. O Allah, bless Muhammad and the family of Muhammad as You blessed Ibrahim and the family of Ibrahim. You are Praiseworthy, Glorious.')
       ],
       [proof('Al-Bukhari 757','ارْجِعْ فَصَلِّ فَإِنَّكَ لَمْ تُصَلِّ … ثُمَّ ارْكَعْ حَتَّى تَطْمَئِنَّ رَاكِعًا',
         'Go back and pray, for you have not prayed … then bow until you are at ease in the bowing position.')]
@@ -147,8 +147,9 @@
       [
         proof('Abu Dawud 1400','سُورَةٌ مِنَ الْقُرْآنِ ثَلَاثُونَ آيَةً شَفَعَتْ لِرَجُلٍ حَتَّى غُفِرَ لَهُ، وَهِيَ تَبَارَكَ الَّذِي بِيَدِهِ الْمُلْكُ',
           'A surah from the Qur’an of thirty verses interceded for a man until he was forgiven. It is the surah that begins, “Blessed is the One in whose hand is all dominion.”'),
-        { ...proof('Al-Tirmidhi 2890 (weak chain)','هِيَ الْمَانِعَةُ هِيَ الْمُنْجِيَةُ، تُنْجِيهِ مِنْ عَذَابِ الْقَبْرِ','It protects him and saves him from the punishment of the grave.'),
-          arName:'الترمذي ٢٨٩٠ (إسناده ضعيف)' },
+        { ...proof('An-Nasa’i · A report from Ibn Mas‘ud','عَنْ عَبْدِ اللَّهِ بْنِ مَسْعُودٍ قَالَ: مَنْ قَرَأَ ﴿تَبَارَكَ الَّذِي بِيَدِهِ الْمُلْكُ﴾ كُلَّ لَيْلَةٍ مَنَعَهُ اللَّهُ بِهَا مِنْ عَذَابِ الْقَبْرِ',
+          'Abdullah ibn Mas‘ud said that Allah protects the person who recites Surah Al-Mulk every night from the punishment of the grave.'),
+          arName:'النسائي · أثر عبد الله بن مسعود' },
         proof('Al-Tirmidhi 2892','كَانَ لَا يَنَامُ حَتَّى يَقْرَأَ الم تَنْزِيلُ وَتَبَارَكَ الَّذِي بِيَدِهِ الْمُلْكُ',
           'He did not go to sleep until he had recited Alif Lam Mim Tanzil and Tabaraka Alladhi Bi-Yadihi al-Mulk.')
       ]

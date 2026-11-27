@@ -1338,12 +1338,14 @@
       const blocked = {
         prayers: nativeStatus?.prayerAlerts === false || (wantsAdhan && nativeStatus?.prayerSound === false),
         reminders: cfg.reminderEnabled && nativeStatus?.reminderAlerts === false,
-        isha: nativeStatus?.ishaAlerts === false
+        isha: nativeStatus?.ishaAlerts === false,
+        playback: wantsAdhan && nativeStatus?.adhanControls === false
       };
       for (const button of channelButtons) button.hidden = !canNotify || !blocked[button.dataset.alertSettings];
       if (canNotify && blocked.prayers) issues.push('Turn on Prayer times and choose Alert in Android.');
       if (canNotify && blocked.reminders) issues.push('Prayer reminders are off in Android.');
       if (canNotify && blocked.isha) issues.push('The Isha alarm is off or silent in Android.');
+      if (canNotify && blocked.playback) issues.push('Allow Adhan playback notifications so you can stop the sound.');
       if (cfg.soundVolume > 0 && nativeStatus?.alarmVolumeOn === false) issues.push('Turn up Alarms in Android’s volume controls.');
       if (nativeStatus?.backgroundRestricted) issues.push('Android is restricting Salah in the background. Check its battery settings.');
       $('openAndroidBattery').hidden = !nativeStatus?.backgroundRestricted;
@@ -1351,7 +1353,7 @@
       $('androidAlertHelp').hidden = !issues.length;
       $('testNotification').hidden = !canNotify || !nativeStatus?.exact || nativeStatus?.prayerAlerts === false;
       $('testNotification').textContent = wantsAdhan ? 'Test adhan in 30 seconds' : 'Test alert in 30 seconds';
-      $('testNotification').disabled = testPending || !!nativeStatus?.wake?.playback;
+      $('testNotification').disabled = testPending || blocked.playback || !!nativeStatus?.wake?.playback;
       $('notificationStatus').textContent = result || androidAlertStatus();
       $('notificationStatus').hidden = false;
       const lastTest = $('androidTestStatus');
@@ -1373,6 +1375,7 @@
         lastAdhanStatus.textContent = translate('Last adhan · {prayer} · {time}', { prayer:lastAdhan.prayer, time }) + ' · ' + lastAdhan.result;
       }
       renderWakeControl();
+      renderPlaybackControls();
       return;
     }
     const permission = notificationPermission();
@@ -1450,11 +1453,12 @@
     const pending = nativeStatus.testAt > Date.now() && !nativeStatus.error;
     $('testWake').disabled = !canTest || pending || !!wake.playback;
     $('pauseWake').hidden = wake.playback !== 'ringing';
-    $('stopWake').hidden = !wake.playback;
     const status = $('wakeStatus');
     if (wake.playback === 'paused') status.textContent = 'Paused for 30 seconds.';
     else if (wake.playback) status.textContent = wake.playback === 'ringing' ? 'Wake alarm is ringing.' : 'Starting wake alarm…';
-    else if (pending && wake.testPending) status.textContent = 'Wake alarm test scheduled. You can lock your phone.';
+    else if (pending && wake.testPending) status.textContent = wake.fullScreen === false || wake.popOnScreen === false ?
+      'Wake alarm test scheduled. Look for Stop in the notification.' :
+      'Wake alarm test scheduled. Lock your phone to test the full-screen alarm.';
     else if (!nativeStatus.notifications || !nativeStatus.exact) status.textContent = 'Allow notifications and exact alarms above.';
     else if (!wake.notifications) status.textContent = 'Turn on Wake me notifications in Android.';
     else if (!nativeStatus.alarmVolumeOn) status.textContent = 'Turn up Alarms in Android’s volume controls.';
@@ -1483,9 +1487,22 @@
     soundChoice:cfg.soundChoice, volume:Math.round(cfg.soundVolume)
   }));
   $('pauseWake').addEventListener('click', () => native?.send('pauseWake'));
-  $('stopWake').addEventListener('click', () => native?.send('stopWake'));
   $('wakeNotificationSettings').addEventListener('click', () => native?.send('alertSettings', { alert:'wake' }));
   $('allowWakeScreen').addEventListener('click', () => native?.send('allowFullScreen'));
+
+  function renderPlaybackControls() {
+    const wake = nativeStatus?.wake?.playback;
+    const controls = $('androidPlayback');
+    controls.hidden = !wake && !nativeStatus?.adhanPlaying;
+    if (controls.hidden) return;
+    $('openWake').hidden = !wake;
+    const label = wake === 'paused' ? 'Paused for 30 seconds.' :
+      wake ? 'Wake alarm is active.' : 'Adhan is playing.';
+    if ($('playbackLabel').textContent !== translate(label)) $('playbackLabel').textContent = translate(label);
+    $('stopAndroidSound').textContent = translate(wake ? 'Stop wake alarm' : 'Stop adhan');
+  }
+  $('openWake').addEventListener('click', () => native?.send('openWake'));
+  $('stopAndroidSound').addEventListener('click', () => native?.send(nativeStatus?.wake?.playback ? 'stopWake' : 'stopAdhan'));
 
   function androidAlertStatus() {
     if (!nativeStatus) return 'Checking notification access…';
@@ -2591,25 +2608,34 @@
       precise:() => native.send('openLocationPermissions'),
       deviceLocation:() => native.send('openLocationSettings'),
       notifications:() => native.send('allowNotifications'),
-      exactAlarms:() => native.send('allowExact')
+      exactAlarms:() => native.send('allowExact'),
+      fullScreenAlarms:() => native.send('allowFullScreen')
     };
     const dismissedAccess = new Set();
     let accessState;
     function showAccessRecovery() {
       if (!accessState || !cfg.permissionSetupDone || permissionSetup.open || document.hidden || !nativeVisible) return;
+      if (nativeStatus?.adhanPlaying || nativeStatus?.wake?.playback) {
+        if (accessDialog.open) accessDialog.close();
+        return;
+      }
       let restoring = false;
       for (const button of restoreButtons) {
         const key = button.dataset.restoreAccess;
         const location = locationAccess.includes(key);
         const lost = accessState[key + 'Missing'] === true;
-        const missing = lost || (!location && cfg.useDeviceLocation && accessState.location && accessState[key] === false);
+        const missing = key === 'fullScreenAlarms' ? accessState.fullScreenWanted && accessState.fullScreenAlarms === false :
+          lost || (!location && cfg.useDeviceLocation && accessState.location && accessState[key] === false);
         if (!missing) dismissedAccess.delete(key);
         button.hidden = !missing || dismissedAccess.has(key) || (location && !cfg.useDeviceLocation);
         if (!button.hidden && lost) restoring = true;
       }
-      $('restoreAccessTitle').textContent = restoring ? 'Restore Salah access' : 'Set up prayer alerts';
-      $('restoreAccessHelp').textContent = restoring ? 'Turn access back on to use prayer alerts, prayer times and Qibla.' :
-        'Allow notifications and exact alarms for prayer alerts when Salah is closed.';
+      const wakeAccess = restoreButtons.find(button => button.dataset.restoreAccess === 'fullScreenAlarms');
+      const justWakeAccess = !wakeAccess.hidden && restoreButtons.every(button => button === wakeAccess || button.hidden);
+      $('restoreAccessTitle').textContent = justWakeAccess ? 'Full-screen alarms' : restoring ? 'Restore Salah access' : 'Set up prayer alerts';
+      $('restoreAccessHelp').textContent = justWakeAccess ? 'Allow full-screen alarms to open Wake me when your phone is locked.' :
+        restoring ? 'Turn access back on to use prayer alerts, prayer times and Qibla.' :
+          'Allow notifications and exact alarms for prayer alerts when Salah is closed.';
       if (restoreButtons.every(button => button.hidden)) {
         if (accessDialog.open) accessDialog.close();
       } else if (!accessDialog.open) {
@@ -2643,7 +2669,8 @@
     native.on('location', trackAndroidPosition);
     native.on('compass', readAndroidCompass);
     native.on('scheduleStatus', status => {
-      if (status.wake?.playback && !nativeStatus?.wake?.playback) stopSound();
+      if ((status.wake?.playback && !nativeStatus?.wake?.playback) ||
+          (status.adhanPlaying && !nativeStatus?.adhanPlaying)) stopSound();
       nativeStatus = status;
       if (scheduledPlace === undefined && status.place) {
         const place = status.place;
@@ -2651,6 +2678,7 @@
       }
       markDelivered((status.delivered || []).map(id => ({ id })));
       renderNotificationControl();
+      showAccessRecovery();
       checkPrayerReminders();
     });
     native.on('dueAlerts', message => {

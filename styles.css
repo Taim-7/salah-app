@@ -434,9 +434,14 @@ body:has(:is(.occasion-dialog, .permission-dialog)[open]) { overflow: hidden; }
 .alert-actions, .setting-action-row { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 10px; }
 .phone-notification-controls { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 12px; }
 .phone-notification-controls .secondary-button { margin-top: 8px; }
-.reminder-toast { z-index: 110; position: fixed; right: 12px; bottom: calc(76px + env(safe-area-inset-bottom)); left: 12px; width: min(calc(100% - 24px),510px); margin: auto; border: 1px solid var(--accent); border-radius: var(--inset-radius); background: var(--raised); padding: 5px 8px 5px 13px; display: flex; gap: 8px; align-items: center; justify-content: space-between; color: var(--ink); box-shadow: 0 4px 20px #0007; font-size: 13px; }
+.notice-stack { z-index: 110; position: fixed; inset-inline: 12px; bottom: calc(76px + env(safe-area-inset-bottom)); max-width: 510px; margin-inline: auto; display: grid; gap: 7px; pointer-events: none; }
+.notice-stack aside { border: 1px solid var(--accent); border-radius: var(--inset-radius); background: var(--raised); color: var(--ink); box-shadow: 0 4px 20px #0007; font-size: 13px; pointer-events: auto; }
+.reminder-toast, .playback-card { padding: 5px 8px 5px 13px; display: flex; gap: 8px; align-items: center; justify-content: space-between; }
 .reminder-toast p { white-space: pre-line; }
 .reminder-toast .text-button { font-size: 20px; }
+.playback-card { flex-wrap: wrap; padding: 8px 10px; }
+.playback-card > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.playback-card button { min-height: 44px; }
 .settings-screen { overflow: hidden; }
 .dialog-heading { margin: 0; padding: 18px clamp(13px,3.3vw,26px) 12px; }
 .dialog-scroll { padding: 0 clamp(13px,3.3vw,26px); }
