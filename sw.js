@@ -1,6 +1,6 @@
 const BASE = new URL(self.registration.scope);
 const PREFIX = 'salah-static:' + BASE.pathname + ':';
-const CACHE_NAME = PREFIX + 'v41';
+const CACHE_NAME = PREFIX + 'v42';
 const legacyIcons = ['ocean', 'midnight', 'sand', 'slate', 'mihrab', 'minaret', 'compass', 'mat'];
 const palettes = ['forest', 'ocean', 'midnight', 'sand', 'slate'];
 const iconDesigns = ['crescent', 'mihrab', 'minaret', 'compass', 'mat'];
@@ -10,9 +10,9 @@ const iconFiles = palettes.flatMap(palette => iconDesigns.flatMap(icon => [
   ...[180, 192, 512].map(size => './icons/art/' + palette + '/' + icon + '-' + size + '.png')
 ]));
 const FILES = [
-  './', './index.html', './styles.css', './region.js', './solar.js', './providers.js', './timetable.js',
+  './', './index.html', './styles.css', './locales.js', './region.js', './solar.js', './providers.js', './timetable.js',
   './audio.js', './hijri.js', './compass.js', './alerts.js', './platform.js', './app.js',
-  './al-mulk.js', './learn-text.js', './learn.js', './media/damascus.mp3',
+  './al-mulk.js', './learn-text.js', './learn-topics.js', './learn-evidence.js', './learn.js', './media/damascus.mp3',
   './manifest.webmanifest', './vendor/magvar/magvar.mjs', './vendor/magvar/utils.mjs', './vendor/magvar/WMMCOF2025.mjs',
   './install/icon.js', ...['forest', ...legacyIcons].map(name => './install/' + name + '.html'),
   ...legacyIcons.map(name => './manifest-' + name + '.webmanifest'), ...iconFiles

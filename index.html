@@ -4,23 +4,23 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
-<meta content="#0c1717" name="theme-color"/>
+<meta content="#0e1325" name="theme-color"/>
 <meta content="yes" name="apple-mobile-web-app-capable"/>
 <meta content="default" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="Salah" name="apple-mobile-web-app-title"/>
 <meta content="Prayer times, Qibla direction, fasting tracker and sound reminders for the UK and Ireland." name="description"/>
-<link id="appManifest" href="./manifest.webmanifest" rel="manifest"/>
-<link id="tabIcon" href="./icons/art/forest/crescent-192.png" rel="icon" type="image/png"/>
-<link id="touchIcon" href="./icons/art/forest/crescent-180.png" rel="apple-touch-icon"/>
+<link id="appManifest" href="./manifest-midnight-minaret.webmanifest" rel="manifest"/>
+<link id="tabIcon" href="./icons/art/midnight/minaret-192.png" rel="icon" type="image/png"/>
+<link id="touchIcon" href="./icons/art/midnight/minaret-180.png" rel="apple-touch-icon"/>
 <link href="./styles.css" rel="stylesheet"/>
 <title>Salah — Prayer times</title>
 </head>
-<body data-accent="forest" data-layout="compact" data-theme="dark"><span id="top"></span>
+<body data-accent="midnight" data-layout="timeline" data-theme="dark"><span id="top"></span>
 <div class="site-shell">
 <header class="masthead">
 <a aria-label="Salah — Prayer times" class="brand" href="#today">
-<span aria-hidden="true" class="brand-mark"><svg aria-hidden="true" fill="none" viewbox="0 0 40 40"><path d="M29 6.5A16.1 16.1 0 1 0 30.7 33 14.2 14.2 0 1 1 29 6.5Z" fill="currentColor"></path><path d="m27 12 1.6 3.5 3.5 1.6-3.5 1.6-1.6 3.5-1.6-3.5-3.5-1.6 3.5-1.6z" fill="currentColor"></path></svg></span>
-<span>salāh<span class="brand-dot">.</span></span>
+<img id="brandIcon" class="brand-mark" src="./icons/art/midnight/minaret-180.png" width="34" height="34" alt=""/>
+<span><span id="brandName">salāh</span><span class="brand-dot">.</span></span>
 </a>
 
 </header>
@@ -82,7 +82,7 @@
 <header class="qibla-heading">
   <div><h2 id="qiblaTitle">Qibla</h2><p id="qiblaPosition"></p></div>
   <div class="compass-controls">
-    <label class="compass-chime" for="qiblaChime"><span>Chime</span><input id="qiblaChime" type="checkbox" switch/></label>
+    <label class="compass-chime" for="qiblaChime"><span>Compass feedback</span><input id="qiblaChime" type="checkbox" switch/></label>
   </div>
 </header>
 <div class="location-prompt" id="qiblaLocationPrompt">
@@ -240,6 +240,10 @@
       <h3 id="upcomingEidsTitle">Eid dates</h3>
       <ul class="upcoming-list" id="upcomingEids"></ul>
     </section>
+    <section aria-labelledby="upcomingWorshipTitle">
+      <h3 id="upcomingWorshipTitle">Other dates for worship</h3>
+      <ul class="upcoming-list" id="upcomingWorship"></ul>
+    </section>
   </div>
   <dialog class="occasion-dialog" id="occasionDialog" aria-labelledby="occasionDialogTitle" aria-describedby="occasionDialogDate">
     <header class="occasion-dialog-header">
@@ -262,24 +266,10 @@
   <div id="learnIndex">
     <header class="panel-heading"><h2 id="learnTitle" tabindex="-1">Learn</h2></header>
     <div class="learn-topics" id="learnTopics"></div>
-    <details class="learn-planned">
-      <summary>Topics to add later</summary>
-      <ul>
-        <li>Ghusl</li>
-        <li>The prostration of forgetfulness</li>
-        <li>Prayer in congregation and joining late</li>
-        <li>Praying while ill or unable to stand</li>
-      </ul>
-    </details>
   </div>
-  <article id="learnArticle" class="learn-article" data-language="both" hidden>
+  <article id="learnArticle" class="learn-article" hidden>
     <button class="secondary-button" id="backToLearn" type="button">‹ All topics</button>
     <h2 id="lessonTitle" tabindex="-1"></h2>
-    <div class="learn-languages" aria-label="Reading language" role="group">
-      <button class="text-button" data-lesson-language="both" type="button" aria-pressed="true">Both</button>
-      <button class="text-button" data-lesson-language="en" type="button" aria-pressed="false">English</button>
-      <button class="text-button" data-lesson-language="ar" type="button" aria-pressed="false" lang="ar">العربية</button>
-    </div>
     <div id="lessonContent"></div>
   </article>
 </section>
@@ -292,7 +282,7 @@
       <select id="soundChoice">
         <option value="adhan-abu-bakr">Abu Bakr</option>
         <option value="adhan-fajr-abu-bakr">Echo</option>
-        <option value="adhan-damascus">Damascus</option>
+        <option value="adhan-damascus">Dimashqiya</option>
         <option value="soft">Gentle chime</option>
         <option value="bell">Clear bell</option>
         <option value="off">Silent</option>
@@ -339,37 +329,32 @@
     </div>
     <section class="reminder-card wake-card" id="wakeCard" aria-labelledby="wakeTitle" hidden>
       <h3 id="wakeTitle">Wake me</h3>
+      <p class="setting-hint">Uses the adhan or chime and sound level selected above.</p>
       <div class="wake-prayers">
-        <label class="tracking-toggle"><input type="checkbox" id="wakeFajr"/><span>Fajr</span></label>
-        <p class="setting-hint" id="wakeFajrTime">At Fajr prayer time.</p>
-        <label class="tracking-toggle"><input type="checkbox" id="wakeIsha"/><span>Isha</span></label>
-        <p class="setting-hint" id="wakeIshaTime">10 minutes before the first third of the night ends.</p>
-      </div>
-      <label class="block-label" for="wakeSound">Fajr alarm sound</label>
-      <select id="wakeSound">
-        <option value="tone">Alarm tone</option>
-        <option value="ali">Ali · Fajr announcement</option>
-        <option value="muslim">Muslim · Fajr announcement</option>
-      </select>
-      <p class="setting-hint">Isha uses the alarm tone.</p>
-      <fieldset class="wake-volume">
-        <legend>Wake alarm volume</legend>
-        <label class="tracking-toggle"><input type="radio" name="wakeVolumeMode" value="progressive" checked/><span>Progressive</span></label>
-        <p class="setting-hint" id="wakeProgressiveHint">Plays for a minute, pauses for 30 seconds, then goes up to the next level. The levels are 30%, 45%, 60%, 75%, 85% and 95%.</p>
-        <label class="tracking-toggle"><input type="radio" name="wakeVolumeMode" value="manual"/><span>Manual</span></label>
-        <div id="wakeVolumeControl" class="volume-controls" hidden>
-          <input aria-label="Manual wake alarm volume" id="wakeVolume" type="range" min="30" max="100" value="65"/>
-          <output for="wakeVolume" id="wakeVolumeLabel">65%</output>
+        <div class="wake-prayer">
+          <label class="tracking-toggle"><input type="checkbox" id="wakeFajr"/><span>Fajr</span></label>
+          <label class="block-label" for="wakeFajrLead">Time before Fajr</label>
+          <select id="wakeFajrLead"></select>
+          <p class="setting-hint" id="wakeFajrTime"></p>
         </div>
-      </fieldset>
+        <div class="wake-prayer">
+          <label class="tracking-toggle"><input type="checkbox" id="wakeIsha"/><span>Isha</span></label>
+          <label class="block-label" for="wakeIshaLead">Time before first third</label>
+          <select id="wakeIshaLead"></select>
+          <p class="setting-hint" id="wakeIshaTime"></p>
+        </div>
+      </div>
+      <p class="setting-hint">On nights when Isha starts after the first third, the alarm uses the start of Isha.</p>
       <p class="setting-hint">The alarm repeats until you tap Stop. Your phone’s Alarms volume applies.</p>
       <div class="alert-actions">
         <button class="secondary-button" id="testWake" type="button">Test alarm in 30 seconds</button>
         <button class="secondary-button" id="pauseWake" type="button" hidden>Pause 30 seconds</button>
         <button class="secondary-button" id="stopWake" type="button" hidden>Stop wake alarm</button>
         <button class="secondary-button" id="wakeNotificationSettings" type="button" hidden>Wake me notification settings</button>
+        <button class="secondary-button" id="allowWakeScreen" type="button" hidden>Allow full-screen alarms</button>
       </div>
       <p class="alert-status" id="wakeStatus" role="status"></p>
+      <p class="setting-hint" id="wakeScreenStatus" hidden></p>
     </section>
   </div>
 </section>
@@ -407,8 +392,8 @@
     <label for="settingsLayout">App style
       <select id="settingsLayout"><option value="compact">Focus</option><option value="timeline">Dayline</option><option value="horizon">Horizon</option></select>
     </label>
-    <label for="settingsTimeFormat">Clock
-      <select id="settingsTimeFormat"><option value="12">12-hour</option><option value="24">24-hour</option></select>
+    <label for="settingsLanguage">Language
+      <select id="settingsLanguage"><option value="en" lang="en-GB">English</option><option value="ar" lang="ar">العربية</option></select>
     </label>
   </div>
   <p class="block-label" id="paletteLabel">Colour preset</p>
@@ -442,7 +427,7 @@
 <section class="settings-group"><h3>Fajr and Isha angles</h3><div aria-label="Calculation angles" class="option-group" role="radiogroup"><label class="option-card"><input name="method" type="radio" value="15-13"/><span><strong>15° / 13°</strong><small>15° Fajr · 13° Isha</small></span></label><label class="option-card"><input name="method" type="radio" value="12-12"/><span><strong>French UOIF · 12° / 12°</strong><small>12° Fajr · 12° Isha</small></span></label><label class="option-card"><input name="method" type="radio" value="18-17"/><span><strong>Muslim World League · 18° / 17°</strong><small>MWL angle pair · uses your summer rule</small></span></label><label class="option-card"><input name="method" type="radio" value="custom"/><span><strong>Custom angles</strong></span></label></div><div class="field-grid" id="customAngles"><label>Fajr angle <input id="fajrAngleInput" inputmode="decimal" max="22" min="6" step="0.5" type="number"/></label><label>Isha angle <input id="ishaAngleInput" inputmode="decimal" max="22" min="6" step="0.5" type="number"/></label></div><p class="setting-hint">Angles estimate the religious signs. A missing crossing tells you about the Sun’s position.</p></section>
 <section class="settings-group">
   <h3>Isha</h3>
-  <label class="block-label" for="ishaLimit">Ordinary Isha cutoff</label>
+  <label class="block-label" for="ishaLimit">Isha end time</label>
   <select id="ishaLimit">
     <option value="half">Half of the night (default)</option>
     <option value="third">First third</option>
@@ -499,7 +484,7 @@
     <button class="text-button" id="dismissAccessRecovery" type="button">Not now</button>
   </div>
 </dialog>
-<script src="./region.js"></script><script src="./solar.js"></script><script src="./providers.js"></script><script src="./timetable.js"></script><script src="./hijri.js"></script><script src="./audio.js"></script><script src="./compass.js"></script><script src="./alerts.js"></script><script src="./platform.js"></script>
-<script src="./al-mulk.js"></script><script src="./learn-text.js"></script><script src="./learn.js"></script><script src="./app.js"></script>
+<script src="./locales.js"></script><script src="./region.js"></script><script src="./solar.js"></script><script src="./providers.js"></script><script src="./timetable.js"></script><script src="./hijri.js"></script><script src="./audio.js"></script><script src="./compass.js"></script><script src="./alerts.js"></script><script src="./platform.js"></script>
+<script src="./al-mulk.js"></script><script src="./learn-text.js"></script><script src="./learn-topics.js"></script><script src="./learn-evidence.js"></script><script src="./learn.js"></script><script src="./app.js"></script>
 </body>
 </html>

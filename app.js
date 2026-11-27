@@ -8,7 +8,7 @@
     ishaLimit: 'half', highLatRule: 'seventh',
     activeSource: 'angles', soundChoice: 'adhan-abu-bakr', soundVolume: 40,
     reminderLead: 15, reminderEnabled: true, soundRepeat: false, qiblaSound: true,
-    fastingView: 'week', timeFormat: '12', layout: 'compact', accent: 'forest', iconChoice: 'crescent'
+    fastingView: 'week', language: 'en', layout: 'timeline', accent: 'midnight', iconChoice: 'minaret'
   };
   const names = [
     { key: 'fajr', en: 'Fajr', ar: 'الفجر', icon: 'sun-horizon', desc: 'Dawn' },
@@ -68,7 +68,6 @@
       const c = { ...defaults, accent:launchAccent, iconChoice:launchIcon, ...raw };
       if (!raw.version4) {
         if (raw.method === '12-12') c.method = '15-13';
-        c.timeFormat = '12';
         if (raw.soundChoice === 'soft') c.soundChoice = 'adhan';
       }
       if (!raw.version6 && c.soundChoice === 'adhan') c.soundChoice = 'soft';
@@ -101,11 +100,14 @@
       delete c.qiblaChime;
       delete c.calendarLead;
       delete c.theme;
-      c.timeFormat = ['12','24'].includes(String(c.timeFormat)) ? String(c.timeFormat) : '12';
+      delete c.timeFormat;
+      c.language = c.language === 'ar' ? 'ar' : 'en';
       c.layout = layouts.includes(c.layout) ? c.layout : defaults.layout;
       if (c.accent === 'dusk') c.accent = 'midnight';
       c.accent = Object.hasOwn(palettes, c.accent) ? c.accent : defaults.accent;
-      if (!Object.hasOwn(iconDesigns, c.iconChoice)) c.iconChoice = previousMatchingIcons[c.accent];
+      if (!Object.hasOwn(iconDesigns, raw.iconChoice)) {
+        c.iconChoice = Object.hasOwn(iconDesigns, iconQuery) ? iconQuery : previousMatchingIcons[c.accent];
+      }
       delete c.onlineCompare;
       if (!Object.hasOwn(summerRules, c.highLatRule)) c.highLatRule = defaults.highLatRule;
       if (![c.fajrAngle, c.ishaAngle].every(a => Number.isFinite(+a) && +a >= 6 && +a <= 22)) {
@@ -122,6 +124,8 @@
   }
 
   let cfg = loadConfig();
+  const { t:translate, uiLocale, isArabic } = SalahLocale.start(cfg.language);
+  SalahLearn.init(isArabic);
   const store = () => {
     try { localStorage.setItem('salah-config', JSON.stringify(cfg)); } catch {}
     if (nativeReady) queueMicrotask(checkPrayerReminders);
@@ -134,19 +138,21 @@
   function fmt(date) {
     if (!currentPlace || !(date instanceof Date) || !Number.isFinite(+date)) return '—';
     const { timeZone } = currentPlace;
-    const key = timeZone + ':' + cfg.timeFormat;
-    if (!clockFormats.has(key)) clockFormats.set(key, new Intl.DateTimeFormat('en-GB', {
-      timeZone, hour: cfg.timeFormat === '12' ? 'numeric' : '2-digit',
-      minute:'2-digit', hour12: cfg.timeFormat === '12'
+    const key = timeZone;
+    if (!clockFormats.has(key)) clockFormats.set(key, new Intl.DateTimeFormat(uiLocale, {
+      timeZone, hour:'numeric', minute:'2-digit', hourCycle:'h12'
     }));
     return clockFormats.get(key).format(date).replace(/am|pm/ig, value => value.toLowerCase());
   }
 
-  const prettyKey = key => dateAtNoonUTC(key).toLocaleDateString('en-GB', {
+  const shortDateKey = key => dateAtNoonUTC(key).toLocaleDateString(uiLocale, {
+    timeZone:'UTC', day:'numeric', month:'short'
+  });
+  const prettyKey = key => dateAtNoonUTC(key).toLocaleDateString(uiLocale, {
     timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   });
   const relativeKey = key => key === todayKey() ? 'Today' : key === dayShift(todayKey(), 1) ? 'Tomorrow' :
-    dateAtNoonUTC(key).toLocaleDateString('en-GB', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' });
+    dateAtNoonUTC(key).toLocaleDateString(uiLocale, { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' });
   const isBetween = (t, a, b) => a && b && t >= a.getTime() && t < b.getTime();
   let selectedKey = todayKey();
   let browsing = false, dayInfo = null, lastListRefresh = 0;
@@ -305,9 +311,9 @@
       const time = c.day?.valid ? c.day[n.key] : null;
       const reference = active?.valid ? active[n.key] : null;
       const delta = time && reference ? Math.round((time - reference) / 60000) : null;
-      const diff = delta === null ? '' : delta === 0 ? 'same time' : (delta > 0 ? '+' : '') + delta + ' min';
-      const hint = time && isEstimated(c.day, n.key) ? ' · est.' : '';
-      const nextDay = time && dateParts(time, currentPlace.timeZone) !== selectedKey ? ' (+1 day)' : '';
+      const diff = delta === null ? '' : delta === 0 ? translate('same time') : translate('{number} min', { number:(delta > 0 ? '+' : '') + delta });
+      const hint = time && isEstimated(c.day, n.key) ? ' · ' + translate('est.') : '';
+      const nextDay = time && dateParts(time, currentPlace.timeZone) !== selectedKey ? ' (' + (isArabic ? 'اليوم التالي' : '+1 day') + ')' : '';
       const status = c.id === 'moonsighting' ?
         !currentPlace ? '—' : pendingOnline.has(id) ? 'Loading…' : failedOnline.has(id) || !navigator.onLine ? 'Unavailable' : 'Load online' : '—';
       return `<td class="${c.id === cfg.activeSource ? 'selected-col' : ''}">${time ?
@@ -320,16 +326,16 @@
     if (cols[1].day.ishaReason) messages.push(cols[1].day.ishaReason);
     if (pendingOnline.has(id)) messages.push('Loading AlAdhan times…');
     else if (failedOnline.has(id)) messages.push('AlAdhan could not be reached.');
-    $('comparisonStatus').textContent = messages.join(' ');
+    $('comparisonStatus').textContent = messages.map(message => translate(message)).join(' ');
     if ($('summerCompare').open) renderSummerComparison();
   }
   function renderSummerComparison() {
     const mark = (t, kind) => {
       const time = t[kind];
       if (!time) return '—';
-      const nextDay = dateParts(time, currentPlace.timeZone) !== selectedKey ? ' (+1 day)' : '';
+      const nextDay = dateParts(time, currentPlace.timeZone) !== selectedKey ? ' (' + (isArabic ? 'اليوم التالي' : '+1 day') + ')' : '';
       const estimated = kind === 'midnight' ? t.nightEstimated : isEstimated(t, kind);
-      return fmt(time) + nextDay + (estimated ? ' · est.' : '');
+      return fmt(time) + nextDay + (estimated ? ' · ' + translate('est.') : '');
     };
     $('summerCompareBody').innerHTML = Object.entries(summerRules).map(([id, label]) => {
       const t = localDay(selectedKey, 'angles', id);
@@ -339,7 +345,7 @@
 
   function renderDate() {
     $('dateLabel').textContent = relativeKey(selectedKey);
-    $('dateSubLabel').textContent = prettyKey(selectedKey).replace(/^[A-Za-z]+,?\s+/, '');
+    $('dateSubLabel').textContent = shortDateKey(selectedKey);
     $('nativeDate').value = selectedKey;
     renderLocationState();
   }
@@ -372,36 +378,37 @@
     const key = hijriDayKey(selectedKey, dayInfo, now);
     if (lastHijriKey === key) return;
     lastHijriKey = key;
-    const label = SalahHijri.label(key);
-    $('hijriDate').textContent = label ? label + ' · est.' : '';
+    const label = SalahHijri.label(key, cfg.language);
+    $('hijriDate').textContent = label ? label + ' · ' + translate('est.') : '';
     $('hijriDate').hidden = !label;
   }
   function getDay(key) { return getActiveDay(key); }
 
   const ishaDeadline = day => SalahTimetable.ishaDeadline(day, cfg.ishaLimit);
   const ishaHasWindow = day => SalahTimetable.ishaHasWindow(day, cfg.ishaLimit);
-  function renderNotice(t) {
+  const hasPreferredIsha = day => cfg.ishaLimit !== 'third' && ishaHasWindow(day) && day.isha < day.firstThird;
+  function renderNotice(day) {
     const msgs = [];
-    if (t.sourceFallback) msgs.push('AlAdhan is unavailable for this date. The timetable shows your local angle calculation.');
-    if (t.providerEstimate) msgs.push('AlAdhan supplies Fajr and Isha. Daylight times use the local Sun calculation.');
-    if (t.fajrReason) msgs.push(t.fajrReason);
-    if (t.ishaReason) msgs.push(t.ishaReason);
-    if (isEstimated(t, 'fajr') || isEstimated(t, 'isha')) {
-      if (t.taybaNotes) {
-        const descriptions = ['fajr', 'isha'].filter(k => isEstimated(t, k))
-          .map(k => (k === 'fajr' ? 'Fajr' : 'Isha') + ' uses Tayba’s ' + t.taybaNotes[k].toLowerCase());
-        msgs.push(descriptions.join('. ') + '.');
-      } else if (!t.providerEstimate) {
+    if (day.sourceFallback) msgs.push('AlAdhan is unavailable for this date. The timetable shows your local angle calculation.');
+    if (day.providerEstimate) msgs.push('AlAdhan supplies Fajr and Isha. Daylight times use the local Sun calculation.');
+    if (day.fajrReason) msgs.push(day.fajrReason);
+    if (day.ishaReason) msgs.push(day.ishaReason);
+    if (isEstimated(day, 'fajr') || isEstimated(day, 'isha')) {
+      if (day.taybaNotes) {
+        const descriptions = ['fajr', 'isha'].filter(k => isEstimated(day, k))
+          .map(k => (k === 'fajr' ? 'Fajr' : 'Isha') + ' uses Tayba’s ' + day.taybaNotes[k].toLowerCase());
+        msgs.push(...descriptions.map(description => description + '.'));
+      } else if (!day.providerEstimate) {
         const [fa, ia] = anglePair();
-        const missing = [isEstimated(t, 'fajr') ? fa + '° Fajr' : '', isEstimated(t, 'isha') ? ia + '° Isha' : ''].filter(Boolean);
-        msgs.push('The model finds no ' + missing.join(' or ') + ' crossing. Estimate from ' + summerRules[t.highLatRule] + '.');
+        const missing = [isEstimated(day, 'fajr') ? fa + '° Fajr' : '', isEstimated(day, 'isha') ? ia + '° Isha' : ''].filter(Boolean);
+        msgs.push('The model finds no ' + missing.join(' or ') + ' crossing. Estimate from ' + summerRules[day.highLatRule] + '.');
       }
     }
-    if (t.fajrFallback) msgs.push('This Fajr estimate also affects the calculated start of fasting. True dawn is the light spreading along the eastern horizon.');
-    if (t.isha && !ishaHasWindow(t)) msgs.push('Isha begins after the selected cutoff for ordinary prayer. This calculation gives no ordinary Isha window.');
-    if (!t.nextFajr) msgs.push('Night markers need the following day’s Fajr.');
-    else if (t.nightEstimated) msgs.push('The night markers use an estimated next Fajr.');
-    note(msgs.join(' '));
+    if (day.fajrFallback) msgs.push('This Fajr estimate also affects the calculated start of fasting. True dawn is the light spreading along the eastern horizon.');
+    if (day.isha && !ishaHasWindow(day)) msgs.push('Isha starts after your selected end time.');
+    if (!day.nextFajr) msgs.push('Night markers need the following day’s Fajr.');
+    else if (day.nightEstimated) msgs.push('The night markers use an estimated next Fajr.');
+    note(msgs.map(message => translate(message)).join(' '));
   }
 
   const svgIcon = (kind) => {
@@ -433,12 +440,13 @@
       return { level:'preferred', label:t.isha ? 'Maghrib time' : 'After sunset', desc:t.isha ? 'Until ' + fmt(t.isha) : 'Isha time unavailable' };
     const deadline = ishaDeadline(t);
     if (ishaHasWindow(t) && isBetween(instant, t.isha, deadline)) {
-      return { level:'calm', label:'Isha time', desc:'Until ' + fmt(deadline) };
+      const preferred = hasPreferredIsha(t) && instant >= t.firstThird;
+      return { level:'calm', label:preferred ? 'Preferred time for Isha' : 'Isha time', desc:'Until ' + fmt(deadline) };
     }
     if (t.isha && !t.ishaOverlapsFajr && t.isha <= instant && isBetween(instant, t.midnight, t.nextFajr) && cfg.ishaLimit === 'half-necessity')
       return { level:'caution', label:'Isha · necessity period', desc:'Until ' + fmt(t.nextFajr) };
     if (instant >= t.maghrib || (t.nextFajr && instant < t.fajr))
-      return { level:'calm', label:'Night', desc:t.isha && !t.nextFajr && instant >= t.isha ? 'Isha cutoff unavailable' : '' };
+      return { level:'calm', label:'Night', desc:t.isha && !t.nextFajr && instant >= t.isha ? 'Isha end time unavailable' : '' };
     if (t.fajr && instant < t.fajr) return { level:'calm', label:'Before Fajr' };
     return { level:'calm', label:'Between prayers' };
   }
@@ -453,16 +461,16 @@
     }
     const events = names.map(n => ({
       at:t[n.key], title:n.en, desc:n.key === 'asr' ? 'One length added to the noon shadow' :
-        n.key === 'isha' && t.isha && !ishaHasWindow(t) ? 'Outside the selected ordinary window' : n.desc,
+        n.key === 'isha' && t.isha && !ishaHasWindow(t) ? 'After your selected end time' : n.desc,
       kind:'prayer', name:n, estimated:isEstimated(t, n.key)
     }));
     const selectedThird = cfg.ishaLimit === 'third';
-    const lateIsha = t.ishaBeyondFirstThird && t.isha > t.firstThird;
-    const thirdTitle = selectedThird ? 'Isha cutoff · first third' :
-      lateIsha ? 'First third passed before Isha' : 'First third of the night ends';
-    const halfTitle = selectedThird ? 'Halfway through the night' : 'Ordinary Isha cutoff';
-    const thirds = { at:t.firstThird, title:thirdTitle,
-      desc:lateIsha ? 'Calculated Isha begins at or after this point' : '',
+    const preferredNow = currentPrayer === 'isha' && hasPreferredIsha(t) && now >= t.firstThird;
+    const thirdDetail = selectedThird ? 'Isha end time' :
+      t.isha && t.isha >= t.firstThird ? 'Isha has yet to begin at this time' :
+      hasPreferredIsha(t) ? 'Preferred time for Isha begins' : '';
+    const halfTitle = selectedThird ? 'Halfway through the night' : 'Isha end time';
+    const thirds = { at:t.firstThird, title:'First third', desc:thirdDetail,
       kind:'night', icon:'third', estimated:t.nightEstimated };
     const half = { at:t.midnight, title:halfTitle, desc:'Half of the night', kind:'night', icon:'half', estimated:t.nightEstimated };
 
@@ -475,16 +483,19 @@
       .sort((a,b) => a.at - b.at);
 
     const currentIndex = current ? sorted.reduce((index,e,i) => e.at <= now ? i : index, -1) : -1;
-    const nextIndex = current ? sorted.findIndex(e => e.at > now && e.name && e.name.key !== 'sunrise' && (e.name.key !== 'isha' || ishaHasWindow(t))) : -1;
+    const nextIndex = current ? sorted.findIndex(e => e.at > now && e.name?.key !== 'sunrise' &&
+      (e.name?.key !== 'isha' || ishaHasWindow(t))) : -1;
     const list = $('prayerList');
     list.innerHTML = sorted.map((e,i) => {
       const phase = current ? (i === currentIndex ? (e.kind === 'prayer' ? 'is-now' : 'is-current-marker') :
         i === nextIndex ? 'is-next' : i < currentIndex ? 'is-past' : 'is-future') : '';
-      const isCurrent = e.kind === 'prayer' && e.name.key === currentPrayer;
       const activeRange = current && isBetween(now, e.at, e.end);
+      const isCurrent = activeRange || (preferredNow ? e === thirds : e.name && e.name.key === currentPrayer);
       const dimmed = current && !isCurrent && !activeRange && (e.end || e.at) <= now;
       const extra = e.end ? `<span class="range-label">to ${fmt(e.end)}</span>` : '';
-      const following = dateParts(e.at, currentPlace.timeZone) !== selectedKey ? '<span class="next-day">+1 day</span>' : '';
+      const eventDate = dateParts(e.at, currentPlace.timeZone);
+      const showDate = e.kind === 'night' || eventDate !== selectedKey;
+      const following = showDate ? '<span class="next-day">' + shortDateKey(eventDate) + '</span>' : '';
       const label = isCurrent ? '<span class="phase-pill current-pill">CURRENT</span>' :
         i === nextIndex ? '<span class="phase-pill next-pill">NEXT</span>' : '';
       return `<div class="time-row ${e.kind === 'prayer' ? 'prayer-entry' : e.kind === 'night' ? 'night-summary' : 'avoid-entry'} ${phase}${dimmed ? ' is-elapsed' : ''} ${isCurrent ? 'current-prayer' : ''} ${activeRange ? 'within-range' : ''}" data-event="${e.name?.key || e.kind}" data-event-time="${e.at.getTime()}">
@@ -574,7 +585,7 @@
     const second = remaining % 60;
     const timer = hour + ':' + String(minute).padStart(2, '0') + ':' + String(second).padStart(2, '0');
     $('countdown').classList.add('is-counting');
-    $('countdown').textContent = 'In ' + timer + currentHero.following + currentHero.estimated;
+    $('countdown').textContent = translate('In {timer}', { timer }) + currentHero.following + currentHero.estimated;
   }
   function setHero(event, now, otherDate = false) {
     currentHero = null;
@@ -582,13 +593,13 @@
     $('horizonPrayerLabel').textContent = otherDate ? 'First listed prayer' : 'Next prayer';
     $('nextPrayerName').textContent = event?.en || 'Unavailable';
     $('nextPrayerArabic').textContent = event?.ar || '';
-    $('nextPrayerArabic').hidden = !event?.ar;
+    $('nextPrayerArabic').hidden = isArabic || !event?.ar;
     $('nextPrayerTime').textContent = fmt(event?.at);
     if (!event) { $('countdown').textContent = 'No upcoming time available'; return; }
-    const estimated = event.estimated ? ' · estimate' : '';
-    if (otherDate) { $('countdown').textContent = 'First listed prayer' + estimated; return; }
+    const estimated = event.estimated ? ' · ' + translate('estimate') : '';
+    if (otherDate) { $('countdown').textContent = translate('First listed prayer') + estimated; return; }
     currentHero = { at:event.at, estimated,
-      following:dateParts(event.at, currentPlace.timeZone) !== selectedKey ? ' · tomorrow' : '' };
+      following:dateParts(event.at, currentPlace.timeZone) !== selectedKey ? ' · ' + translate('Tomorrow').toLowerCase() : '' };
     updateCountdown(+now);
   }
   function prayerEvent(day, prayer) {
@@ -894,7 +905,7 @@
     document.body.dataset.layout = cfg.layout;
     document.body.dataset.accent = cfg.accent;
     $('settingsLayout').value = cfg.layout;
-    $('settingsTimeFormat').value = cfg.timeFormat;
+    $('settingsLanguage').value = cfg.language;
     placeDateControls();
     for (const choice of paletteChoices.children) {
       choice.setAttribute('aria-pressed', choice.dataset.palette === cfg.accent);
@@ -906,6 +917,7 @@
     const iconKey = cfg.accent + '-' + cfg.iconChoice;
     $('tabIcon').href = iconAsset(cfg.iconChoice, cfg.accent, 192);
     $('touchIcon').href = iconAsset(cfg.iconChoice, cfg.accent, 180);
+    $('brandIcon').src = $('touchIcon').href;
     $('appManifest').href = './manifest-' + iconKey + '.webmanifest';
     for (const choice of iconChoices.children) {
       choice.setAttribute('aria-pressed', choice.dataset.iconChoice === cfg.iconChoice);
@@ -924,11 +936,14 @@
     cfg[kind] = value;
     store();
     applyAppearance();
-    if (kind === 'timeFormat') render();
     if (kind === 'layout') drawSunChart(dayInfo);
   }
   $('settingsLayout').addEventListener('change', () => changeAppearance('layout', $('settingsLayout').value));
-  $('settingsTimeFormat').addEventListener('change', () => changeAppearance('timeFormat', $('settingsTimeFormat').value));
+  $('settingsLanguage').addEventListener('change', () => {
+    cfg.language = $('settingsLanguage').value;
+    store();
+    location.reload();
+  });
   paletteChoices.addEventListener('click', event => {
     const choice = event.target.closest('[data-palette]');
     if (choice) changeAppearance('accent', choice.dataset.palette);
@@ -1020,7 +1035,7 @@
     if (dayInfo?.valid && selectedKey === localDay && !$('today').hidden) {
       renderHero(dayInfo);
       updateSunChart(Date.now());
-      if (Date.now() - lastListRefresh >= 30000) renderPrayerList(dayInfo);
+      if (Date.now() - lastListRefresh >= 15000) renderPrayerList(dayInfo);
     }
     if (!$('datesPanel').hidden) renderIslamicDates(localDay);
     checkPrayerReminders();
@@ -1045,6 +1060,7 @@
   const softNotes = [[660, 0, .42, .12], [830, .4, .55, .11]];
   const bellNotes = [[880, 0, .7, .15], [1320, .12, .65, .09]];
   const alignmentNotes = [[740, 0, .13, .08], [990, .14, .24, .10]];
+  const compassTickNotes = [[970, 0, .07, .11]];
   const isIOS = !native && (/iPhone|iPad|iPod/.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
   const ADHAN_RECORDINGS = Object.freeze({
@@ -1266,7 +1282,13 @@
   let reminderTimer = null, testingNotification = false;
   let nativeStatus, lastPlanSignature = '', lastForegroundAudio;
   const channelButtons = [...document.querySelectorAll('[data-alert-settings]')];
-  const wakeModes = [...document.querySelectorAll('[name="wakeVolumeMode"]')];
+  const wakeLeads = [0, 5, 10, 15, 20, 25, 30, 45, 60, 90, 120];
+  const wakeInputs = ['wakeFajr', 'wakeFajrLead', 'wakeIsha', 'wakeIshaLead'].map($);
+  for (const select of [$('wakeFajrLead'), $('wakeIshaLead')]) {
+    for (const lead of wakeLeads) {
+      select.append(new Option(lead ? translate('{minutes} minutes before', { minutes:lead }) : translate('At the time'), lead));
+    }
+  }
   let deliveredAlerts = new Set();
   try { deliveredAlerts = new Set(JSON.parse(sessionStorage.getItem('salah-reminders') || '[]')); } catch {}
 
@@ -1304,7 +1326,7 @@
       if (cfg.soundVolume > 0 && nativeStatus?.alarmVolumeOn === false) issues.push('Turn up Alarms in Android’s volume controls.');
       if (nativeStatus?.backgroundRestricted) issues.push('Android is restricting Salah in the background. Check its battery settings.');
       $('openAndroidBattery').hidden = !nativeStatus?.backgroundRestricted;
-      $('androidAlertHelp').textContent = issues.join(' ');
+      $('androidAlertHelp').textContent = issues.map(issue => translate(issue)).join(' ');
       $('androidAlertHelp').hidden = !issues.length;
       $('testNotification').hidden = !canNotify || !nativeStatus?.exact || nativeStatus?.prayerAlerts === false;
       $('testNotification').textContent = wantsAdhan && audioReady ? 'Test adhan in 30 seconds' : 'Test alert in 30 seconds';
@@ -1314,8 +1336,8 @@
       const lastTest = $('androidTestStatus');
       lastTest.hidden = !nativeStatus?.lastTestAt;
       if (!lastTest.hidden) {
-        const time = new Date(nativeStatus.lastTestAt).toLocaleTimeString('en-GB', {
-          hour:'numeric', minute:'2-digit', hour12:cfg.timeFormat === '12'
+        const time = new Date(nativeStatus.lastTestAt).toLocaleTimeString(uiLocale, {
+          hour:'numeric', minute:'2-digit', hourCycle:'h12'
         });
         const playback = nativeStatus.lastTestAdhan ? ' ' + nativeStatus.lastTestAdhan : '';
         lastTest.textContent = nativeStatus.lastTestRan ? 'Android ran the last test at ' + time + '.' + playback :
@@ -1341,7 +1363,7 @@
     try {
       const registration = await navigator.serviceWorker.getRegistration();
       if (!registration?.active || !stillDue()) return false;
-      await registration.showNotification(title, { body, tag, silent, icon:$('tabIcon').href });
+      await registration.showNotification(translate(title), { body:translate(body), tag, silent, icon:$('tabIcon').href });
       return true;
     } catch { return false; }
   }
@@ -1382,19 +1404,20 @@
     if (!wake) return;
     $('wakeFajr').checked = wake.fajr;
     $('wakeIsha').checked = wake.isha;
-    $('wakeSound').value = wake.sound;
-    $('wakeVolume').value = wake.volume;
-    $('wakeVolumeLabel').textContent = wake.volume + '%';
-    $('wakeVolumeControl').hidden = wake.progressive;
-    for (const input of wakeModes) input.checked = (input.value === 'progressive') === wake.progressive;
-    const clock = new Intl.DateTimeFormat('en-GB', {
-      timeZone:nativeStatus.place?.timeZone, weekday:'short', hour:'numeric',
-      minute:'2-digit', hour12:cfg.timeFormat === '12'
+    $('wakeFajrLead').value = wake.fajrLead ?? 0;
+    $('wakeIshaLead').value = wake.ishaLead ?? 10;
+    $('wakeFajrLead').disabled = !wake.fajr;
+    $('wakeIshaLead').disabled = !wake.isha;
+    const clock = new Intl.DateTimeFormat(uiLocale, {
+      timeZone:nativeStatus.place?.timeZone, weekday:'short', hour:'numeric', minute:'2-digit', hourCycle:'h12'
     });
-    $('wakeFajrTime').textContent = wake.nextFajr ? 'At Fajr · ' + clock.format(wake.nextFajr) : 'At Fajr prayer time.';
-    const ishaDetail = '10 minutes before the first third of the night ends.';
-    $('wakeIshaTime').textContent = wake.nextIsha ? clock.format(wake.nextIsha) + ' · ' + ishaDetail : ishaDetail;
-    const canTest = nativeStatus.notifications && nativeStatus.exact && wake.notifications;
+    $('wakeFajrTime').textContent = wake.nextFajr ? clock.format(wake.nextFajr) : '';
+    $('wakeIshaTime').textContent = wake.nextIsha ? clock.format(wake.nextIsha) : '';
+    const soundChosen = adhanSelected() || chimeChoice(cfg.soundChoice);
+    const soundAvailable = chimeChoice(cfg.soundChoice) || cfg.soundChoice === 'adhan-damascus' ||
+      (cfg.soundChoice === 'adhan-abu-bakr' ? nativeStatus.fajrAdhanReady : nativeStatus.regularAdhanReady);
+    const canTest = nativeStatus.notifications && nativeStatus.exact && wake.notifications &&
+      nativeStatus.alarmVolumeOn !== false && cfg.soundVolume > 0 && soundChosen && soundAvailable;
     const pending = nativeStatus.testAt > Date.now() && !nativeStatus.error;
     $('testWake').disabled = !canTest || pending || !!wake.playback;
     $('pauseWake').hidden = wake.playback !== 'ringing';
@@ -1406,24 +1429,34 @@
     else if (!nativeStatus.notifications || !nativeStatus.exact) status.textContent = 'Allow notifications and exact alarms above.';
     else if (!wake.notifications) status.textContent = 'Turn on Wake me notifications in Android.';
     else if (!nativeStatus.alarmVolumeOn) status.textContent = 'Turn up Alarms in Android’s volume controls.';
+    else if (cfg.soundVolume === 0) status.textContent = 'Turn up the sound level above to hear the alarm.';
+    else if (!soundChosen) status.textContent = 'Choose an adhan or chime above for the wake alarm.';
+    else if (!soundAvailable) status.textContent = 'The wake alarm sound is waiting to download.';
     else if (!wake.nextFajr && !wake.nextIsha && (wake.fajr || wake.isha)) status.textContent = 'Waiting for prayer times for your location.';
     else status.textContent = '';
-    $('wakeNotificationSettings').hidden = !nativeStatus.notifications || wake.notifications;
+    $('wakeNotificationSettings').hidden = !nativeStatus.notifications || (wake.notifications && wake.popOnScreen !== false);
+    $('allowWakeScreen').hidden = wake.fullScreen !== false;
+    const screenStatus = $('wakeScreenStatus');
+    screenStatus.hidden = !nativeStatus.notifications || (wake.fullScreen !== false && wake.popOnScreen !== false);
+    screenStatus.textContent = wake.fullScreen === false ?
+      'Allow full-screen alarms to show the wake screen when your phone is locked.' :
+      'Allow Wake me to pop up on your screen in Android notification settings.';
   }
 
   function saveWakeSettings() {
     native?.send('saveWakeSettings', {
-      fajr:$('wakeFajr').checked, isha:$('wakeIsha').checked, sound:$('wakeSound').value,
-      progressive:wakeModes[0].checked, volume:Number($('wakeVolume').value)
+      fajr:$('wakeFajr').checked, isha:$('wakeIsha').checked,
+      fajrLead:Number($('wakeFajrLead').value), ishaLead:Number($('wakeIshaLead').value)
     });
   }
-  for (const input of [$('wakeFajr'), $('wakeIsha'), $('wakeSound'), $('wakeVolume'), ...wakeModes])
-    input.addEventListener('change', saveWakeSettings);
-  $('wakeVolume').addEventListener('input', () => { $('wakeVolumeLabel').textContent = $('wakeVolume').value + '%'; });
-  $('testWake').addEventListener('click', () => native?.send('testWake'));
+  for (const input of wakeInputs) input.addEventListener('change', saveWakeSettings);
+  $('testWake').addEventListener('click', () => native?.send('testWake', {
+    soundChoice:cfg.soundChoice, volume:Math.round(cfg.soundVolume)
+  }));
   $('pauseWake').addEventListener('click', () => native?.send('pauseWake'));
   $('stopWake').addEventListener('click', () => native?.send('stopWake'));
   $('wakeNotificationSettings').addEventListener('click', () => native?.send('alertSettings', { alert:'wake' }));
+  $('allowWakeScreen').addEventListener('click', () => native?.send('allowFullScreen'));
 
   function androidAlertStatus() {
     if (!nativeStatus) return 'Checking notification access…';
@@ -1433,10 +1466,10 @@
     const { place, nextAt, through, waitingProvider } = nativeStatus;
     if (!place) return 'Use your location on the Today screen to schedule prayer alerts.';
     if (!nextAt) return waitingProvider ? 'Waiting for AlAdhan times.' : 'Waiting for usable prayer times.';
-    const clock = new Intl.DateTimeFormat('en-GB', {
-      timeZone:place.timeZone, hour:'numeric', minute:'2-digit', hour12:cfg.timeFormat === '12'
+    const clock = new Intl.DateTimeFormat(uiLocale, {
+      timeZone:place.timeZone, hour:'numeric', minute:'2-digit', hourCycle:'h12'
     });
-    const day = through && dateAtNoonUTC(through).toLocaleDateString('en-GB', {
+    const day = through && dateAtNoonUTC(through).toLocaleDateString(uiLocale, {
       timeZone:'UTC', day:'numeric', month:'short'
     });
     return 'Next ' + clock.format(nextAt) + ' · ' + place.location +
@@ -1474,9 +1507,9 @@
   function syncAndroidPlan(now) {
     const place = scheduledPlace;
     if (!nativeReady || !place || !cfg.useDeviceLocation) return;
-    const { activeSource, timeFormat, ishaLimit, method, highLatRule, reminderEnabled, reminderLead, soundChoice } = cfg;
+    const { activeSource, ishaLimit, method, highLatRule, reminderEnabled, reminderLead, soundChoice } = cfg;
     const [fajrAngle, ishaAngle] = anglePair();
-    const settings = { activeSource, timeFormat, ishaLimit, method, fajrAngle, ishaAngle, highLatRule,
+    const settings = { activeSource, timeFormat:'12', ishaLimit, method, fajrAngle, ishaAngle, highLatRule,
       reminderEnabled, reminderLead, soundChoice, mute:cfg.soundVolume === 0 };
     const online = activeSource === 'moonsighting';
     const today = dateParts(new Date(now), place.timeZone);
@@ -1496,7 +1529,7 @@
   function describePrayerAlert(alert, now) {
     const { kind, event, target, day } = alert;
     const estimated = kind === 'third' ? day.nightEstimated : event.estimated;
-    const time = fmt(new Date(target)) + (estimated ? ' (estimate)' : '') + (day.sourceFallback ? ' · local calculation' : '');
+    const time = fmt(new Date(target)) + (estimated ? ' (' + translate('estimate') + ')' : '') + (day.sourceFallback ? ' · ' + translate('local calculation') : '');
     const ahead = Math.ceil((target - now) / minute);
     const minutes = ahead + (ahead === 1 ? ' minute' : ' minutes');
     if (kind === 'third') {
@@ -1505,12 +1538,15 @@
         title = 'Isha time unavailable';
         body = 'Check your prayer timetable for tonight.';
       } else if (cfg.ishaLimit === 'third') {
-        title = 'Isha cutoff in ' + minutes;
-        body = +day.isha >= target ? 'Calculated Isha is at ' + fmt(day.isha) + ' · cutoff at ' + time + '.' :
-          'Your selected cutoff is at ' + time + '.';
+        title = 'Isha time ends in ' + minutes;
+        body = +day.isha >= target ? 'Calculated Isha is at ' + fmt(day.isha) + ' · end time at ' + time + '.' :
+          'Your selected end time is ' + time + '.';
       } else if (+day.isha > target) {
         title = 'Isha begins later tonight';
         body = 'Calculated Isha is at ' + fmt(day.isha) + ' · night marker at ' + time + '.';
+      } else if (+day.isha === target) {
+        title = 'Isha in ' + minutes;
+        body = time;
       } else {
         title = 'Preferred time for Isha in ' + minutes;
         body = 'From ' + time + ' if you’re able to delay Isha.';
@@ -1524,7 +1560,7 @@
   async function deliverPrayerAlerts(alerts, now) {
     markDelivered(alerts);
     const messages = alerts.map(alert => describePrayerAlert(alert, now));
-    showReminder(messages.map(message => message.message).join('\n'));
+    showReminder(messages.map(message => translate(message.message)).join('\n'));
     const place = currentPlace;
     const stillDue = alert => !document.hidden && currentPlace === place && Date.now() >= alert.at && Date.now() < alert.until;
     const soundAlert = alerts.find(alert => alert.kind === 'start') ||
@@ -1599,6 +1635,8 @@
 
   const norm360=x=>(x%360+360)%360;
   const compassPoints = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  const compassDirectionNames = ['N','North-north-east','North-east','East-north-east','E','East-south-east',
+    'South-east','South-south-east','S','South-south-west','South-west','West-south-west','W','West-north-west','North-west','North-north-west'];
   const compassLetters = ['compassNorth', 'compassEast', 'compassSouth', 'compassWest'];
   const compassFailureNotes = [[520, 0, .18, .13], [370, .21, .25, .13]];
   const alignmentLimit = 2;
@@ -1615,6 +1653,7 @@
   let compassSource, headingExpired = false, lastQiblaReference;
   let lastCompassRotation = 0, compassPortrait = true, portraitReadyAt = 0;
   let compassIssuesPlayed = new Set();
+  let compassCueDistance = null, compassTickAt = -Infinity;
   function playCompassChime(notes) {
     if (!cfg.qiblaSound) return;
     if (audio.chime(notes)) return;
@@ -1624,6 +1663,27 @@
       if (!stillOnCompass() || audio.chime(notes)) return;
       if (await audio.unlock() && stillOnCompass()) audio.chime(notes);
     });
+  }
+
+  function cueCompassProgress(distance) {
+    if (distance === null || distance > 45 || distance <= alignmentLimit) {
+      compassCueDistance = null;
+      return;
+    }
+    const near = distance <= 15;
+    const step = near ? 2.5 : 5;
+    if (compassCueDistance === null || distance - compassCueDistance >= step) {
+      compassCueDistance = distance;
+      return;
+    }
+    const now = performance.now();
+    if (compassCueDistance - distance < step || now - compassTickAt < (near ? 190 : 310)) return;
+    compassCueDistance = distance;
+    compassTickAt = now;
+    if (!cfg.qiblaSound) return;
+    audio.chime(compassTickNotes);
+    if (native) native.send('compassTick');
+    else navigator.vibrate?.(12);
   }
 
   function announceCompassIssue(kind) {
@@ -1665,10 +1725,10 @@
     if (reference === lastQiblaReference) return;
     lastQiblaReference = reference;
     $('qiblaBearing').textContent = target ? target.bearing.toFixed(1) + '°' : '—';
-    $('qiblaCardinal').textContent = target ? compassPoints[Math.round(target.bearing / 22.5) % 16] : '';
+    $('qiblaCardinal').textContent = target ? translate((isArabic ? compassDirectionNames : compassPoints)[Math.round(target.bearing / 22.5) % 16]) : '';
     $('qiblaMagneticBearing').textContent = target && Number.isFinite(magneticVariation)
       ? norm360(target.bearing - magneticVariation).toFixed(1) + '°' : '—';
-    $('qiblaDistance').textContent = target ? Math.round(target.km).toLocaleString('en-GB') + ' km' : '—';
+    $('qiblaDistance').textContent = target ? Math.round(target.km).toLocaleString(uiLocale) + ' km' : '—';
     $('qiblaPosition').textContent = currentPlace?.location || '';
   }
 
@@ -1751,8 +1811,8 @@
     dial.dataset.state = status.dataset.state = state;
     status.hidden = !cue;
     $('qiblaCueMark').textContent = mark;
-    if ($('qiblaCue').textContent !== cue) $('qiblaCue').textContent = cue;
-    if ($('qiblaAccuracy').textContent !== help) $('qiblaAccuracy').textContent = help;
+    if ($('qiblaCue').textContent !== translate(cue)) $('qiblaCue').textContent = translate(cue);
+    if ($('qiblaAccuracy').textContent !== translate(help)) $('qiblaAccuracy').textContent = translate(help);
     $('qiblaAccuracy').hidden = !help;
     $('qiblaTurnAngle').textContent = waitingForHeading ? '—' : (live ? angle : qiblaTarget.bearing.toFixed(1)) + '°';
     $('qiblaTurnLabel').textContent = live ? (inRange ? 'From Qibla' : 'Turn ' + turn) :
@@ -1774,10 +1834,15 @@
     $('qiblaArc').setAttribute('d', difference > alignmentLimit + 1e-9
       ? 'M160 ' + (160 - radius) + ' A' + radius + ' ' + radius + ' 0 0 ' + (direction < 0 ? 0 : 1) + ' ' + target : '');
 
+    const feedbackActive = live && !$('qiblaPanel').hidden && !document.hidden;
+    cueCompassProgress(feedbackActive ? difference : null);
     if (!validHeading || (live && difference > alignmentLimit + 1)) alignmentChimed = false;
     if (aligned && compassReading.steady && !alignmentChimed && !$('qiblaPanel').hidden && !document.hidden) {
       playCompassChime(alignmentNotes);
-      if (cfg.qiblaSound) native?.send('alignmentHaptic');
+      if (cfg.qiblaSound) {
+        if (native) native.send('alignmentHaptic');
+        else navigator.vibrate?.([28, 45, 65]);
+      }
       alignmentChimed = true;
     }
   }
@@ -1911,6 +1976,8 @@
 
   function endCompassReading() {
     clearTimeout(headingTimer);
+    compassCueDistance = null;
+    compassTickAt = -Infinity;
     checkCompassProblem('');
     window.removeEventListener('deviceorientation', orientationHandler);
     window.removeEventListener('deviceorientationabsolute', orientationHandler);
@@ -2081,7 +2148,7 @@
     if (event.key === 'Enter' && event.target.matches('input[data-count]')) event.target.blur();
   });
 
-  const upcomingFormat = new Intl.DateTimeFormat('en-GB', { timeZone:'UTC', day:'numeric', month:'short', year:'numeric' });
+  const upcomingFormat = new Intl.DateTimeFormat(uiLocale, { timeZone:'UTC', day:'numeric', month:'short', year:'numeric' });
   const occasionDialog = $('occasionDialog');
   let lastOccasionDate, openedOccasion;
   let listedOccasions = {};
@@ -2089,24 +2156,25 @@
     const key = hijriDayKey(today, getDay(today), Date.now());
     if (key === lastOccasionDate || occasionDialog.open) return;
     lastOccasionDate = key;
-    const { dates, fasts } = SalahHijri.upcoming(key);
+    const { dates, fasts, worship } = SalahHijri.upcoming(key);
     const { ramadan, ...eids } = dates;
-    listedOccasions = { ...fasts, ...dates };
+    listedOccasions = { ...fasts, ...dates, ...worship };
     const available = Object.keys(dates).length > 0;
     $('datesUnavailable').hidden = available;
     $('occasionGroups').hidden = !available;
     renderOccasions('upcomingFasts', { ...fasts, ...(ramadan && { ramadan }) });
     renderOccasions('upcomingEids', eids);
+    renderOccasions('upcomingWorship', worship);
   }
 
   function occasionLabels(id, event) {
     const from = dateAtNoonUTC(event.from), to = event.to && dateAtNoonUTC(event.to);
     const date = !to ? upcomingFormat.format(from) : typeof upcomingFormat.formatRange === 'function' ?
       upcomingFormat.formatRange(from, to) : upcomingFormat.format(from) + ' – ' + upcomingFormat.format(to);
-    const { name, kind, ruling } = SalahHijri.occasions[id];
-    const title = id === 'ashura' && to ? 'Ashura and the day before' : name;
-    const start = SalahHijri.label(event.from);
-    const hijri = to ? start.split(' ')[0] + '–' + SalahHijri.label(event.to) : start;
+    const { name, kind, ruling } = SalahHijri.occasion(id, cfg.language);
+    const title = id === 'ashura' && to ? translate('Ashura and the day before') : name;
+    const start = SalahHijri.label(event.from, cfg.language);
+    const hijri = to ? start.split(' ')[0] + '–' + SalahHijri.label(event.to, cfg.language) : start;
     return { title, kind, ruling, date, hijri };
   }
 
@@ -2127,7 +2195,7 @@
     if (!button || occasionDialog.open) return;
     const id = button.parentElement.dataset.occasion;
     const { title, kind, ruling, date, hijri } = occasionLabels(id, listedOccasions[id]);
-    const { notes, sources } = SalahHijri.occasions[id];
+    const { notes, sources, refs = [] } = SalahHijri.occasion(id, cfg.language);
     openedOccasion = id;
     $('occasionDialogTitle').textContent = title;
     $('occasionDialogDate').textContent = date + ' · ' + hijri;
@@ -2136,10 +2204,11 @@
     $('occasionNotes').innerHTML = notes.map(note => `<p>${note}</p>`).join('');
     $('occasionEvidence').innerHTML = sources.map(({ name, url, arabic, meaning }) => `
       <div class="occasion-source">
-        <a href="${url}" target="_blank" rel="noopener noreferrer">${name}</a>
+        <a href="${url}" target="_blank" rel="noopener noreferrer">${isArabic ? SalahLocale.arabicReference(name) : name}</a>
         ${arabic ? `<blockquote lang="ar" dir="rtl">${arabic}</blockquote>` : ''}
-        <p>${meaning}</p>
-      </div>`).join('');
+        ${isArabic ? '' : '<p>' + meaning + '</p>'}
+      </div>`).join('') + refs.map(({ name, arName, url }) =>
+      '<p><a href="' + url + '" target="_blank" rel="noopener noreferrer">' + (isArabic ? arName : name) + '</a></p>').join('');
     occasionDialog.showModal();
     occasionDialog.querySelector('.occasion-dialog-body').scrollTop = 0;
     $('occasionDialogTitle').focus({ preventScroll:true });
@@ -2175,7 +2244,7 @@
     };
   }
 
-  const fastingWeekFormat = new Intl.DateTimeFormat('en-GB', {
+  const fastingWeekFormat = new Intl.DateTimeFormat(uiLocale, {
     timeZone:'UTC', year:'numeric', month:'short', day:'numeric'
   });
   function renderFasting(restoreFocus = false) {
@@ -2210,12 +2279,12 @@
     const range = () => typeof fastingWeekFormat.formatRange === 'function' ? fastingWeekFormat.formatRange(first, last) :
       fastingWeekFormat.format(first) + ' – ' + fastingWeekFormat.format(last);
     $('fastingMonth').textContent = week ? range() :
-      date.toLocaleDateString('en-GB', { timeZone:'UTC', month:'long', year:'numeric' });
+      date.toLocaleDateString(uiLocale, { timeZone:'UTC', month:'long', year:'numeric' });
     grid.innerHTML = '<span aria-hidden="true"></span>'.repeat(blanks) + Array.from({ length:days }, (_, i) => {
       const key = dayShift(startKey, i);
       const mark = markForDate(key);
       const selected = key === fastingKey;
-      const label = prettyKey(key) + (mark ? ', ' + fastingLabels[mark] : '');
+      const label = prettyKey(key) + (mark ? (isArabic ? '، ' : ', ') + translate(fastingLabels[mark]) : '');
       return '<button type="button" class="fast-day" data-date="' + key + '" data-mark="' + mark +
         '" tabindex="' + (selected ? 0 : -1) + '" aria-label="' + label + '" aria-pressed="' + selected +
         '" aria-controls="fastingDetail"' + (key === today ? ' aria-current="date"' : '') +
@@ -2232,7 +2301,7 @@
       (undatedDue ? `<p>${undatedDue} without dates</p>` : due.length ? '' : '<p>No fasts left to make up.</p>');
 
     $('fastingRelative').textContent = fastingKey === today ? 'Today' : '';
-    $('fastingDate').textContent = date.toLocaleDateString('en-GB', {
+    $('fastingDate').textContent = date.toLocaleDateString(uiLocale, {
       timeZone:'UTC', weekday:'long', day:'numeric', month:'long', ...(date.getUTCFullYear() !== dateAtNoonUTC(today).getUTCFullYear() && { year:'numeric' })
     });
 
@@ -2435,7 +2504,7 @@
     const idx=controls.indexOf(document.activeElement);
     if(idx<0||!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
     e.preventDefault();
-    const next=e.key==='Home'?0:e.key==='End'?controls.length-1:(idx+(e.key==='ArrowRight'?1:-1)+controls.length)%controls.length;
+    const next=e.key==='Home'?0:e.key==='End'?controls.length-1:(idx+((e.key==='ArrowRight') !== isArabic ? 1 : -1)+controls.length)%controls.length;
     controls[next].tabIndex=0;controls[next].focus();showScreen(controls[next].dataset.screenTarget);
   });
   document.querySelector('.brand').addEventListener('click', event => {
@@ -2577,6 +2646,7 @@
     });
     nativeReady = true;
     native.send('ready');
+    native.send('setLanguage', { language:cfg.language });
     native.send('setAdhanVolume', { volume:Math.round(cfg.soundVolume) });
   }
   showScreen(location.hash.slice(1));

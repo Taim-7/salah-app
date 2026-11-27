@@ -2,7 +2,7 @@
 
 window.SalahLessons = [
   {
-    id: 'wudu', title: 'Wudu', description: 'The Prophet’s ablution, its requirements and what breaks it',
+    id: 'wudu', arTitle: 'الوضوء', arDescription: 'وضوء النبي ﷺ وفروض الوضوء ونواقضه', title: 'Wudu', description: 'The Prophet’s ablution, its requirements and what breaks it',
     sections: [
       {
         title: 'How the Prophet ﷺ performed wudu', arTitle: 'صفة وضوء النبي ﷺ',
@@ -87,7 +87,7 @@ According to the view given here, touching a woman without desire, blood coming 
     ]
   },
   {
-    id: 'prayer', title: 'Prayer', description: 'How to pray according to the Sunnah',
+    id: 'prayer', arTitle: 'الصلاة', arDescription: 'صفة الصلاة كما جاءت في السنة', title: 'Prayer', description: 'How to pray according to the Sunnah',
     sections: [
       {
         title: 'The guiding rule', arTitle: 'القاعدة الجامعة',
@@ -142,7 +142,7 @@ People often rush the stillness in each position. Leaving it out invalidates the
     ]
   },
   {
-    id: 'travel', title: 'Combining and shortening prayers', description: 'Prayer while travelling and scholarly differences',
+    id: 'travel', arTitle: 'الجمع والقصر', arDescription: 'صلاة المسافر وأقوال أهل العلم', title: 'Combining and shortening prayers', description: 'Prayer while travelling and scholarly differences',
     sections: [
       {
         title: 'Shortening prayers and its evidence', arTitle: 'القصر: الأصل ودليله',
@@ -161,13 +161,11 @@ Ibn Umar said he accompanied the Prophet ﷺ while travelling and saw him pray n
       {
         title: 'How far counts as travel?', arTitle: 'مسافة السفر',
         en: `1. The majority view, held by the Malikis, Shafi’is and Hanbalis, uses four burud, roughly 80 km, based on reports from Ibn Abbas and Ibn Umar (may Allah be pleased with them).
-2. The Hanafi view describes the distance of a three-day and three-night trip.
-3. Ibn Taymiyyah held that Islamic law gives no fixed distance in kilometres. Where people generally regard a trip as travel, a traveller may shorten because the ruling refers to travel in general.
+2. Ibn Taymiyyah held that Islamic law gives no fixed distance in kilometres. Where people generally regard a trip as travel, a traveller may shorten because the ruling refers to travel in general.
 
 The majority’s distance gives a more cautious, measurable rule for modern travel. Following the view based on local custom also has scholarly precedent.`,
         ar: `1. قول الجمهور من المالكية والشافعية والحنابلة: تُقدّر بأربعة بُرُد، أي نحو ٨٠ كم، لآثار عن ابن عباس وابن عمر رضي الله عنهم.
-2. قول الحنفية: مسيرة ثلاثة أيام بلياليها.
-3. اختيار شيخ الإسلام ابن تيمية: لا حد للمسافة بالكيلومترات، بل ما سماه الناس سفراً وعُدّ في العرف سفراً قُصرت فيه الصلاة، لأن الشرع علّق الحكم بمطلق السفر ولم يحدّه.
+2. اختيار شيخ الإسلام ابن تيمية: لا حد للمسافة بالكيلومترات، بل ما سماه الناس سفراً وعُدّ في العرف سفراً قُصرت فيه الصلاة، لأن الشرع علّق الحكم بمطلق السفر ولم يحدّه.
 
 والعمل بقول الجمهور أحوط وأضبط للمسافر المعاصر، ومن أخذ بالعرف فله سلف.`
       },
@@ -176,15 +174,13 @@ The majority’s distance gives a more cautious, measurable rule for modern trav
         en: `Shortening starts after leaving the built-up area of your town or city. The verse refers to setting out through the land, which a person has yet to do while still in their town.
 
 1. The majority of Shafi’i, Maliki and Hanbali scholars have a limit of about four days, though their counting differs. A traveller who plans to stay beyond that limit prays in full. They cite the Prophet ﷺ shortening during his four-day stay in Makkah at the Farewell Hajj.
-2. The Hanafi position uses fifteen days.
-3. Ibn Taymiyyah held that a traveller can keep shortening while the stay is temporary, even if it lasts longer, unless they intend to settle or stay without a definite end. Ahmad and Abu Dawud report that the Prophet ﷺ shortened during a twenty-day stay in Tabuk.
+2. Ibn Taymiyyah held that a traveller can keep shortening while the stay is temporary, even if it lasts longer, unless they intend to settle or stay without a definite end. Ahmad and Abu Dawud report that the Prophet ﷺ shortened during a twenty-day stay in Tabuk.
 
 Someone staying for a fixed period for work or study who follows the majority completes their prayers after the applicable four-day limit. This is an area of recognised disagreement.`,
         ar: `يبدأ المسافر بالقصر إذا فارق بنيان بلده، لقوله تعالى ﴿وَإِذَا ضَرَبْتُمْ فِي الْأَرْضِ﴾، ولا يكون ضارباً في الأرض وهو في بلده.
 
 1. الجمهور من الشافعية والمالكية والحنابلة يقدّرون المدة بنحو أربعة أيام مع اختلافهم في حسابها. فمن نوى الإقامة فوق الحد أتمّ، واستدلوا بإقامة النبي ﷺ بمكة أربعاً في حجة الوداع وهو يقصر.
-2. الحنفية: خمسة عشر يوماً.
-3. اختيار ابن تيمية: يبقى مسافراً يقصر ما لم ينو الاستيطان أو الإقامة المطلقة ولو طالت المدة. وجاء أن النبي ﷺ أقام بتبوك عشرين يوماً يقصر. رواه أحمد وأبو داود.
+2. اختيار ابن تيمية: يبقى مسافراً يقصر ما لم ينو الاستيطان أو الإقامة المطلقة ولو طالت المدة. وجاء أن النبي ﷺ أقام بتبوك عشرين يوماً يقصر. رواه أحمد وأبو داود.
 
 فمن جلس مدة محددة لعمل أو دراسة وأخذ بقول الجمهور أتم بعد الحد المذكور، ومن قلد القول الآخر فلا حرج، والخلاف سائغ.`,
         refs: [['Abu Dawud 1235', 'https://sunnah.com/abudawud:1235']]
@@ -212,7 +208,7 @@ Shortening is for travel. Combining has wider grounds, so a resident with an exc
     ]
   },
   {
-    id: 'tayammum', title: 'Dry ablution', description: 'When tayammum applies, how to do it and what breaks it',
+    id: 'tayammum', arTitle: 'التيمم', arDescription: 'متى يُشرع التيمم وكيفيته ونواقضه', title: 'Dry ablution', description: 'When tayammum applies, how to do it and what breaks it',
     sections: [
       {
         title: 'Evidence for tayammum', arTitle: 'دليل التيمم',
@@ -279,7 +275,7 @@ A prayer performed with valid tayammum before finding water is valid and does no
     ]
   },
   {
-    id: 'without-purification', title: 'Without purification materials', description: 'When you can use neither water nor clean earth',
+    id: 'without-purification', arTitle: 'فاقد الطهورين', arDescription: 'الصلاة عند العجز عن استعمال الماء والصعيد الطيب', title: 'Without purification materials', description: 'When you can use neither water nor clean earth',
     sections: [
       {
         title: 'Who does this apply to?', arTitle: 'من هو فاقد الطهورين؟',
@@ -306,7 +302,7 @@ Allah does not burden a soul beyond its capacity (Al-Baqarah 2:286). The Prophet
 
 window.SalahLessons.push(
   {
-    id: 'remembrance', title: 'Remembrance from the Qur’an and Sunnah',
+    id: 'remembrance', arTitle: 'الأذكار من القرآن والسنة', arDescription: 'أذكار الصلاة وما بعدها وأذكار الصباح والمساء', title: 'Remembrance from the Qur’an and Sunnah',
     description: 'Supplications during and after prayer, and morning and evening dhikr',
     sections: [
       {
@@ -400,7 +396,7 @@ He also taught Abu Bakr (may Allah be pleased with him) to say ‘O Allah, I hav
     ]
   },
   {
-    id: 'al-mulk', title: 'Surah Al-Mulk', description: 'Its virtue and recitation before sleep',
+    id: 'al-mulk', arTitle: 'سورة الملك', arDescription: 'فضلها وقراءتها قبل النوم', title: 'Surah Al-Mulk', description: 'Its virtue and recitation before sleep',
     sections: [
       {
         title: 'The virtue of Surah Al-Mulk', arTitle: 'فضل سورة الملك',

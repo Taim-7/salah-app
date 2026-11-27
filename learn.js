@@ -5,7 +5,6 @@
   const article = document.getElementById('learnArticle');
   const title = document.getElementById('lessonTitle');
   const content = document.getElementById('lessonContent');
-  const languageButtons = [...article.querySelectorAll('[data-lesson-language]')];
   let activeTopic;
 
   function element(tag, text) {
@@ -15,9 +14,8 @@
   }
 
   function language(node, lang) {
-    node.dataset.lessonText = lang;
     node.lang = lang === 'ar' ? 'ar' : 'en-GB';
-    if (lang === 'ar') node.dir = 'rtl';
+    node.dir = lang === 'ar' ? 'rtl' : 'ltr';
     return node;
   }
 
@@ -35,30 +33,44 @@
     return block;
   }
 
-  function renderSection(section) {
+  function renderEvidence(quote, isArabic) {
+    const block = element('blockquote');
+    block.className = 'lesson-evidence';
+    block.append(language(element('p', quote.ar), 'ar'));
+    if (!isArabic) block.append(language(element('p', quote.en), 'en'));
+    if (quote.name) {
+      const name = isArabic ? SalahLocale.arabicReference(quote.name) : quote.name;
+      block.append(element('cite', name));
+    }
+    return block;
+  }
+
+  function renderSection(section, isArabic, existingEvidence) {
     const card = element('section');
     card.className = 'lesson-section';
-    card.append(language(element('h3', section.title), 'en'), language(element('h3', section.arTitle), 'ar'));
+    card.dataset.localised = '';
+    card.append(element('h3', isArabic ? section.arTitle : section.title));
     if (section.verses) {
-      const bismillah = language(element('p', 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ'), 'ar');
+      card.append(language(element('p', 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ'), 'ar'));
       const verses = element('ol');
       verses.className = 'lesson-verses';
       for (const verse of section.verses) {
         const line = element('li');
-        line.append(language(element('p', verse.ar), 'ar'), language(element('p', verse.en), 'en'));
+        line.append(language(element('p', verse.ar), 'ar'));
+        if (!isArabic) line.append(language(element('p', verse.en), 'en'));
         verses.append(line);
       }
-      card.append(bismillah, verses);
+      card.append(verses);
     } else {
-      const arabic = lessonText(section.ar, 'ar');
-      arabic.className = 'lesson-arabic';
-      card.append(lessonText(section.en, 'en'), arabic);
+      card.append(lessonText(isArabic ? section.ar : section.en, isArabic ? 'ar' : 'en'));
+      const quotes = section.evidence || (isArabic ? [] : existingEvidence);
+      for (const proof of quotes || []) card.append(renderEvidence(proof, isArabic));
     }
     if (section.refs?.length) {
       const refs = element('footer');
       refs.className = 'lesson-references';
-      for (const [name, url] of section.refs) {
-        const link = element('a', name);
+      for (const [name, url, arName] of section.refs) {
+        const link = element('a', isArabic ? arName || SalahLocale.arabicReference(name) : name);
         link.href = url;
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
@@ -69,42 +81,42 @@
     return card;
   }
 
-  function open(topic, button) {
+  function open(topic, button, isArabic) {
     activeTopic = button;
-    title.textContent = topic.title;
-    content.replaceChildren(...topic.sections.map(renderSection));
+    title.textContent = isArabic ? topic.arTitle : topic.title;
+    const evidence = window.SalahLessonEvidence[topic.id];
+    content.replaceChildren(...topic.sections.map((section, i) => renderSection(section, isArabic, evidence?.[i])));
     index.hidden = true;
     article.hidden = false;
-    window.scrollTo({ top: 0, behavior: 'instant' });
-    title.focus({ preventScroll: true });
+    window.scrollTo({ top:0, behavior:'instant' });
+    title.focus({ preventScroll:true });
   }
 
   function close() {
     if (article.hidden) return false;
     article.hidden = true;
     index.hidden = false;
-    activeTopic?.focus({ preventScroll: true });
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    activeTopic?.focus({ preventScroll:true });
+    window.scrollTo({ top:0, behavior:'instant' });
     return true;
   }
 
-  for (const topic of window.SalahLessons) {
-    const button = element('button');
-    button.className = 'learn-topic';
-    button.type = 'button';
-    button.dataset.topic = topic.id;
-    const chevron = element('span', '›');
-    chevron.setAttribute('aria-hidden', 'true');
-    button.append(element('strong', topic.title), element('small', topic.description), chevron);
-    button.addEventListener('click', () => open(topic, button));
-    document.getElementById('learnTopics').append(button);
+  function init(isArabic) {
+    const topics = document.getElementById('learnTopics');
+    for (const topic of window.SalahLessons) {
+      const button = element('button');
+      button.className = 'learn-topic';
+      button.type = 'button';
+      button.dataset.topic = topic.id;
+      const chevron = element('span', isArabic ? '‹' : '›');
+      chevron.setAttribute('aria-hidden', 'true');
+      button.append(element('strong', isArabic ? topic.arTitle : topic.title),
+        element('small', isArabic ? topic.arDescription : topic.description), chevron);
+      button.addEventListener('click', () => open(topic, button, isArabic));
+      topics.append(button);
+    }
   }
+
   document.getElementById('backToLearn').addEventListener('click', close);
-  for (const button of languageButtons) {
-    button.addEventListener('click', () => {
-      article.dataset.language = button.dataset.lessonLanguage;
-      for (const other of languageButtons) other.setAttribute('aria-pressed', String(other === button));
-    });
-  }
-  window.SalahLearn = { close };
+  window.SalahLearn = { init, close };
 })();

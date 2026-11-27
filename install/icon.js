@@ -1,5 +1,11 @@
 'use strict';
 
+try {
+  SalahLocale.start(JSON.parse(localStorage.getItem('salah-config') || '{}').language);
+} catch {
+  // The icon page can still be added when browser storage is unavailable.
+}
+
 if (navigator.standalone === true || matchMedia('(display-mode: standalone)').matches) {
   const app = new URL('../', location.href);
   app.searchParams.set('icon', document.body.dataset.icon || document.body.dataset.accent);
