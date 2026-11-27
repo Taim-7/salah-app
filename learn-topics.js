@@ -135,20 +135,38 @@ Ibn Baz gives a different instruction for prostrations after the imam’s salaam
           title:'The minimum for ghusl', arTitle:'الغسل المجزئ',
           en:`Ghusl is a full wash for prayer. Make the intention in your heart, then wash your whole body. Let water reach all your skin and the roots of your hair.
 
-Ibn ‘Uthaymin and Ibn Baz both require rinsing your mouth and nose. Ibn Qudamah records that the Shafi‘i school recommends these rinses as Sunnah. Rinsing follows both views.
+Rinse your mouth and nose as part of the wash. Scholars differ on whether these rinses are required.
 
 Qur’an 5:6 mentions janabah, a state that calls for ghusl before prayer. Ibn Taymiyyah held that this ghusl can also count as wudu. Ibn Baz said that you can intend both when you do this ghusl. If something breaks your wudu during or after the wash, do wudu again before you pray.`,
           ar:`الغسل طهارة تشمل البدن كله للصلاة. انوِ الغسل بقلبك، ثم عمّم البدن بالماء حتى يصل إلى جميع البشرة وأصول الشعر.
 
-يرى ابن عثيمين وابن باز وجوب المضمضة والاستنشاق في الغسل. ونقل ابن قدامة عن الشافعية أنهما من السنة. وفعلهما يوافق القولين.
+تمضمض واستنشق في الغسل. واختلف العلماء في وجوبهما.
 
 ذكرت سورة المائدة (٦) الجنابة، وهي حالة توجب الغسل للصلاة. وبيّن ابن تيمية أن غسل الجنابة يجزئ عن الوضوء. وقال ابن باز إن من نوى بغسل الجنابة رفع الحدثين كفاه. وإذا حصل ناقض للوضوء أثناء الغسل أو بعده فتوضأ قبل الصلاة.`,
           evidence:[evidence('Qur’an 5:6','وَإِنْ كُنْتُمْ جُنُبًا فَاطَّهَّرُوا', 'If you are in a state of janabah, purify yourselves by washing.')],
           refs:[source('Al-Ma’idah 5:6','المائدة ٦','https://quran.com/5/6'), source('Ibn ‘Uthaymin · Minimum and complete washing','ابن عثيمين · الصفة المجزئة والكاملة',uthaymin+'821'),
-            source('Ibn Baz · Rinsing the mouth and nose','ابن باز · المضمضة والاستنشاق في الغسل','https://binbaz.org.sa/fatwas/16611/%D8%AD%D9%83%D9%85-%D8%A7%D9%84%D9%85%D8%B6%D9%85%D8%B6%D8%A9-%D9%88%D8%A7%D9%84%D8%A7%D8%B3%D8%AA%D9%86%D8%B4%D8%A7%D9%82-%D8%A7%D8%AB%D9%86%D8%A7%D8%A1-%D8%A7%D9%84%D8%BA%D8%B3%D9%84'),
-            source('Ibn Qudamah · Al-Mughni, whether rinsing is required','ابن قدامة · المغني، المضمضة والاستنشاق','https://gcp.islamweb.net/ar/library/content/15/132/%D9%85%D8%B3%D8%A3%D9%84%D8%A9-%D8%A7%D9%84%D9%81%D9%85-%D9%88%D8%A7%D9%84%D8%A3%D9%86%D9%81-%D9%85%D9%86-%D8%A7%D9%84%D9%88%D8%AC%D9%87'),
             source('Ibn Baz · When ghusl counts as wudu','ابن باز · متى يجزئ الغسل عن الوضوء؟','https://binbaz.org.sa/fatwas/3807/الغسل-من-الجنابة-وغيرها-هل-يجزى-عن-الوضوء'),
-            source('Ibn Taymiyyah · Majmu‘ al-Fatawa 21:299, ghusl and wudu','ابن تيمية · مجموع الفتاوى ٢١:٢٩٩','https://www.islamweb.net/ar/library/content/22/2297/%D9%85%D8%B3%D8%A3%D9%84%D8%A9-%D8%A7%D8%BA%D8%AA%D8%B3%D9%84-%D9%88%D9%84%D9%85-%D9%8A%D8%AA%D9%88%D8%B6%D8%A3-%D9%81%D9%87%D9%84-%D9%8A%D8%AC%D8%B2%D9%8A%D9%87-%D8%B0%D9%84%D9%83')]
+            source('Ibn Taymiyyah · Majmu‘ al-Fatawa 21:299, ghusl and wudu','ابن تيمية · مجموع الفتاوى ٢١:٢٩٩','https://www.islamweb.net/ar/library/content/22/2297/%D9%85%D8%B3%D8%A3%D9%84%D8%A9-%D8%A7%D8%BA%D8%AA%D8%B3%D9%84-%D9%88%D9%84%D9%85-%D9%8A%D8%AA%D9%88%D8%B6%D8%A3-%D9%81%D9%87%D9%84-%D9%8A%D8%AC%D8%B2%D9%8A%D9%87-%D8%B0%D9%84%D9%83')],
+          comparisons:[
+            {
+              title:'Rinsing the mouth and nose', arTitle:'المضمضة والاستنشاق',
+              views:[
+                {
+                  title:'Hanbali school', arTitle:'الحنابلة',
+                  en:'Rinsing the mouth and nose is required for ghusl. This is also the view of Ibn Taymiyyah, Ibn Baz and Ibn ‘Uthaymin.',
+                  ar:'المضمضة والاستنشاق واجبان في الغسل. وهو اختيار ابن تيمية وابن باز وابن عثيمين.',
+                  refs:[source('Dorar · Rinsing in ghusl','الدرر السنية · المضمضة والاستنشاق في الغسل','https://dorar.net/feqhia/487'),
+                    source('Al-Bukhari 257','البخاري ٢٥٧','https://sunnah.com/bukhari:257')]
+                },
+                {
+                  title:'Maliki and Shafi‘i schools', arTitle:'المالكية والشافعية',
+                  en:'Rinsing the mouth and nose is Sunnah. Ghusl is still valid if you omit the rinses and complete the required washing.',
+                  ar:'المضمضة والاستنشاق سنتان. ويصح الغسل بتركهما إذا أتيت بما يجب غسله.',
+                  refs:[source('IslamWeb 175171 · Rinsing in ghusl and wudu','إسلام ويب ١٧٥١٧١ · المضمضة والاستنشاق في الغسل والوضوء','https://www.islamweb.net/ar/fatwa/print.php?id=175171')]
+                }
+              ]
+            }
+          ]
         },
         {
           title:'The fuller Sunnah wash', arTitle:'صفة الغسل الكامل',

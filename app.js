@@ -2198,7 +2198,7 @@
   }
 
   function occasionStart(id, event) {
-    return id === 'tarawih' || id === 'qadr' ? dayShift(event.from, -1) : event.from;
+    return id === 'qadr' ? dayShift(event.from, -1) : event.from;
   }
   function occasionLabels(id, event) {
     const start = occasionStart(id, event);

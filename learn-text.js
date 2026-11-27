@@ -29,65 +29,145 @@ window.SalahLessons = [
         refs: [['Al-Bukhari 159', 'https://sunnah.com/bukhari:159'], ['Muslim 226a', 'https://sunnah.com/muslim:226a'], ['Al-Bukhari 1', 'https://sunnah.com/bukhari:1']]
       },
       {
-        title: 'Obligatory parts of wudu', arTitle: 'فروض الوضوء التي لا يصح بدونها',
-        en: `Al-Ma’idah 5:6 tells believers to wash their faces, arms and feet and to wipe their heads. The steps below follow the approach taught by Ibn Baz and Ibn ‘Uthaymin, with details where scholars differ.
+        title: 'Wudu essentials', arTitle: 'أساسيات الوضوء',
+        en: `Al-Ma’idah 5:6 tells believers to wash their faces, arms and feet and to wipe their heads. Start with the intention in your heart and say Bismillah. If you forget to say it, your wudu is still valid.
 
 1. Wash your face. Rinse your mouth and nose as part of this step.
 2. Wash your arms, including your elbows.
-3. Wipe your whole head. Wipe your ears too. Scholars differ on whether wiping the ears is required.
+3. Wipe your whole head and your ears.
 4. Wash both feet, including your ankles.
 5. Follow this order.
 6. Keep going from one part to the next without a long break.
 
-Washing each part once properly is enough. Washing up to three times and starting with the right arm or foot are Sunnah. Ibn ‘Uthaymin considered saying Bismillah Sunnah. Ibn Baz advised saying it and said your wudu is valid if you forget.`,
-        ar: `أمر الله في المائدة (٦) بغسل الوجه واليدين والرجلين ومسح الرأس. وهذه الخطوات على ما ذكره ابن باز وابن عثيمين، مع بيان بعض مواضع الخلاف.
+Wash each part at least once so the water reaches it all. Washing up to three times and starting with the right arm or foot are Sunnah.`,
+        ar: `أمر الله في المائدة (٦) بغسل الوجه واليدين والرجلين ومسح الرأس. انوِ الوضوء بقلبك وقل بسم الله عند البدء. إن نسيت التسمية فوضوؤك صحيح.
 
 1. اغسل وجهك وتمضمض واستنشق.
 2. اغسل ذراعيك مع المرفقين.
-3. امسح رأسك كله، وامسح الأذنين أيضاً. وقد اختلف العلماء في وجوب مسحهما.
+3. امسح رأسك كله وأذنيك.
 4. اغسل قدميك مع الكعبين.
 5. اتبع هذا الترتيب.
 6. انتقل من عضو إلى آخر دون فاصل طويل.
 
-يكفي غسل كل عضو مرةً إذا وصل الماء إلى جميعه. والتثليث والبدء باليمنى في اليدين والرجلين من السنة. ويرى ابن عثيمين أن التسمية سنة، وأوصى بها ابن باز وبيّن أن من نسيها فوضوؤه صحيح.`,
+يكفي غسل كل عضو مرةً إذا وصل الماء إلى جميعه. والتثليث والبدء باليمنى في اليدين والرجلين من السنة.`,
         refs: [['Al-Ma’idah 5:6', 'https://quran.com/5/6'],
-          ['Ibn Baz · How to perform wudu', 'https://binbaz.org.sa/fatwas/4022/بيان-كيفية-الوضوء-والصلاة', 'ابن باز · كيفية الوضوء'],
-          ['Ibn Baz · Bismillah at the start', 'https://binbaz.org.sa/fatwas/20196/حكم-التسمية-عند-الوضوء', 'ابن باز · التسمية عند الوضوء'],
-          ['Ibn ‘Uthaymin · Bismillah and wudu', 'https://old.binothaimeen.net/content/11602', 'ابن عثيمين · التسمية عند الوضوء']]
+          ['Ibn Baz · How to perform wudu', 'https://binbaz.org.sa/fatwas/4022/بيان-كيفية-الوضوء-والصلاة', 'ابن باز · كيفية الوضوء']],
+        comparisons: [
+          {
+            title: 'Bismillah at the start', arTitle: 'التسمية عند بدء الوضوء',
+            views: [
+              {
+                title: 'Maliki and Shafi‘i schools, and one Hanbali view',
+                arTitle: 'المالكية والشافعية، ورواية عند الحنابلة',
+                en: 'Saying Bismillah is Sunnah. Wudu is valid if you leave it out, whether deliberately or by forgetting.',
+                ar: 'التسمية سنة، ويصح الوضوء بتركها عمداً أو نسياناً.',
+                refs: [['IslamQA · Saying Bismillah before wudu', 'https://islamqa.info/en/answers/21241', 'الإسلام سؤال وجواب · حكم التسمية قبل الوضوء'],
+                  ['Abdullah al-Sa‘d · The hadiths about Bismillah', 'https://saaid.org/leqa/7.htm', 'عبد الله السعد · أحاديث التسمية على الوضوء']]
+              },
+              {
+                title: 'The usual Hanbali ruling', arTitle: 'المشهور عند الحنابلة',
+                en: 'Say Bismillah if you remember. Forgetting it is excused, but deliberately leaving it out makes the wudu invalid under this view.',
+                ar: 'التسمية واجبة مع الذكر، وتسقط بالنسيان. ومن تركها عمداً لم يصح وضوؤه على هذا القول.',
+                refs: [['Ibn Qudamah · Al-Mughni on Bismillah', 'https://www.islamweb.net/ar/library/content/15/111/مسألة-التسمية-عند-الوضوء', 'ابن قدامة · المغني، التسمية عند الوضوء'],
+                  ['Al-Tirmidhi 25', 'https://sunnah.com/tirmidhi:25'],
+                  ['Ibn Baz · If you forget Bismillah', 'https://binbaz.org.sa/fatwas/20196/حكم-التسمية-عند-الوضوء', 'ابن باز · من نسي التسمية عند الوضوء']]
+              }
+            ]
+          }
+        ]
       },
       {
         title: 'Dhikr after wudu', arTitle: 'الذكر بعد الوضوء',
         en: `Dhikr means remembering Allah. After doing wudu well, say the testimony of faith below. The Prophet ﷺ said that all eight gates of Paradise will open for the person who says it after wudu, and they may enter through whichever gate they wish.
 
-Ibn Baz also recommended asking Allah to make you among those who repent and keep themselves pure. These words come from Al-Tirmidhi, who noted disagreement about how the report was passed down.`,
+You can also say the du‘a below, asking Allah to make you among those who repent and keep themselves pure.`,
         ar: `الذكر هو تذكّر الله وذكره باللسان. بعد إتمام الوضوء قل الشهادتين الآتيتين. أخبر النبي ﷺ أن من قالهما بعد الوضوء تُفتح له أبواب الجنة الثمانية فيدخل من أيها شاء.
 
-وأوصى ابن باز بالدعاء الآتي بسؤال الله أن يجعل المسلم من التوابين والمتطهرين. رواه الترمذي وذكر اختلافاً في إسناده.`,
+ويمكنك أيضاً أن تدعو بالدعاء الآتي، فتسأل الله أن يجعلك من التوابين والمتطهرين.`,
         refs: [['Muslim 234a', 'https://sunnah.com/muslim:234a'], ['Muslim 234b', 'https://sunnah.com/muslim:234b'], ['Al-Tirmidhi 55', 'https://sunnah.com/tirmidhi:55'],
           ['Ibn Baz · What to say after wudu', 'https://binbaz.org.sa/fatwas/2841/ذكر-الادعية-المشروعة-عند-الوضوء', 'ابن باز · ذكر الأدعية المشروعة عند الوضوء']]
       },
       {
         title: 'What breaks wudu', arTitle: 'نواقض الوضوء',
-        en: `1. Using the toilet, passing wind or other discharge from the private parts.
-2. Sleeping so deeply that you lose awareness. A light doze where you still notice what is going on around you does not break wudu in Ibn Baz’s explanation.
-3. Losing awareness, as when you faint.
-4. Eating camel meat. Ibn Baz and Ibn ‘Uthaymin follow the hadith in which the Prophet ﷺ told a man to do wudu after eating it.
+        en: `Repeat wudu after any of the following:
 
-Ibn Baz says that touching the private parts directly with your hand breaks wudu. Ibn ‘Uthaymin held that an ordinary touch does not break it. He recommended doing wudu anyway as a precaution, and discussed a stricter ruling if the touch was with desire. Both scholars held that ordinary contact with someone else’s skin does not break wudu by itself.
+1. Using the toilet, passing wind or other discharge from the private parts.
+2. Sleeping so deeply that you lose awareness. Light dozing while still aware of your surroundings leaves your wudu valid.
+3. Losing consciousness, as when you faint.
 
-Ibn ‘Uthaymin held that a nosebleed, a cut or vomiting does not break wudu. Ibn Baz recommended renewing wudu after heavy bleeding or a large amount of vomiting as a precaution.`,
-        ar: `1. قضاء الحاجة أو خروج الريح أو غير ذلك مما يخرج من موضع قضاء الحاجة.
-2. النوم العميق الذي يذهب معه الإحساس. أما النعاس الخفيف الذي يشعر معه الإنسان بما حوله فلا ينقض الوضوء عند ابن باز.
+Do wudu after eating camel meat, following the hadith below. Repeat wudu after touching your private parts with your bare hand to cover both views. Under the view followed here, ordinary skin contact such as a handshake leaves wudu valid.
+
+A nosebleed, a cut or vomiting leaves wudu valid according to many scholars. Other scholars require another wudu when the amount of blood or vomit is large.`,
+        ar: `توضأ من جديد بعد أيٍّ مما يأتي:
+
+1. قضاء الحاجة أو خروج الريح أو غير ذلك مما يخرج من موضع قضاء الحاجة.
+2. النوم العميق الذي يذهب معه الإحساس. أما النعاس الخفيف الذي تبقى معه مدركاً لما حولك فلا ينقض الوضوء.
 3. فقدان الوعي، كالإغماء.
-4. أكل لحم الإبل. أخذ ابن باز وابن عثيمين بالحديث الذي أمر فيه النبي ﷺ بالوضوء بعد أكله.
 
-يرى ابن باز أن مس الفرج باليد مباشرة ينقض الوضوء. ويرى ابن عثيمين أن مجرد المس لا ينقضه، ونصح بالوضوء احتياطاً، وذكر احتمال وجوبه إن كان المس بشهوة. وعند الشيخين لا ينقض الوضوء بمجرد لمس بشرة شخص آخر.
+توضأ بعد أكل لحم الإبل، عملاً بالحديث الآتي. وجدّد الوضوء إذا مسست فرجك بيدك من غير حائل، خروجاً من الخلاف. ولا ينتقض الوضوء بمجرد اللمس، كالمصافحة، على القول المذكور هنا.
 
-ويرى ابن عثيمين أن الرعاف أو الدم من جرح أو القيء لا ينقض الوضوء. ونصح ابن باز بتجديد الوضوء احتياطاً عند كثرة الدم أو القيء.`,
-        refs: [['Al-Bukhari 135', 'https://sunnah.com/bukhari:135'], ['Al-Nasa’i 444', 'https://dorar.net/h/K5964XbV/osoul'], ['Muslim 360a', 'https://sunnah.com/muslim:360a'],
-          ['Ibn Baz · What breaks wudu', 'https://binbaz.org.sa/fatwas/4022/بيان-كيفية-الوضوء-والصلاة', 'ابن باز · ما ينقض الوضوء'],
-          ['Ibn ‘Uthaymin · Direct touch and wudu', 'https://old.binothaimeen.net/content/7190', 'ابن عثيمين · المس ونقض الوضوء'],
-          ['Ibn Baz · Bleeding and wudu', 'https://binbaz.org.sa/fatwas/8960/حكم-وضوء-من-خرج-منه-دم', 'ابن باز · خروج الدم والوضوء']]
+الرعاف والدم من جرح والقيء لا تنقض الوضوء عند كثير من العلماء. ويرى آخرون وجوب إعادة الوضوء إذا كثر الدم أو القيء.`,
+        refs: [['Al-Bukhari 135', 'https://sunnah.com/bukhari:135'],
+          ['Ibn Baz · What breaks wudu', 'https://binbaz.org.sa/fatwas/4022/بيان-كيفية-الوضوء-والصلاة', 'ابن باز · ما ينقض الوضوء']],
+        comparisons: [
+          {
+            title: 'Nosebleeds, cuts and vomiting', arTitle: 'الرعاف والدم من الجرح والقيء',
+            views: [
+              {
+                title: 'Maliki and Shafi‘i schools, and one Hanbali view',
+                arTitle: 'المالكية والشافعية، وقول عند الحنابلة',
+                en: 'Bleeding from a cut or nosebleed and vomiting leave wudu valid, whether the amount is small or large. Ibn ‘Uthaymin held this view.',
+                ar: 'لا ينقض الوضوءَ دمُ الجرح أو الرعاف ولا القيء، قلّ أو كثر. واختار ابن عثيمين هذا القول.',
+                refs: [['Dorar · Bleeding and vomiting', 'https://dorar.net/feqhia/412', 'الدرر السنية · حكم الدم والقيء'],
+                  ['Ibn Baz · Renewing wudu after bleeding', 'https://binbaz.org.sa/fatwas/8960/حكم-وضوء-من-خرج-منه-دم', 'ابن باز · حكم وضوء من خرج منه دم']]
+              },
+              {
+                title: 'The usual Hanbali ruling', arTitle: 'المشهور عند الحنابلة',
+                en: 'A large amount of blood or vomit breaks wudu. A small amount does not.',
+                ar: 'ينقض الوضوء الدم أو القيء الكثير، ولا ينقضه القليل.',
+                refs: [['Ibn Qudamah · Al-Mughni on bleeding and vomiting', 'https://www.islamweb.net/ar/library/content/15/195/مسألة-القيء-الفاحش-والدم-والدود-الفاحش-يخرج-من-الجروح-هل-ينقض-الوضوء', 'ابن قدامة · المغني، نقض الوضوء بالدم والقيء'],
+                  ['IslamQA · Does vomiting break wudu?', 'https://islamqa.info/en/answers/44633', 'الإسلام سؤال وجواب · هل القيء ينقض الوضوء؟']]
+              }
+            ]
+          },
+          {
+            title: 'Touching the private parts directly', arTitle: 'مس الفرج باليد من غير حائل',
+            views: [
+              {
+                title: 'Hanbali and Shafi‘i schools', arTitle: 'الحنابلة والشافعية',
+                en: 'Direct touch with the palm calls for a new wudu. This view follows the report from Busrah bint Safwan.',
+                ar: 'مس الفرج بباطن الكف من غير حائل ينقض الوضوء، لحديث بُسرة بنت صفوان.',
+                refs: [['Al-Nasa’i 444', 'https://sunnah.com/nasai:444'],
+                  ['Muhammad ibn Shams al-Din · The two reports on touching', 'https://mshmsdin.com/archives/7876', 'محمد بن شمس الدين · بحث الوضوء من مس الفرج']]
+              },
+              {
+                title: 'Ibn ‘Uthaymin’s view', arTitle: 'قول ابن عثيمين',
+                en: 'An ordinary touch leaves wudu valid, though repeating it is recommended. He inclined to requiring wudu if the touch was with desire.',
+                ar: 'مجرد المس لا ينقض الوضوء، ويستحب الوضوء منه. ومال إلى وجوبه إذا كان المس بشهوة.',
+                refs: [['Abu Dawud 182 · The report of Talq', 'https://sunnah.com/abudawud:182', 'أبو داود ١٨٢ · حديث طلق'],
+                  ['IslamQA · Ibn ‘Uthaymin’s explanation', 'https://islamqa.info/ar/answers/220902', 'الإسلام سؤال وجواب · ترجيح ابن عثيمين']]
+              }
+            ]
+          },
+          {
+            title: 'Eating camel meat', arTitle: 'أكل لحم الإبل',
+            views: [
+              {
+                title: 'Hanbali school', arTitle: 'الحنابلة',
+                en: 'Eating camel meat calls for a new wudu, as the Prophet ﷺ instructed in the report from Jabir ibn Samurah.',
+                ar: 'أكل لحم الإبل ينقض الوضوء، لحديث جابر بن سمرة الذي أمر فيه النبي ﷺ بالوضوء منه.',
+                refs: [['Muslim 360a', 'https://sunnah.com/muslim:360a'], ['Dorar · Camel meat and wudu', 'https://dorar.net/feqhia/446', 'الدرر السنية · أكل لحم الإبل']]
+              },
+              {
+                title: 'Maliki and Shafi‘i schools', arTitle: 'المالكية والشافعية',
+                en: 'Eating camel meat leaves wudu valid. Scholars who take this view cite the report about the Prophet’s ﷺ last practice of leaving wudu after eating food cooked over a fire.',
+                ar: 'أكل لحم الإبل لا ينقض الوضوء. واستدل من أخذ بهذا القول بحديث أن آخر الأمرين ترك الوضوء مما مست النار.',
+                refs: [['Dorar · Camel meat and wudu', 'https://dorar.net/feqhia/446', 'الدرر السنية · أكل لحم الإبل'],
+                  ['Abu Dawud 192', 'https://sunnah.com/abudawud:192']]
+              }
+            ]
+          }
+        ]
       }
     ]
   },
@@ -237,39 +317,76 @@ A resident with a reason to combine still prays the full number of rak’ahs.`,
       {
         title: 'When you can perform tayammum', arTitle: 'الحالات التي يُشرع فيها',
         en: `1. You looked for water and could not find it, at home or while travelling.
-2. Water would harm you or slow your recovery. The Qur’an mentions illness. There is also a report about someone with a head injury, and scholars differ on the strength of that particular report.
+2. Using water would worsen an illness or injury, or slow your recovery.
 3. The water is dangerously cold, you cannot warm it and you have reason to fear harm. The Prophet ﷺ accepted tayammum after a severely cold night in the account of Amr ibn Al-As.
 4. Using the only water you have would leave you without water you need for drinking or food.
 
 When you have a valid reason, tayammum can stand in for wudu or ghusl so you can pray.`,
         ar: `1. لم تجد الماء بعد البحث عنه، في السفر أو في بلدك.
-2. تخشى أن يضرّك الماء أو يؤخّر شفاءك. وقد ذكر القرآن المرض. وورد أيضاً خبر الرجل الذي جُرح في رأسه، وفي ثبوت هذا الخبر خلاف.
+2. تخشى أن يزيد الماء مرضك أو إصابتك، أو يؤخّر شفاءك.
 3. الماء شديد البرودة، ولا يمكنك تدفئته وتخشى أن تتضرر. وقد أقرّ النبي ﷺ عمرو بن العاص على التيمم في ليلة باردة.
 4. تحتاج الماء القليل الذي عندك للشرب أو إعداد الطعام، ولن يكفيك إذا استعملته للطهارة.
 
 عند وجود عذر صحيح، يقوم التيمم مقام الوضوء أو الغسل لتصلّي.`,
-        refs: [['Abu Dawud 336', 'https://sunnah.com/abudawud:336'], ['Abu Dawud 334', 'https://sunnah.com/abudawud:334']]
+        refs: [['Al-Ma’idah 5:6', 'https://quran.com/5/6'], ['Abu Dawud 334', 'https://sunnah.com/abudawud:334']]
       },
       {
         title: 'How to perform tayammum', arTitle: 'كيفية التيمم',
-        en: `The Prophet ﷺ showed Ammar how to perform tayammum with one strike of the ground. Here is how Ibn Baz and Ibn ‘Uthaymin explain it.
+        en: `The Prophet ﷺ showed Ammar how to perform tayammum with one light strike of the ground.
 
-1. Intend to do tayammum and say Bismillah.
-2. Touch clean earth once with both palms.
+1. Intend to do tayammum in your heart and say Bismillah.
+2. Pat clean, dusty soil once with both palms. You can blow off any loose dust.
 3. Wipe your whole face with your hands.
-4. Wipe your hands up to the wrists, including the backs of your hands.
+4. Wipe both hands up to the wrists, including the palms and backs.`,
 
-Clean soil works under both main views on the material. Ibn ‘Uthaymin also allowed clean sand or stone from the ground without loose dust. Some scholars require soil or dust that can cling to your hands.`,
-        ar: `علّم النبي ﷺ عماراً التيمم بضربة واحدة على الأرض. وهذه الصفة كما شرحها ابن باز وابن عثيمين.
+        ar: `علّم النبي ﷺ عماراً التيمم بضربة خفيفة واحدة على الأرض.
 
-1. انوِ التيمّم وقل: بسم الله.
-2. اضرب الأرض الطاهرة بكفيك ضربةً واحدة.
+1. انوِ التيمّم بقلبك وقل بسم الله.
+2. اضرب تراباً طاهراً له غبار بكفيك ضربة واحدة. ولك أن تنفخ ما زاد من الغبار.
 3. امسح وجهك كله بيديك.
-4. امسح كفيك إلى الرسغين، بما في ذلك ظاهر الكفين.
+4. امسح كفيك إلى الرسغين، باطنهما وظاهرهما.`,
 
-التراب الطاهر يجزئ على القولين. وأجاز ابن عثيمين التيمم برمل الأرض أو حجرها ولو لم يعلق باليد غبار، واشترط بعض أهل العلم تراباً أو غباراً يعلق باليد.`,
-        refs: [['Al-Bukhari 338', 'https://sunnah.com/bukhari:338'], ['Muslim 368a', 'https://sunnah.com/muslim:368a'],
-          ['Ibn ‘Uthaymin · What you can use for tayammum', 'https://old.binothaimeen.net/content/13921', 'ابن عثيمين · معنى الصعيد الطيب']]
+        refs: [['Al-Bukhari 338', 'https://sunnah.com/bukhari:338'], ['Muslim 368a', 'https://sunnah.com/muslim:368a']],
+        comparisons: [
+          {
+            title: 'What you can use', arTitle: 'ما يصح التيمم به',
+            views: [
+              {
+                title: 'Maliki school and Ibn ‘Uthaymin’s view',
+                arTitle: 'المالكية واختيار ابن عثيمين',
+                en: 'Clean earth, including its sand and stone, can be used even if no dust sticks to your hands.',
+                ar: 'يجوز التيمم بما كان من الأرض الطاهرة، كالرمل والحجر، ولو لم يعلق باليد غبار.',
+                refs: [['Dorar · Materials for tayammum', 'https://dorar.net/feqhia/558', 'الدرر السنية · ما يتيمم به'],
+                  ['Ibn ‘Uthaymin · What counts as clean earth', 'https://old.binothaimeen.net/content/13921', 'ابن عثيمين · معنى الصعيد الطيب']]
+              },
+              {
+                title: 'Shafi‘i school and the usual Hanbali ruling',
+                arTitle: 'الشافعية والمشهور عند الحنابلة',
+                en: 'Use clean soil with dust that can cling to your hands and use it to wipe your face and hands.',
+                ar: 'يُشترط تراب طاهر له غبار يعلق بالكفين ويُمسح به الوجه واليدان.',
+                refs: [['Dorar · Evidence for using soil with dust', 'https://dorar.net/feqhia/558', 'الدرر السنية · أدلة اشتراط التراب ذي الغبار']]
+              }
+            ]
+          },
+          {
+            title: 'How far to wipe', arTitle: 'حدّ مسح اليدين',
+            views: [
+              {
+                title: 'Maliki and Hanbali schools', arTitle: 'المالكية والحنابلة',
+                en: 'One strike is enough. Wipe the face and both hands to the wrists, following Ammar’s hadith. The Maliki school also recommends wiping up to the elbows.',
+                ar: 'تجزئ ضربة واحدة لمسح الوجه والكفين إلى الرسغين لحديث عمار. ويستحب المالكية الزيادة بالمسح إلى المرفقين.',
+                refs: [['IslamWeb 12499 · The method of tayammum', 'https://www.islamweb.net/ar/fatwa/12499/الكيفية-الصحيحة-للتيمم', 'إسلام ويب ١٢٤٩٩ · الكيفية الصحيحة للتيمم'],
+                  ['Uthman al-Khamees · Demonstration of tayammum', 'https://www.othmanalkhamees.com/lesson/201/fawaid?part=2', 'عثمان الخميس · طريقة وصفة التيمم']]
+              },
+              {
+                title: 'Shafi‘i school', arTitle: 'الشافعية',
+                en: 'Use one strike for the face and another for the hands and forearms. Wipe up to and including the elbows.',
+                ar: 'تكون ضربة للوجه وضربة لليدين، ويشمل مسح اليدين المرفقين.',
+                refs: [['IslamWeb 12499 · The view on wiping to the elbows', 'https://www.islamweb.net/ar/fatwa/12499/الكيفية-الصحيحة-للتيمم', 'إسلام ويب ١٢٤٩٩ · القول بالمسح إلى المرفقين']]
+              }
+            ]
+          }
+        ]
       },
       {
         title: 'What breaks tayammum', arTitle: 'نواقض التيمم',

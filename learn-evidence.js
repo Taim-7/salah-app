@@ -73,8 +73,6 @@
         proof('Al-Bukhari 335','جُعِلَتْ لِيَ الْأَرْضُ مَسْجِدًا وَطَهُورًا','The earth was made for me a place to pray and a means to purify.')
       ],
       [
-        { ...proof('Abu Dawud 336 (chain disputed)','إِنَّمَا كَانَ يَكْفِيهِ أَنْ يَتَيَمَّمَ','It would have been enough for him to perform tayammum.'),
-          arName:'أبو داود ٣٣٦ (في إسناده خلاف)' },
         proof('Abu Dawud 334','فَتَيَمَّمْتُ ثُمَّ صَلَّيْتُ بِأَصْحَابِي الصُّبْحَ','So I performed tayammum and then led my companions in the dawn prayer.')
       ],
       [proof('Muslim 368a','إِنَّمَا كَانَ يَكْفِيكَ أَنْ تَقُولَ بِيَدَيْكَ هَكَذَا … ثُمَّ مَسَحَ الشِّمَالَ عَلَى الْيَمِينِ وَظَاهِرَ كَفَّيْهِ وَوَجْهَهُ',

@@ -45,6 +45,39 @@
     return block;
   }
 
+  function renderReferences(sources, isArabic) {
+    const refs = element('footer');
+    refs.className = 'lesson-references';
+    for (const [name, url, arName] of sources) {
+      const link = element('a', isArabic ? arName || SalahLocale.arabicReference(name) : name);
+      link.href = url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      refs.append(link);
+    }
+    return refs;
+  }
+
+  function renderComparisons(comparisons, isArabic) {
+    const panel = element('details');
+    panel.className = 'lesson-views';
+    panel.append(element('summary', isArabic ? 'أقوال العلماء' : 'Scholarly views'));
+    for (const comparison of comparisons) {
+      const group = element('div');
+      group.className = 'lesson-view-group';
+      group.append(element('h4', isArabic ? comparison.arTitle : comparison.title));
+      for (const view of comparison.views) {
+        const entry = element('div');
+        entry.className = 'lesson-view';
+        entry.append(element('strong', isArabic ? view.arTitle : view.title),
+          element('p', isArabic ? view.ar : view.en), renderReferences(view.refs, isArabic));
+        group.append(entry);
+      }
+      panel.append(group);
+    }
+    return panel;
+  }
+
   function renderSection(section, isArabic, existingEvidence) {
     const card = element('section');
     card.className = 'lesson-section';
@@ -66,18 +99,8 @@
       const quotes = section.evidence || existingEvidence;
       for (const proof of quotes || []) card.append(renderEvidence(proof, isArabic));
     }
-    if (section.refs?.length) {
-      const refs = element('footer');
-      refs.className = 'lesson-references';
-      for (const [name, url, arName] of section.refs) {
-        const link = element('a', isArabic ? arName || SalahLocale.arabicReference(name) : name);
-        link.href = url;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        refs.append(link);
-      }
-      card.append(refs);
-    }
+    if (section.refs?.length) card.append(renderReferences(section.refs, isArabic));
+    if (section.comparisons?.length) card.append(renderComparisons(section.comparisons, isArabic));
     return card;
   }
 
