@@ -5,7 +5,16 @@
   const article = document.getElementById('learnArticle');
   const title = document.getElementById('lessonTitle');
   const content = document.getElementById('lessonContent');
+  const groups = [
+    { id:'purification', title:'Purification', arTitle:'الطهارة',
+      topics:['wudu', 'ghusl', 'tayammum', 'without-purification'] },
+    { id:'prayer', title:'Prayer and its rulings', arTitle:'الصلاة وأحكامها',
+      topics:['prayer', 'joining-prayer', 'sujood-al-sahw', 'travel', 'praying-while-ill', 'night-prayer'] },
+    { id:'remembrance', title:'Remembrance and Qur’an', arTitle:'الأذكار والقرآن',
+      topics:['remembrance', 'al-mulk'] }
+  ];
   let activeTopic;
+  let topicListScroll = 0;
 
   function element(tag, text) {
     const node = document.createElement(tag);
@@ -106,6 +115,7 @@
 
   function open(topic, button, isArabic) {
     activeTopic = button;
+    topicListScroll = window.scrollY;
     title.textContent = isArabic ? topic.arTitle : topic.title;
     const evidence = window.SalahLessonEvidence[topic.id];
     content.replaceChildren(...topic.sections.map((section, i) => renderSection(section, isArabic, evidence?.[i])));
@@ -120,24 +130,45 @@
     article.hidden = true;
     index.hidden = false;
     activeTopic?.focus({ preventScroll:true });
-    window.scrollTo({ top:0, behavior:'instant' });
+    window.scrollTo({ top:topicListScroll, behavior:'instant' });
     return true;
   }
 
+  function topicButton(topic, isArabic) {
+    const button = element('button');
+    button.className = 'learn-topic';
+    button.type = 'button';
+    button.dataset.topic = topic.id;
+    const chevron = element('span', isArabic ? '‹' : '›');
+    chevron.setAttribute('aria-hidden', 'true');
+    button.append(element('strong', isArabic ? topic.arTitle : topic.title),
+      element('small', isArabic ? topic.arDescription : topic.description), chevron);
+    button.addEventListener('click', () => open(topic, button, isArabic));
+    return button;
+  }
+
   function init(isArabic) {
-    const topics = document.getElementById('learnTopics');
-    for (const topic of window.SalahLessons) {
-      const button = element('button');
-      button.className = 'learn-topic';
-      button.type = 'button';
-      button.dataset.topic = topic.id;
-      const chevron = element('span', isArabic ? '‹' : '›');
-      chevron.setAttribute('aria-hidden', 'true');
-      button.append(element('strong', isArabic ? topic.arTitle : topic.title),
-        element('small', isArabic ? topic.arDescription : topic.description), chevron);
-      button.addEventListener('click', () => open(topic, button, isArabic));
-      topics.append(button);
+    const directory = document.getElementById('learnTopics');
+    const unlisted = new Map(window.SalahLessons.map(topic => [topic.id, topic]));
+    for (const group of groups) {
+      const list = element('div');
+      list.className = 'learn-topics';
+      for (const id of group.topics) {
+        const topic = unlisted.get(id);
+        if (!topic) continue;
+        list.append(topicButton(topic, isArabic));
+        unlisted.delete(id);
+      }
+      if (!list.childElementCount) continue;
+      const section = element('section');
+      const heading = element('h3', isArabic ? group.arTitle : group.title);
+      heading.id = 'learn-group-' + group.id;
+      section.setAttribute('aria-labelledby', heading.id);
+      section.className = 'learn-group';
+      section.append(heading, list);
+      directory.append(section);
     }
+    for (const topic of unlisted.values()) directory.append(topicButton(topic, isArabic));
   }
 
   document.getElementById('backToLearn').addEventListener('click', close);

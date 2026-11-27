@@ -482,6 +482,8 @@ body:has(:is(.occasion-dialog, .permission-dialog)[open]) { overflow: hidden; }
 }
 
 .learn-panel { max-width: 760px; margin-inline: auto; }
+.learn-groups { display: grid; gap: 21px; }
+.learn-group h3 { margin: 0 0 8px; color: var(--muted); font-size: 14px; }
 .learn-topics { display: grid; gap: 7px; }
 .learn-topic {
   display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 4px 12px; align-items: center;
